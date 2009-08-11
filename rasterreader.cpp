@@ -85,7 +85,7 @@ ProjectedRaster* RasterReader::readRaster(std::string filename)
   return raster;
 }
 
-ProjectedRaster* RasterReader::readImgRaster(std::string filename)
+ProjectedRaster* RasterReader::readImgRaster(std::string filename, int rank, int num_procs)
 {
   string imgname, xmlname;
   imgname = xmlname = filename;
@@ -94,10 +94,15 @@ ProjectedRaster* RasterReader::readImgRaster(std::string filename)
   RasterInfo in_info(xmlname.c_str());
   int fd = -1;
   int readsize = 0;
-  int rastersize = in_info.rows() * in_info.cols();
+  int rastersize = in_info.rows()/num_procs * in_info.cols();
+  int overflow = (in_info.rows() % num_procs) * in_info.cols();
   ProjectedRaster *pr = new ProjectedRaster;
 
-  pr->data = calloc(rastersize, in_info.bitCount()/8);
+  if (rank != num_procs-1) {
+    overflow = 0;
+  }
+
+  pr->data = calloc(rastersize + overflow, in_info.bitCount()/8);
   if (pr->data == 0) {
     printf("Data allocation failed\n");
     return 0;
@@ -105,7 +110,9 @@ ProjectedRaster* RasterReader::readImgRaster(std::string filename)
   // Read in image data
   errno = 0;
   fd = open(imgname.c_str(), O_RDONLY);
-  readsize = read(fd, pr->data, rastersize*(in_info.bitCount()/8));
+  lseek(fd, rank * rastersize, SEEK_SET);
+  readsize = read(fd, pr->data, 
+		  (rastersize+overflow)*(in_info.bitCount()/8));
   if (readsize != (rastersize * (in_info.bitCount()/8))) {
     printf("Read error: %d!\n", readsize);
     printf("Supposed to be: %d\n", rastersize*(in_info.bitCount()/8));
@@ -115,10 +122,14 @@ ProjectedRaster* RasterReader::readImgRaster(std::string filename)
   close(fd);
 
   // Setup projection
+  int num_rows = in_info.rows()/num_procs;
+  if (rank == num_procs-1)
+    num_rows += in_info.rows() % num_procs;
   pr->setProjection((ProjCode)in_info.projectionNumber());
-  pr->setUL(in_info.ul_X(), in_info.ul_Y());
+  pr->setUL(in_info.ul_X(), in_info.ul_Y() 
+	    - (rank * (in_info.rows()/num_procs) * in_info.pixelSize()));
   pr->setDatum((ProjDatum)in_info.datumNumber());
-  pr->setRowCount(in_info.rows());
+  pr->setRowCount(num_rows);
   pr->setColCount(in_info.cols());
   pr->setPixelSize(in_info.pixelSize());
   if (in_info.isSigned())
@@ -182,3 +193,4 @@ void RasterReader::writeRaster(std::string filename,
   }
   return;
 }
+
