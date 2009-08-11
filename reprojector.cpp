@@ -1,5 +1,6 @@
 
 #include <cstdio>
+#include <vector>
 
 #include "gctp_cpp/projection.h"
 #include "gctp_cpp/transformer.h"
@@ -157,7 +158,7 @@ void FindMinBox(ProjectedRaster *input, Projection *outproj, double out_pixsize,
     if (temp.y < miny) miny = temp.y;
     if (temp.y > maxy) maxy = temp.y;
     temp.x = ul_lon + (x * delta_east);
-    temp.y = ul_lat + (rows*delta_north);
+    temp.y = ul_lat - (rows*delta_north);
     outproj->forward(temp.x, temp.y, &(temp.x), &(temp.y));
     if (temp.x < minx) minx = temp.x;
     if (temp.x > maxx) maxx = temp.x;
@@ -178,7 +179,7 @@ void FindMinBox(ProjectedRaster *input, Projection *outproj, double out_pixsize,
     temp.x = ul_lon;
     temp.y = ul_lat - (y*delta_north);
     outproj->forward(temp.x, temp.y, &(temp.x), &(temp.y));
-    if (temp.x < minx) minx = temp.x;
+     if (temp.x < minx) minx = temp.x;
     if (temp.x > maxx) maxx = temp.x;
     if (temp.y < miny) miny = temp.y;
     if (temp.y > maxy) maxy = temp.y;
@@ -194,7 +195,7 @@ void FindMinBox(ProjectedRaster *input, Projection *outproj, double out_pixsize,
     if (temp.y < miny) miny = temp.y;
     if (temp.y > maxy) maxy = temp.y;
     temp.x = ul_lon + (cols * delta_east);
-    temp.y = ul_lat + (y * delta_north);
+    temp.y = ul_lat - (y * delta_north);
     outproj->forward(temp.x, temp.y, &(temp.x), &(temp.y));
     if (temp.x < minx) minx = temp.x;
     if (temp.x > maxx) maxx = temp.x;
