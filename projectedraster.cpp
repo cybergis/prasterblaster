@@ -102,8 +102,6 @@ bool ProjectedRaster::isReady()
   }
 }
 
-
-
 Projection* ProjectedRaster::getProjection()
 {
   return projection;

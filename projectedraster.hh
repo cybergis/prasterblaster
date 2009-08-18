@@ -21,7 +21,8 @@ public:
 	~ProjectedRaster();
 	void* getData();
 	Projection* getProjection();
-	bool isReady();
+        bool isReady();
+	ProjectedRaster* getSubraster(int firstrow, int lastrow);
 	
 	// Area
 	void setUL(double ul_x, double ul_y);
@@ -64,7 +65,6 @@ public:
 	
 
 	// Members
-	long northBound, southBound, westBound, eastBound;
 	double ul_x, ul_y;
 
 	// Pixel Description
