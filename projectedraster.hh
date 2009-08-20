@@ -17,6 +17,7 @@ class ProjectedRaster
 {
 public:
 	ProjectedRaster();
+	ProjectedRaster(string filename);
 	ProjectedRaster(long num_rows, long num_cols, long pixel_bits);
 	~ProjectedRaster();
 	void* getData();
@@ -83,6 +84,8 @@ public:
 	
 	void* data;
 private:
+	bool readImgRaster(string filename);
+	bool readRaster(string filename);
 	Projection *projection;
 	Transformer t;
         ProjectedRaster& operator=(ProjectedRaster& a);
