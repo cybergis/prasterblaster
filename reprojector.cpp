@@ -28,11 +28,13 @@ Reprojector::~Reprojector()
   
 	return;
 }
+
 void parallelReproject(int rank, int numProcs)
 {
   
 	return;
 }
+
 void Reprojector::reproject()
 {
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -94,40 +96,6 @@ void Reprojector::reproject()
 
 	return;
 }
-
-ProjectedRaster* GetOutputChunk(ProjectedRaster *input, Projection *outproj,
-				double out_pixsize, int rank, int num_nodes)
-{
-	ProjectedRaster *pr = 0;
-	double ulx, uly, lrx, lry;
-	int rows, cols, overflow;
-
-	ulx = uly = lrx = lry = 0.0;
-	rows = cols = overflow = 0;
-  
-	FindMinBox(input, outproj, out_pixsize, ulx, uly, lrx, lry);
-  
-	rows = (int)((uly - lry)/out_pixsize);
-	cols = (int)((lrx - ulx)/out_pixsize);
-	rows /= num_nodes;
-
-	overflow = rows % num_nodes;
-	if (rank == (num_nodes-1))
-		rows += overflow;
-  
-	pr = new ProjectedRaster(rows, cols, input->getBitCount());
-	if (pr == 0)
-		return 0;
-  
-	pr->setProjection(outproj->number());
-	pr->setUnit(outproj->units());
-	pr->setDatum(outproj->datum());
-	pr->setGctpParams(outproj->params());
-	pr->setUL(ulx, uly - (rows * out_pixsize)*rank);
-
-	return pr;
-}
-
 
 // Minbox finds number of rows and columns in output and upper-left
 // corner of output

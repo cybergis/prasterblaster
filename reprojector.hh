@@ -29,15 +29,10 @@ private:
 		      unsigned long out_cols);
 };
 
-
-ProjectedRaster* GetOutputChunk(ProjectedRaster *input, Projection *outproj,
-				double out_pixsize, int rank, int num_nodes);
-
 void FindMinBox(ProjectedRaster *input, Projection *outproj,
 		double out_pixsize,
 		double &_ul_x, double &_ul_y, double &_lr_x, double &_lr_y);
 
-//vector<ProjectedRaster> DivideRaster(ProjectedRaster *input, int num);
 
 
 #endif // REPROJECTOR_HH

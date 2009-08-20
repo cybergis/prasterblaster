@@ -12,6 +12,9 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include <gdal_priv.h>
+#include <ogr_spatialref.h>
+
 #include "rasterinfo.h"
 #include "gctp_cpp/transformer.h"
 #include "gctp_cpp/mercator.h"
@@ -20,24 +23,6 @@
 #include "projectedraster.hh"
 
 using namespace std;
-
-ProjectedRaster::ProjectedRaster()
-{
-	data = 0;
-	ready = false;
-	ul_x = ul_y = 0;
-	rows = cols = 0;
-	bitCount = 8;
-	issigned = false;
-	integer = true;
-	projection = 0;
-
-	for(int i = 0; i < 16; ++i) {
-		gctpParams[i] = 0;
-	}
-
-	return;
-}
 
 ProjectedRaster::ProjectedRaster(string filename)
 {
@@ -49,17 +34,19 @@ ProjectedRaster::ProjectedRaster(string filename)
 }
 
 ProjectedRaster::ProjectedRaster(long num_rows, long num_cols, 
-				 long pixel_bits)
+				 long pixel_bits, Projection *proj,
+				 double ulx, double uly)
 {
 	data = calloc(num_cols*num_rows, (pixel_bits/8));
 	ready = false;
-	ul_x = ul_y = 0;
+	ul_x = ulx;
+	ul_y = uly;
 	rows = num_rows;
 	cols = num_cols;
 	bitCount = pixel_bits;
 	issigned = false;
 	integer = true;
-	projection = 0;
+	projection = proj;
 
 	for(int i = 0; i < 16; ++i) {
 		gctpParams[i] = 0;
@@ -102,6 +89,58 @@ Projection* ProjectedRaster::getProjection()
 void* ProjectedRaster::getData()
 {
 	return data;
+}
+
+bool ProjectedRaster::write(string filename)
+{
+	GDALDataset *ds;
+	GDALDriver *driver;
+	OGRSpatialReference sr;
+	Projection *proj;
+	char **options = 0;
+	char *wkt;
+	double transforms[6];
+
+	GDALAllRegister();
+
+	driver = GetGDALDriverManager()->GetDriverByName("GTiff");
+  
+	// Initialize spatial reference
+	// Projection, gctp params, units, and datum
+	proj = getProjection();
+	if (getProjection()->number() == _UTM) {
+		sr.importFromUSGS((long)proj->number(), ((UTM*)proj)->zone(),
+				  proj->params(), (long)proj->datum());
+	} else {
+		sr.importFromUSGS((long)proj->number(),  0,
+				  proj->params(), (long)proj->datum());
+	}
+	sr.SetLinearUnits(SRS_UL_METER, 1);
+	sr.exportToWkt( &wkt );
+
+	// Create Dataset
+	ds = driver->Create(filename.c_str(), getColCount(),
+			    getRowCount(), getBitCount()/8, 
+			    GDT_Byte, options);
+  
+
+
+	if (ds != 0) {
+		// TODO: Support more than one band
+		printf("Writing raster: %d cols %d rows\n", getColCount(), getRowCount());
+		if (ds->RasterIO(GF_Write, 0, 0, getColCount(), getRowCount(),
+				 getData(), getColCount(), getRowCount(),
+				 GDT_Byte, 1, 0, 0, 0, 0) == CE_Failure) {
+			printf("RasterIO failed...\n");
+		}
+
+		ds->SetProjection(wkt);
+		GDALClose(ds);
+		return true;
+	}
+	
+	return false;
+
 }
 
 void ProjectedRaster::setUL(double _ul_x, double _ul_y)

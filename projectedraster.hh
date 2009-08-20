@@ -16,14 +16,14 @@ using namespace std; // Don't do this :(
 class ProjectedRaster
 {
 public:
-	ProjectedRaster();
 	ProjectedRaster(string filename);
-	ProjectedRaster(long num_rows, long num_cols, long pixel_bits);
+	ProjectedRaster(long num_rows, long num_cols, long pixel_bits,
+			Projection *proj, double ulx, double uly);
 	~ProjectedRaster();
 	void* getData();
 	Projection* getProjection();
         bool isReady();
-	ProjectedRaster* getSubraster(int firstrow, int lastrow);
+	bool write(string filename);
 	
 	// Area
 	void setUL(double ul_x, double ul_y);
@@ -57,13 +57,6 @@ public:
 	int getZoneNumber();
 	ProjDatum getDatum();
 	double* getGctpParams();
-
-	// Reprojection
-	void setReprojection();
-
-	// Pixel Values
-	void getValueGeo(double lat, double lon, void* val);
-	
 
 	// Members
 	double ul_x, ul_y;

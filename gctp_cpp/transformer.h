@@ -8,7 +8,63 @@
 
 #include "coordinate.h"
 
+#include "albersConEqArea.h"
 
+#include "lambertcc.h"
+
+#include "mercator.h"
+
+#include "polyconic.h"
+
+#include "equidistantc.h"
+
+#include "sinusoidal.h"
+
+#include "equirectangular.h"
+
+#include "mollweide.h"
+
+#include "intmollweide.h"
+
+#include "transversemercator.h"
+
+#include "miller.h"
+
+#include "polarstereo.h"
+
+#include "oblatedeqarea.h"
+
+#include "azequidistant.h"
+
+#include "genvertnsp.h"
+
+#include "gnomonic.h"
+
+#include "goodeh.h"
+
+#include "orthographic.h"
+
+#include "vandergrinten.h"
+
+#include "robinson.h"
+
+#include "hammer.h"
+
+#include "wagneriv.h"
+
+#include "wagnervii.h"
+
+#include "utm.h"
+
+#include "lambertazimuth.h"
+
+#include "spaceobmerc.h"
+
+#include "alaskaconformal.h"
+
+#include "hotinobmerc.h"
+
+#include "stereo.h"
 
 //! Transformer class
 

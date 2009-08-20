@@ -21,7 +21,6 @@ HEADERS += projectedraster.hh \
            tinyxml.h \
            rasterxml.h \
            resampler.hh \
-           rasterreader.hh \
            ../gctp_cpp/alaskaconformal.h \
            ../gctp_cpp/albersConEqArea.h \
            ../gctp_cpp/azequidistant.h \
@@ -68,7 +67,6 @@ SOURCES += projectedraster.cpp \
            rasterxml.cpp \
            driver.cpp \
            resampler.cpp \
-           rasterreader.cpp \
            ../gctp_cpp/alaskaconformal.cpp \
            ../gctp_cpp/albersConEqArea.cpp \
            ../gctp_cpp/azequidistant.cpp \

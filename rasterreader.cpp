@@ -28,7 +28,7 @@ ProjectedRaster* RasterReader::readRaster(std::string filename)
   int pixelsize, xsize, ysize, bandcount;
   long projcode, projzone, projdatum;
   double *params = (double*)calloc(16, sizeof(double));
-  ProjectedRaster* raster = new ProjectedRaster;
+  ProjectedRaster* raster = 0;
   Projection *proj = 0;
   Transformer t;
   char* temp;
@@ -96,7 +96,7 @@ ProjectedRaster* RasterReader::readImgRaster(std::string filename, int rank, int
   int readsize = 0;
   int rastersize = in_info.rows()/num_procs * in_info.cols();
   int overflow = (in_info.rows() % num_procs) * in_info.cols();
-  ProjectedRaster *pr = new ProjectedRaster;
+  ProjectedRaster *pr = 0;
 
   if (rank != num_procs-1) {
     overflow = 0;
