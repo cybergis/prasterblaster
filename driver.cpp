@@ -45,15 +45,13 @@ int main(int argc, char *argv[])
   rows = (int)((ul_y-lr_y)/in.getPixelSize());
 
   ProjectedRaster out(rows, cols, in.getBitCount(), outproj, ul_x, ul_y);
-  out.setProjection(HAMMER);
-  out.setDatum((ProjDatum)19);
-  out.setGctpParams(params);
-  out.setUL(ul_x, ul_y);
-  out.setPixelSize(in.getPixelSize()); 
   out.setUnit(METER);
 
   Reprojector rp(&in, &out);
-  rp.reproject();
+  //  rp.reproject();
+  rp.parallelReproject(world.rank(), world.size());
+  if (world.rank() == 0)
+    out.write("/home/dmattli/Desktop/output.tif");
 
   return 0;
 }

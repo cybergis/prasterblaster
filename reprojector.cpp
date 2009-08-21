@@ -2,12 +2,18 @@
 #include <cstdio>
 #include <vector>
 
+#include <boost/mpi/environment.hpp>
+#include <boost/mpi/communicator.hpp>
+#include <boost/mpi/collectives.hpp>
+
 #include "gctp_cpp/projection.h"
 #include "gctp_cpp/transformer.h"
 #include "gctp_cpp/coordinate.h"
 
 #include "reprojector.hh"
 #include "resampler.hh"
+
+namespace mpi = boost::mpi;
 
 Reprojector::Reprojector(ProjectedRaster *_input, ProjectedRaster *_output) :
   input(_input), output(_output)
@@ -29,12 +35,71 @@ Reprojector::~Reprojector()
 	return;
 }
 
-void parallelReproject(int rank, int numProcs)
+void Reprojector::parallelReproject(int rank, int numProcs)
 {
+	// We assume input is filled with raster goodness
+	Transformer t;
+	Coordinate temp, temp2;
+	double in_ulx, in_uly, out_ulx, out_uly;
+	double in_pixsize, out_pixsize;
+	long in_rows, in_cols, out_rows, out_cols;
+	mpi::communicator world;
+	vector<char> ot;
+
+	t.setInput(*output->getProjection());
+	t.setOutput(*input->getProjection());
   
+	in_rows = input->getRowCount();
+	in_cols = input->getColCount();
+	out_rows = output->getRowCount()/numProcs;
+	out_cols = output->getColCount();
+	in_pixsize = input->getPixelSize();
+	out_pixsize = output->getPixelSize();
+	in_ulx = input->ul_x;
+	in_uly = input->ul_y;
+	out_ulx = output->ul_x;
+	out_uly = output->ul_y - (rank * ((out_rows * out_pixsize)/numProcs));
+
+	temp.units = METER;
+	for (int y = 0; y < out_rows; ++y) {
+		if (y % 100 == 0)
+			printf("Node %d On row %d of %d\n", rank, y + (rank * (output->getRowCount()/numProcs)), output->getRowCount());
+		for (int x = 0; x < out_cols; ++x) {
+			temp.x = ((double)x * out_pixsize) + out_ulx;
+			temp.y = ((double)y * out_pixsize) - out_uly;
+			t.transform(&temp);
+			output->getProjection()->inverse(temp.x, temp.y);
+			output->getProjection()->forward(output->getProjection()->lon(),
+							 output->getProjection()->lat(), 
+							 &(temp2.x), &(temp2.y));
+			temp.x = ((double)x * out_pixsize) + out_ulx;
+			temp.y = ((double)y * out_pixsize) - out_uly;
+
+			t.transform(&temp);
+
+			// temp now contains coords to input projection
+			temp.x -= in_ulx;
+			temp.y += in_uly;
+			temp.x /= in_pixsize;
+			temp.y /= out_pixsize;
+			// temp is now scaled to input raster coords, now resample!
+			resampler(input->data, temp.x, temp.y, in_cols, 
+				  output->data, x, y, out_cols);
+
+		}
+	}
+	mpi::gather(world, (char*)output->data, out_rows * out_cols, (char*)output->data, 0);
+	
 	return;
 }
 
+void Reprojector::reproject()
+{
+	parallelReproject(0, 1);
+
+}
+
+/*
 void Reprojector::reproject()
 {
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -96,7 +161,7 @@ void Reprojector::reproject()
 
 	return;
 }
-
+*/
 // Minbox finds number of rows and columns in output and upper-left
 // corner of output
 void FindMinBox(ProjectedRaster *input, Projection *outproj, double out_pixsize,

@@ -24,8 +24,10 @@
 
 using namespace std;
 
-ProjectedRaster::ProjectedRaster(string filename)
+ProjectedRaster::ProjectedRaster(string filename) 
 {
+	projection = 0;
+	data = 0;
 	if (readImgRaster(filename) == true) {
 		ready = true;
 	} else {
@@ -37,8 +39,8 @@ ProjectedRaster::ProjectedRaster(long num_rows, long num_cols,
 				 long pixel_bits, Projection *proj,
 				 double ulx, double uly)
 {
+	printf("Allocatin' %ld\n", pixel_bits);
 	data = calloc(num_cols*num_rows, (pixel_bits/8));
-	ready = false;
 	ul_x = ulx;
 	ul_y = uly;
 	rows = num_rows;
@@ -51,7 +53,10 @@ ProjectedRaster::ProjectedRaster(long num_rows, long num_cols,
 	for(int i = 0; i < 16; ++i) {
 		gctpParams[i] = 0;
 	}
-	ready = false;
+	ready = true;
+
+	if (data == 0)
+		printf("Oh no!\n");
 
 	return;
 }
@@ -381,6 +386,7 @@ bool ProjectedRaster::readImgRaster(std::string filename)
 		setUnsigned();
 	setUnit((ProjUnit)in_info.unitNumber());
 	setGctpParams(in_info.allGctpParams());
+	setBitCount(in_info.bitCount());
   
 	return true;
 }
