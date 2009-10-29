@@ -24,10 +24,12 @@
 
 using namespace std;
 
-ProjectedRaster::ProjectedRaster(string filename) 
+ProjectedRaster::ProjectedRaster(string _filename)
 {
 	projection = 0;
 	data = 0;
+	start_row = -1;
+	filename = _filename;
 	if (readImgRaster(filename) == true) {
 		ready = true;
 	} else {
@@ -39,7 +41,6 @@ ProjectedRaster::ProjectedRaster(long num_rows, long num_cols,
 				 long pixel_bits, Projection *proj,
 				 double ulx, double uly)
 {
-	printf("Allocatin' %ld\n", pixel_bits);
 	data = calloc(num_cols*num_rows, (pixel_bits/8));
 	ul_x = ulx;
 	ul_y = uly;
@@ -49,15 +50,18 @@ ProjectedRaster::ProjectedRaster(long num_rows, long num_cols,
 	issigned = false;
 	integer = true;
 	projection = proj;
+	filename = "";
+	start_row = -1;
 
 	for(int i = 0; i < 16; ++i) {
 		gctpParams[i] = 0;
 	}
 	ready = true;
 
-	if (data == 0)
+	if (data == 0) {
 		printf("Oh no!\n");
-
+		ready = false;
+	}
 	return;
 }
 
@@ -88,7 +92,24 @@ bool ProjectedRaster::isReady()
 
 Projection* ProjectedRaster::getProjection()
 {
-	return projection;
+	return projection->copy();
+}
+
+ProjectedRaster* ProjectedRaster::getSubRaster(int fromRow, int upToRow)
+{
+	ProjectedRaster *temp = 0;
+	
+	temp = new ProjectedRaster(upToRow - fromRow, cols, bitCount, 
+				   projection->copy(), 
+				   ul_x, ul_y - (fromRow * getPixelSize()));
+	if (temp == 0) {  // Allocation failed? Yes! Oh, that's too bad...
+		return 0;
+	}
+
+	temp->start_row = fromRow;
+	temp->filename = filename;
+
+	return temp;
 }
 
 void* ProjectedRaster::getData()
@@ -352,7 +373,7 @@ bool ProjectedRaster::readImgRaster(std::string filename)
 	int fd = -1;
 	int readsize = 0;
 	int rastersize = in_info.rows() * in_info.cols();
-
+	
 	data = calloc(rastersize, in_info.bitCount()/8);
 	if (data == 0) {
 		printf("Data allocation failed\n");

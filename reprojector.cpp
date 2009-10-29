@@ -63,7 +63,8 @@ void Reprojector::parallelReproject(int rank, int numProcs)
 	temp.units = METER;
 	for (int y = 0; y < out_rows; ++y) {
 		if (y % 100 == 0)
-			printf("Node %d On row %d of %d\n", rank, y + (rank * (output->getRowCount()/numProcs)), output->getRowCount());
+			printf("Node %d On row %d of %d\n", rank, 
+			       y + (rank * (output->getRowCount()/numProcs)), output->getRowCount());
 		for (int x = 0; x < out_cols; ++x) {
 			temp.x = ((double)x * out_pixsize) + out_ulx;
 			temp.y = ((double)y * out_pixsize) - out_uly;
@@ -72,7 +73,7 @@ void Reprojector::parallelReproject(int rank, int numProcs)
 			output->getProjection()->forward(output->getProjection()->lon(),
 							 output->getProjection()->lat(), 
 							 &(temp2.x), &(temp2.y));
-			temp.x = ((double)x * out_pixsize) + out_ulx;
+			temp.x = ((double)x * out_pixsize) + out_ulx;	
 			temp.y = ((double)y * out_pixsize) - out_uly;
 
 			t.transform(&temp);
@@ -88,6 +89,7 @@ void Reprojector::parallelReproject(int rank, int numProcs)
 
 		}
 	}
+
 	mpi::gather(world, (char*)output->data, out_rows * out_cols, (char*)output->data, 0);
 	
 	return;
@@ -99,69 +101,6 @@ void Reprojector::reproject()
 
 }
 
-/*
-void Reprojector::reproject()
-{
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	// Assume output memory is allocated!
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
-	Transformer t;
-	Coordinate temp, temp2;
-	double in_ulx, in_uly, out_ulx, out_uly;
-	double in_pixsize, out_pixsize;
-	long in_rows, in_cols, out_rows, out_cols;
-
-
-	t.setInput(*output->getProjection());
-	t.setOutput(*input->getProjection());
-  
-	in_rows = input->getRowCount();
-	in_cols = input->getColCount();
-	out_rows = output->getRowCount();
-	out_cols = output->getColCount();
-	in_pixsize = input->getPixelSize();
-	out_pixsize = output->getPixelSize();
-	in_ulx = input->ul_x;
-	in_uly = input->ul_y;
-	out_ulx = output->ul_x;
-	out_uly = output->ul_y;
-  
-
-	temp.units = METER;
-	for (int y = 0; y < out_rows; ++y) {
-		if (y % 100 == 0)
-			printf("On row %d of %ld\n", y, out_rows);
-		for (int x = 0; x < out_cols; ++x) {
-			temp.x = ((double)x * out_pixsize) + out_ulx;
-			temp.y = ((double)y * out_pixsize) - out_uly;
-			t.transform(&temp);
-			output->getProjection()->inverse(temp.x, temp.y);
-			output->getProjection()->forward(output->getProjection()->lon(),
-							 output->getProjection()->lat(), 
-							 &(temp2.x), &(temp2.y));
-			temp.x = ((double)x * out_pixsize) + out_ulx;
-			temp.y = ((double)y * out_pixsize) - out_uly;
-	
-			t.transform(&temp);
-	
-			// temp now contains coords to input projection
-			temp.x -= in_ulx;
-			temp.y += in_uly;
-			temp.x /= in_pixsize;
-			temp.y /= out_pixsize;
-			//      printf("temp.x: %lld, temp.y: %lld, x: %d, y: %d\n", 
-			//	     (long long)temp.x, (long long)temp.y, x, y);
-			// temp is now scaled to input raster coords, now resample!
-			resampler(input->data, temp.x, temp.y, in_cols, 
-				  output->data, x, y, out_cols);
-
-		}
-	}
-
-	return;
-}
-*/
 // Minbox finds number of rows and columns in output and upper-left
 // corner of output
 void FindMinBox(ProjectedRaster *input, Projection *outproj, double out_pixsize,
@@ -274,13 +213,6 @@ void FindMinBox(ProjectedRaster *input, Projection *outproj, double out_pixsize,
 		if (temp.y > maxy) maxy = temp.y;
 	}
 
-/*
-	printf("Min x: %e, Max x: %e, Max y: %e, Min y: %e\n",
-	       minx, maxx, maxy, miny);
-	printf("Output Raster Dim: %lld cols, %lld rows\n", 
-	       (long long)((maxx-minx)/out_pixsize),
-	       (long long)((maxy-miny)/out_pixsize));
-*/
 	// Set outputs
 	_ul_x = minx;
 	_ul_y = maxy;
@@ -291,3 +223,50 @@ void FindMinBox(ProjectedRaster *input, Projection *outproj, double out_pixsize,
 	return;
 }
 
+ProjectedRaster* GetOutputRaster(ProjectedRaster* input,
+				 Projected *output_proj,
+				 double output_pixel_size)
+{
+	double ul_x, ul_y, lr_x, lr_y;
+	long num_rows, num_cols;
+	
+	ul_x = ul_y = lr_x = lr_y = 0d0;
+	FindMinBox(input, output_proj, output_pix_size, ul_x, ul_y, lr_x, 
+		   lr_y);
+	num_rows = (ul_y - lr_y) / output_pixel_size;
+	num_cols = (lr_x - ul_x) / output_pixel_size;
+	
+
+
+	return new ProjectedRaster(num_rows, num_cols, input->getBitCount(),
+				   output_proj->copy(), ul_x, ul_y);
+}
+
+vector<ProjectedRaster*> PartitionRaster(ProjectedRaster *input, 
+					 Projection *output_proj, 
+					 double output_pix_size, 
+					 int partition_count)
+{
+	double ul_x, ul_y, lr_x, lr_y;
+	double part_height, part_rows;
+	vector<ProjectedRaster*> parts(partition_count);
+	
+
+	ul_x = ul_y = lr_x = lr_y = part_height = 0d0;
+
+	FindMinBox(input, output_proj, output_pix_size, ul_x, ul_y, lr_x, 
+		   lr_y);
+	part_height = (lr_y - ul_y) / partition_count;
+	part_rows = part_height / output_pix_size;
+	
+	for (int i = 0; i < partition_count; ++i) {
+		parts[i] = new ProjectedRaster(part_rows,
+					       input->getColCount(),
+					       input->getBitCount(),
+					       output_proj,
+					       ul_x,
+					       ul_y + i*part_height);
+	}
+
+	return parts;
+}
