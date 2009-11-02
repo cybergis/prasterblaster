@@ -31,7 +31,7 @@ int main(int argc, char *argv[]){
 	long int rows, cols;
 	mpi::environment env(argc, argv);
 	mpi::communicator world;
-
+	/*
 	rows = cols = 0;
 	ProjectedRaster in("/home/dmattli/Desktop/holdnorm_geographic_30min");
 	if (in.isReady() == true) {
@@ -52,6 +52,6 @@ int main(int argc, char *argv[]){
 	rp.parallelReproject(world.rank(), world.size());
 	if (world.rank() == 0)
 		out.write("/home/dmattli/Desktop/output.tif");
-
+	*/
 	return 0;
 }

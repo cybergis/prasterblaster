@@ -48,7 +48,7 @@ This constructor takes a single arguments, filename, representing
 	the path to the raster to be opened.
 */
 
-	ProjectedRaster(string filename);
+	ProjectedRaster(string filename, int subIndex = 0, int subCount = 1);
 	ProjectedRaster(long num_rows, long num_cols, long pixel_bits,
 			Projection *proj, double ulx, double uly); 
 	~ProjectedRaster();
@@ -56,7 +56,6 @@ This constructor takes a single arguments, filename, representing
 
 	void* getData();
 	Projection* getProjection();
-	ProjectedRaster* getSubRaster(int fromRow, int upToRow);
         bool isReady();
 	bool write(string filename);
 	
@@ -98,7 +97,7 @@ This constructor takes a single arguments, filename, representing
 
 	// Pixel Description
 	int rows, cols, bitCount;
-	int start_row;
+	int subIndex, subCount;
 	bool issigned;
   	bool integer;
 	double pixsize; // In degrees

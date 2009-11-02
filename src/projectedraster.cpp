@@ -18,22 +18,30 @@
 #include "rasterinfo.h"
 #include "gctp_cpp/transformer.h"
 #include "gctp_cpp/mercator.h"
+#include "gctp_cpp/constants.h"
+#include "gctp_cpp/utm.h"
 #include "reprojector.hh"
 
 #include "projectedraster.hh"
 
 using namespace std;
 
-ProjectedRaster::ProjectedRaster(string _filename)
+ProjectedRaster::ProjectedRaster(string _filename, int _subIndex, 
+				 int _subCount)
 {
 	projection = 0;
 	data = 0;
-	start_row = -1;
 	filename = _filename;
+	subIndex = _subIndex;
+	subCount = _subCount;
 	if (readImgRaster(filename) == true) {
 		ready = true;
 	} else {
 		ready = false;
+	}
+
+	if (subCount < subIndex) {
+		subCount = subIndex + 1;
 	}
 }
 
@@ -51,7 +59,6 @@ ProjectedRaster::ProjectedRaster(long num_rows, long num_cols,
 	integer = true;
 	projection = proj;
 	filename = "";
-	start_row = -1;
 
 	for(int i = 0; i < 16; ++i) {
 		gctpParams[i] = 0;
@@ -93,23 +100,6 @@ bool ProjectedRaster::isReady()
 Projection* ProjectedRaster::getProjection()
 {
 	return projection->copy();
-}
-
-ProjectedRaster* ProjectedRaster::getSubRaster(int fromRow, int upToRow)
-{
-	ProjectedRaster *temp = 0;
-	
-	temp = new ProjectedRaster(upToRow - fromRow, cols, bitCount, 
-				   projection->copy(), 
-				   ul_x, ul_y - (fromRow * getPixelSize()));
-	if (temp == 0) {  // Allocation failed? Yes! Oh, that's too bad...
-		return 0;
-	}
-
-	temp->start_row = fromRow;
-	temp->filename = filename;
-
-	return temp;
 }
 
 void* ProjectedRaster::getData()
@@ -373,6 +363,13 @@ bool ProjectedRaster::readImgRaster(std::string filename)
 	int fd = -1;
 	int readsize = 0;
 	int rastersize = in_info.rows() * in_info.cols();
+	int subrastersize = in_info.rows() / subCount;
+	int suboverflow = in_info.rows() % subCount;
+
+	if (subIndex < subCount - 1)
+		rastersize = subrastersize * in_info.cols();
+	else
+		rastersize = (subrastersize + suboverflow) * in_info.cols();
 	
 	data = calloc(rastersize, in_info.bitCount()/8);
 	if (data == 0) {
@@ -383,6 +380,7 @@ bool ProjectedRaster::readImgRaster(std::string filename)
 	// Read in image data
 	errno = 0;
 	fd = open(imgname.c_str(), O_RDONLY);
+	lseek(fd, rastersize, SEEK_SET);
 	readsize = read(fd, data, 
 			rastersize*(in_info.bitCount()/8));
 	if (readsize != (rastersize * (in_info.bitCount()/8))) {
@@ -395,10 +393,19 @@ bool ProjectedRaster::readImgRaster(std::string filename)
 
 	// Setup projection
 	int num_rows = in_info.rows();
+	
+
 	setProjection((ProjCode)in_info.projectionNumber());
 	setUL(in_info.ul_X(), in_info.ul_Y());
+	setUL(in_info.ul_X(), 
+	      in_info.ul_Y() - (subrastersize * in_info.pixelSize()));
 	setDatum((ProjDatum)in_info.datumNumber());
 	setRowCount(num_rows);
+	if (subIndex < subCount -1) {
+		setRowCount(subrastersize);
+	} else {
+		setRowCount(subrastersize + suboverflow);
+	}
 	setColCount(in_info.cols());
 	setPixelSize(in_info.pixelSize());
 	if (in_info.isSigned())

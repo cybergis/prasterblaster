@@ -33,12 +33,7 @@ void FindMinBox(ProjectedRaster *input, Projection *outproj,
 		double &_ul_x, double &_ul_y, double &_lr_x, double &_lr_y);
 
 ProjectedRaster* GetOutputRaster(ProjectedRaster* input,
-				 Projected *out_proj,
+				 Projection *out_proj,
 				 double out_pixel_size);
-
-vector<ProjectedRaster*> PartitionRaster(ProjectedRaster *input, 
-					 Projection *out_proj,
-					 double output_pix_size, 
-					 int partition_count);
 
 #endif // REPROJECTOR_HH
