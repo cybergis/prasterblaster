@@ -148,6 +148,7 @@ bool ProjectedRaster::write(string filename)
 				 getData(), getColCount(), getRowCount(),
 				 GDT_Byte, 1, 0, 0, 0, 0) == CE_Failure) {
 			printf("RasterIO failed...\n");
+			return false;
 		}
 
 		ds->SetProjection(wkt);
@@ -380,14 +381,14 @@ bool ProjectedRaster::readImgRaster(std::string filename)
 	// Read in image data
 	errno = 0;
 	fd = open(imgname.c_str(), O_RDONLY);
-	lseek(fd, rastersize, SEEK_SET);
+	lseek(fd, rastersize * subIndex, SEEK_SET);
 	readsize = read(fd, data, 
 			rastersize*(in_info.bitCount()/8));
 	if (readsize != (rastersize * (in_info.bitCount()/8))) {
 		printf("Read error: %d!\n", readsize);
 		printf("Supposed to be: %d\n", rastersize*(in_info.bitCount()/8));
 		printf("ERROR: %s\n", strerror(errno));
-		return 0;
+				return false;
 	}
 	close(fd);
 

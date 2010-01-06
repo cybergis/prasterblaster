@@ -13,7 +13,7 @@
 #ifndef RASTERXML_H
 #define RASTERXML_H
 #include <iostream>
-#include <tinyxml.h>
+#include "tinyxml.h"
 
 //!Image Class.
 /*!

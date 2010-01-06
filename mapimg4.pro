@@ -5,29 +5,29 @@
 TEMPLATE = app
 TARGET = 
 DEPENDPATH += . gctp_cpp
-INCLUDEPATH += . ./gctp_cpp/ /usr/local/include/
-LIBS += -lgdal -lmpi  -lboost_mpi -lboost_serialization -lgctp
+INCLUDEPATH += . ../gctp_cpp/ /usr/local/include/ .. #/usr/lib/openmpi/1.3.2-gcc/include/
+LIBS += -lgdal -lmpi -lmpi_cxx -lboost_python -lpython2.6 -lboost_mpi -lboost_serialization -lgctp 
 QMAKE_CXXFLAGS_DEBUG += -pg
-QMAKE_LIBDIR_FLAGS +=  -Lgctp_cpp
+QMAKE_LIBDIR_FLAGS +=  -L../gctp_cpp -Wl,-R../gctp_cpp #-L/usr/lib/openmpi/1.3.2-gcc/lib/
 CONFIG += debug
 
 # Input
-HEADERS += projectedraster.hh \
-	   rasterinfo.h \
-           reprojector.hh \
-           gctpnames.h \
-           tinystr.h \
-           tinyxml.h \
-           rasterxml.h \
-           resampler.hh 
+HEADERS += src/projectedraster.hh \
+	   src/rasterinfo.h \
+           src/reprojector.hh \
+           src/gctpnames.h \
+           src/tinystr.h \
+           src/tinyxml.h \
+           src/rasterxml.h \
+           src/resampler.hh 
 
-SOURCES += projectedraster.cpp \
-	   rasterinfo.cpp \
-           reprojector.cpp \
-           tinystr.cpp \ 
-           tinyxml.cpp \
-           tinyxmlerror.cpp \ 
-           tinyxmlparser.cpp \
-           rasterxml.cpp \
-           driver.cpp \
-           resampler.cpp
+SOURCES += src/projectedraster.cpp \
+	   src/rasterinfo.cpp \
+           src/reprojector.cpp \
+           src/tinystr.cpp \ 
+           src/tinyxml.cpp \
+           src/tinyxmlerror.cpp \ 
+           src/tinyxmlparser.cpp \
+           src/rasterxml.cpp \
+           src/driver.cpp \
+           src/resampler.cpp

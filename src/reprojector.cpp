@@ -90,8 +90,6 @@ void Reprojector::parallelReproject(int rank, int numProcs)
 		}
 	}
 
-	mpi::gather(world, (char*)output->data, out_rows * out_cols, (char*)output->data, 0);
-	
 	return;
 }
 
