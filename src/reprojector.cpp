@@ -21,9 +21,8 @@ Reprojector::Reprojector(ProjectedRaster *_input, ProjectedRaster *_output) :
 	maxx = maxy = 0;
 	minx = miny = 1e+37;
 
-	if (input->getBitCount() == 8) {
-		resampler = &nearest_neighbor<unsigned char>;
-	}
+	resampler = &nearest_neighbor<unsigned char>;
+
 
 	return;
 };
@@ -53,8 +52,8 @@ void Reprojector::parallelReproject(int rank, int numProcs)
 	in_cols = input->getColCount();
 	out_rows = output->getRowCount()/numProcs;
 	out_cols = output->getColCount();
-	in_pixsize = input->getPixelSize();
-	out_pixsize = output->getPixelSize();
+	in_pixsize = 8;
+	out_pixsize = 8;
 	in_ulx = input->ul_x;
 	in_uly = input->ul_y;
 	out_ulx = output->ul_x;
@@ -117,9 +116,9 @@ void FindMinBox(ProjectedRaster *input, Projection *outproj, double out_pixsize,
 
 	ul_x = input->ul_x;
 	ul_y = input->ul_y;
-	cols = input->cols;
-	rows = input->rows;
-	pixsize = input->getPixelSize();
+	cols = input->getColCount();
+	rows = input->getRowCount();
+	pixsize = 8;
   
 	t.setInput(*input->getProjection());
 	t.setOutput(*outproj);

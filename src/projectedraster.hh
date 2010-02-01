@@ -26,6 +26,9 @@
 
 #include <string>
 
+#include "gdal.h"
+#include "gdal_priv.h"
+
 #include "gctp_cpp/constants.h"
 #include "gctp_cpp/projection.h"
 #include "gctp_cpp/transformer.h"
@@ -48,9 +51,21 @@ This constructor takes a single arguments, filename, representing
 	the path to the raster to be opened.
 */
 
-	ProjectedRaster(string filename, int subIndex = 0, int subCount = 1);
-	ProjectedRaster(long num_rows, long num_cols, long pixel_bits,
-			Projection *proj, double ulx, double uly); 
+	ProjectedRaster(string _filename);
+
+/*! 
+  This constructor takes lots of arguments.
+ */
+	ProjectedRaster(string filename, 
+			int num_rows, int num_cols,
+			GDALDataType pixel_type, double pixel_size,
+			int band_count,
+			Projection *proj,
+			double ulx, double uly);
+
+/*!
+  Destructor
+ */
 	~ProjectedRaster();
 
 
@@ -60,48 +75,26 @@ This constructor takes a single arguments, filename, representing
 	bool write(string filename);
 	
 	// Area
-	void setUL(double ul_x, double ul_y);
-	void setRowCount(int rows);
-	void setColCount(int cols);
 	int getRowCount();
 	int getColCount();
 	
 	// Pixel description
-	void setDataType(const std::string &datatype);
-	void setPixelSize(double pixsize);
-	void setBitCount(int bits);
-	void setSigned();
-	void setUnsigned();
-	void setInteger();
-	void setFloat();
-	string getDataType();
+	GDALDataType getPixelType();
 	double getPixelSize();
-	int getBitCount();
-	bool isSigned();
-	bool isInteger();
-	bool isFloat();
-	
-	
+
 	// Projection
-	void setProjection(ProjCode p);
-	void setZoneNumber(int zone);
-	void setUnit(ProjUnit unit);
-	void setDatum(ProjDatum pd);
-	void setGctpParams(double params[]);
 	int getZoneNumber();
 	ProjDatum getDatum();
 	double* getGctpParams();
 
+
+
+
+
 	// Members
 	double ul_x, ul_y;
 
-	// Pixel Description
-	int rows, cols, bitCount;
-	int subIndex, subCount;
-	bool issigned;
-  	bool integer;
-	double pixsize; // In degrees
-	std::string type;
+	// File Description
 	std::string filename;
 
 	// Projection
@@ -112,10 +105,11 @@ This constructor takes a single arguments, filename, representing
 	double gctpParams[16];
 	
 	void* data;
-private:
+private: 
 	bool readImgRaster(string filename);
 	bool readRaster(string filename);
 	Projection *projection;
+	GDALDataset *dataset;
 	Transformer t;
         ProjectedRaster& operator=(ProjectedRaster& a);
 	bool ready;

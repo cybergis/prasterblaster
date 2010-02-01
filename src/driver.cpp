@@ -1,3 +1,6 @@
+/*
+  Programmer: David Mattli
+*/
 
 #include <boost/mpi.hpp>
 #include <mpi.h>
@@ -19,15 +22,15 @@
 
 namespace mpi = boost::mpi;
 
-double params[15] =  { 6370997.000000, 0, 00000000.000000, 00000000.000000, 0.000000, 
-		       0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 
-		       0.000000, 0.000000, 0.000000, 0.000000, 0.000000};
+double params[15] =  { 6370997.000000, 
+		       0, 0, 0, 0, 
+		       0, 0, 0, 0, 0, 
+		       0, 0, 0, 0, 0};
 
 
 
-int main(int argc, char *argv[]){
-
-
+int main(int argc, char *argv[]) 
+{
 	double ul_x, ul_y, lr_x, lr_y;
  	long int rows, cols;
 	mpi::environment env(argc, argv);
@@ -35,28 +38,26 @@ int main(int argc, char *argv[]){
 	mpi::communicator world;
 
 	rows = cols = 0;
-	ProjectedRaster in("/home/dmattli/Desktop/holdnorm_geographic_30min");
+	ProjectedRaster in("/home/dmattli/Desktop/example.tif");
 	if (in.isReady() == true) {
 		printf("Image read!\n");
 	}
 	Projection *outproj;
 	outproj = new Hammer(params, METER, (ProjDatum)19);
 	
-	FindMinBox(&in, outproj, in.getPixelSize(), ul_x, ul_y, lr_x, lr_y);
-	FindMinBox(&in, outproj, in.getPixelSize(), ul_x, ul_y, lr_x, lr_y);
-	rows = (int)((ul_y-lr_y)/in.getPixelSize());
-	cols = in.getColCount();
+	FindMinBox(&in, outproj, 8, ul_x, ul_y, lr_x, lr_y);
+	FindMinBox(&in, outproj, 8, ul_x, ul_y, lr_x, lr_y);
+	rows = (ul_y-lr_y) / in.getPixelSize();
+	cols = (lr_x-ul_x) / in.getPixelSize();
 
-	ProjectedRaster out(rows, cols, in.getBitCount(), outproj, ul_x, ul_y);
-	out.setUnit(METER);
+	ProjectedRaster out("/home/dmattli/Desktop/output.tif",
+			    rows, cols, GDT_Byte, in.getPixelSize(), 1, outproj, ul_x, ul_y);
 
 	Reprojector rp(&in, &out); 
 	rp.reproject();
 
 	if (world.rank() == 0) {
-		if (!out.isReady())
-			return 1;
-		out.write("/home/dmattli/Desktop/output.tif");
+
 	}
 
 	return 0;

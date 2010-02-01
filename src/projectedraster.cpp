@@ -2,6 +2,7 @@
 #include <QString>
 
 #include <string>
+#include <cstring>
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
@@ -26,49 +27,89 @@
 
 using namespace std;
 
-ProjectedRaster::ProjectedRaster(string _filename, int _subIndex, 
-				 int _subCount)
+ProjectedRaster::ProjectedRaster(string _filename)
 {
+	OGRSpatialReference sr;
+	char *ref = 0;
+	char **ugh = 0;
+	double params[16], *first;
+	long int zone, projsys, datum;
+
 	projection = 0;
-	data = 0;
 	filename = _filename;
-	subIndex = _subIndex;
-	subCount = _subCount;
-	if (readImgRaster(filename) == true) {
-		ready = true;
-	} else {
+	projection = 0;
+	
+	GDALAllRegister();
+
+	dataset = (GDALDataset*)GDALOpen( _filename.c_str(), GA_ReadOnly );
+
+	if (dataset == 0) {
 		ready = false;
+		return;
+	} 
+	
+	ref = strdup(dataset->GetProjectionRef());
+
+	if (ref == 0) {
+		ready = false;
+		return;
 	}
 
-	if (subCount < subIndex) {
-		subCount = subIndex + 1;
-	}
+	// Else
+	// Setup projection
+	ugh = &ref;
+	sr.importFromWkt(ugh);
+	first = &(params[0]);
+	sr.exportToUSGS(&projsys, &zone, &first, &datum);
+	projection = Transformer::convertProjection((ProjCode)projsys);
+	if ((ProjCode)projsys == _UTM)
+		((UTM*)projection)->setZone(zone);
+	projection->setParams(params);
+	projection->setDatum((ProjDatum)datum);
+	projection->setUnits(METER);
+
+
+        // clean up
+	//free(ref);
+	return;
 }
 
-ProjectedRaster::ProjectedRaster(long num_rows, long num_cols, 
-				 long pixel_bits, Projection *proj,
+ProjectedRaster::ProjectedRaster(string _filename, 
+				 int num_rows, int num_cols, 
+				 GDALDataType pixel_type, double pixel_size,
+				 int band_count,
+				 Projection *proj,
 				 double ulx, double uly)
 {
-	data = calloc(num_cols*num_rows, (pixel_bits/8));
-	ul_x = ulx;
-	ul_y = uly;
-	rows = num_rows;
-	cols = num_cols;
-	bitCount = pixel_bits;
-	issigned = false;
-	integer = true;
-	projection = proj;
-	filename = "";
+	const char *format = "GTiff";
+	GDALDriver *driver;
+	char **papszMetadata;
+	char **options = 0;
 
-	for(int i = 0; i < 16; ++i) {
-		gctpParams[i] = 0;
+	GDALAllRegister();
+
+	projection = proj;
+	filename = _filename;
+
+	driver = GetGDALDriverManager()->GetDriverByName("GTiff");
+
+	if( driver == NULL ) {
+	  ready = false;
+	  return;
 	}
+	  
+	dataset = driver->Create(filename.c_str(), num_cols, num_rows, 
+				 band_count, pixel_type,
+				 options);
+	// Setup georeferencing
+	double geotransform[6];
+	geotransform[0] = ulx;
+	geotransform[3] = uly;
+	geotransform[1] = 
+	
+
 	ready = true;
 
-	if (data == 0) {
-		printf("Oh no!\n");
-		ready = false;
-	}
 	return;
 }
 
@@ -83,6 +124,12 @@ ProjectedRaster::~ProjectedRaster()
 		free(projection);
 		projection = 0;
 	}
+
+	if (dataset != 0) {
+		GDALClose(dataset);
+		dataset = 0;
+	}
+
 
 	return;
 }
@@ -120,7 +167,7 @@ bool ProjectedRaster::write(string filename)
 	GDALAllRegister();
 
 	driver = GetGDALDriverManager()->GetDriverByName("GTiff");
-  
+/*  
 	// Initialize spatial reference
 	// Projection, gctp params, units, and datum
 	proj = getProjection();
@@ -155,189 +202,53 @@ bool ProjectedRaster::write(string filename)
 		GDALClose(ds);
 		return true;
 	}
-	
+*/	
 	return false;
 
 }
 
-void ProjectedRaster::setUL(double _ul_x, double _ul_y)
-{
-	ul_x = _ul_x;
-	ul_y = _ul_y;
-	return;
-}
-
-void ProjectedRaster::setRowCount(int _rows)
-{
-	rows = _rows;
-	return;
-}
-
-void ProjectedRaster::setColCount(int _cols)
-{
-	cols = _cols;
-	return;
-}
-
 int ProjectedRaster::getRowCount()
 {
-	return rows;
+	return dataset->GetRasterYSize();
 }
 
 int ProjectedRaster::getColCount()
 {
-	return cols;
+	return dataset->GetRasterXSize();
 }
 
-void ProjectedRaster::setDataType(const std::string &datatype)
+
+GDALDataType ProjectedRaster::getPixelType()
 {
-	QString str(datatype.c_str());
-	type = datatype;
-	if (str.contains("float") || str.contains("Float") 
-	    || str.contains("IEEE"))
-		setFloat();
-	if (str.contains("8"))
-		setBitCount(8);
-	if (str.contains("32"))
-		setBitCount(32);
-	if (str.contains("unsigned") || str.contains("Unsigned"))
-		setUnsigned();
-
-	return;
-}
-
-string ProjectedRaster::getDataType()
-{
-	string t = "";
-
-	if (bitCount == 8)
-		t.append(" 8");
-	else 
-		t.append(" 32");
-
-	if (isFloat())
-		t.append("IEEE Float");
-	else 
-		t.append("Integer");
-
-	if (!isSigned())
-		t.append("Unsigned ");
-
-	return t;
-}
-
-void ProjectedRaster::setPixelSize(double _pixsize)
-{
-	pixsize = _pixsize;
-	return;
+	GDALRasterBand *band = 0;
+	GDALDataType type = GDT_Unknown;
+	
+	band = dataset->GetRasterBand(1);
+	if (band == 0) {
+		return type;
+	} 
+	
+	return band->GetRasterDataType();
 }
 
 double ProjectedRaster::getPixelSize()
 {
-	return pixsize;
-}
-
-int ProjectedRaster::getBitCount() 
-{
-	return bitCount;
-}
-
-
-void ProjectedRaster::setBitCount(int _bits)
-{
-	bitCount = _bits;
-	return;
-}
-
-void ProjectedRaster::setSigned()
-{
-	issigned = true;
-	return;
-}
-
-void ProjectedRaster::setUnsigned()
-{
-	issigned = false;
-	return;
-}
-
-bool ProjectedRaster::isSigned() 
-{
-	return issigned;
-}
-
-void ProjectedRaster::setInteger()
-{
-	integer = true;
-	return;
-}
-
-bool ProjectedRaster::isInteger()
-{
-	if (integer == true)
-		return true;
-	else 
-		return false;
-}
-
-void ProjectedRaster::setFloat()
-{
-	integer = false;
-	return;
-}
-
-bool ProjectedRaster::isFloat()
-{
-	return !integer;
-}
-
-void ProjectedRaster::setProjection(ProjCode p)
-{
-	if (projection != 0) {
-		delete projection;
-		projection = 0;
+	double geo[6];
+	geo[1] = -1;
+	if (isReady()) {
+		dataset->GetGeoTransform(geo);
 	}
-	projection = t.convertProjection(p);
-	
-	return;
-}
-
-void ProjectedRaster::setZoneNumber(int zone)
-{
-	if (projection != 0) {
-		//    projection->setZone(zone);
-	}
-	return;
-}
-
-void ProjectedRaster::setUnit(ProjUnit unit) 
-{
-	if (projection != 0) {
-		projection->setUnits(unit);
-	}
-	return;
-}
-
-void ProjectedRaster::setDatum(ProjDatum pd)
-{
-	if (projection != 0) {
-		projection->setDatum(pd);
-	}
-	return;
-}
-
-void ProjectedRaster::setGctpParams(double params[])
-{
-	if (projection != 0) {
-		projection->setParams(params);
-	}
-	return;
+		
+	return geo[1];
 }
 
 int ProjectedRaster::getZoneNumber()
 {
 	if (projection != 0) {
-		//    Zone();
+		if (projection->number() == _UTM) {
+			return ((UTM*)projection)->zone();
+		}
+		
 	}
 	return -1;
 }
@@ -355,6 +266,7 @@ double* ProjectedRaster::getGctpParams()
 	return gctpParams;
 }
 
+
 bool ProjectedRaster::readImgRaster(std::string filename)
 {
 	string::size_type idx = filename.find('.');
@@ -364,9 +276,18 @@ bool ProjectedRaster::readImgRaster(std::string filename)
 	int fd = -1;
 	int readsize = 0;
 	int rastersize = in_info.rows() * in_info.cols();
-	int subrastersize = in_info.rows() / subCount;
-	int suboverflow = in_info.rows() % subCount;
+	GDALDriver *driver = 0;
+	char **options = 0;
 
+	GetGDALDriverManager()->GetDriverByName("MEM");
+
+	if (driver == 0) {
+		return false;
+	}
+
+//	dataset = driver->Create(
+
+/*
 	if (subIndex < subCount - 1)
 		rastersize = subrastersize * in_info.cols();
 	else
@@ -418,4 +339,6 @@ bool ProjectedRaster::readImgRaster(std::string filename)
 	setBitCount(in_info.bitCount());
   
 	return true;
+*/
 }
+
