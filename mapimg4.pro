@@ -8,6 +8,7 @@ DEPENDPATH += . gctp_cpp
 INCLUDEPATH += . ../gctp_cpp/ /usr/local/include/ .. #/usr/lib/openmpi/1.3.2-gcc/include/
 LIBS += -lgdal -lmpi -lmpi_cxx -lboost_python -lpython2.6 -lboost_mpi -lboost_serialization -lgctp 
 QMAKE_CXXFLAGS_DEBUG += -pg
+OBJECTS_DIR=./build
 QMAKE_LIBDIR_FLAGS +=  -L../gctp_cpp -Wl,-R../gctp_cpp #-L/usr/lib/openmpi/1.3.2-gcc/lib/
 CONFIG += debug
 
