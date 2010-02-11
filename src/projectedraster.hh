@@ -80,6 +80,8 @@ This constructor takes a single arguments, filename, representing
 	
 	// Pixel description
 	GDALDataType getPixelType();
+	int bitsPerPixel();
+	int bandCount();
 	double getPixelSize();
 
 	// Projection
@@ -87,12 +89,15 @@ This constructor takes a single arguments, filename, representing
 	ProjDatum getDatum();
 	double* getGctpParams();
 
-
-
-
+	// IO
+	void readRaster(int xOff, int yOff, int xSize, int ySize, void* data);
+	void writeRaster(int xOff, int yOff, int xSize, int ySize, void* data);
 
 	// Members
 	double ul_x, ul_y;
+	int rows, cols;
+	GDALDataType type;
+	double pixel_size;
 
 	// File Description
 	std::string filename;
@@ -100,12 +105,12 @@ This constructor takes a single arguments, filename, representing
 	// Projection
 	int zoneNumber;
 	ProjCode projectionCode;
-	ProjDatum datum;
 	ProjUnit unit;
 	double gctpParams[16];
 	
 	void* data;
 private: 
+	bool loadImgRaster(string filename);
 	bool readImgRaster(string filename);
 	bool readRaster(string filename);
 	Projection *projection;

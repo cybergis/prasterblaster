@@ -87,7 +87,7 @@ public:
 
    void copy( const RasterInfo &src );
 
-private:
+
    void defaults();
    bool parseFileName();
    void loadInfo();

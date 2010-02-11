@@ -35,30 +35,36 @@ int main(int argc, char *argv[])
  	long int rows, cols;
 	mpi::environment env(argc, argv);
 
-	mpi::communicator world;
+	// mpi::communicator world;
 
+	/*
 	rows = cols = 0;
-	ProjectedRaster in("/home/dmattli/Desktop/example.tif");
+	ProjectedRaster in("/home/dmattli/Desktop/mmr/veg_geographic_1deg.img");
 	if (in.isReady() == true) {
 		printf("Image read!\n");
 	}
+
 	Projection *outproj;
-	outproj = new Hammer(params, METER, (ProjDatum)19);
-	
-	FindMinBox(&in, outproj, 8, ul_x, ul_y, lr_x, lr_y);
-	FindMinBox(&in, outproj, 8, ul_x, ul_y, lr_x, lr_y);
+	outproj = new Hammer(params, METER, in.getDatum());
+
+	FindMinBox(&in, outproj, in.bitsPerPixel(), ul_x, ul_y, lr_x, lr_y);
+	FindMinBox(&in, outproj, in.bitsPerPixel(), ul_x, ul_y, lr_x, lr_y);
 	rows = (ul_y-lr_y) / in.getPixelSize();
 	cols = (lr_x-ul_x) / in.getPixelSize();
 
-	ProjectedRaster out("/home/dmattli/Desktop/output.tif",
-			    rows, cols, GDT_Byte, in.getPixelSize(), 1, outproj, ul_x, ul_y);
+	ProjectedRaster out("/home/dmattli/Desktop/output.tif", 
+			    in.getRowCount(), in.getColCount(), 
+			    in.getPixelType(), in.getPixelSize(), 
+			    in.bandCount(), outproj, ul_x, ul_y);
 
-	Reprojector rp(&in, &out); 
-	rp.reproject();
+	//x	Reprojector rp(&in, &out); 
+	//	rp.reproject();
 
 	if (world.rank() == 0) {
 
 	}
 
+
+	*/
 	return 0;
 }
