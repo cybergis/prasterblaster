@@ -1,14 +1,16 @@
 // $Id: rasterinfo.cpp,v 1.9.2.3 2008/02/28 22:22:33 dmattli Exp $
 
 
-#include "rasterinfo.h"
+#include <fstream>
+#include <cstdio>
+#include <sstream>
 
-#include <QMessageBox>
-#include <QStringList>
-#include <QFile>
+#include "rasterinfo.h"
 
 #include "rasterxml.h"
 #include "gctpnames.h"
+
+using namespace std;
 
 //Default constructor
 // Nulls all private variables.
@@ -22,7 +24,7 @@ RasterInfo::RasterInfo()
 //Load constructor
 // Loads the values found in the file whose name and path are
 // given in imgFileName.
-RasterInfo::RasterInfo( const QString &xmlFileName )
+RasterInfo::RasterInfo( const string &xmlFileName )
 {
      gctpParams = new double[15];
 
@@ -46,43 +48,43 @@ RasterInfo::~RasterInfo()
          delete [] gctpParams;
 }
 
-bool RasterInfo::setXmlFileName( QString &_xmlFileName )
+bool RasterInfo::setXmlFileName( string &_xmlFileName )
 {
   xmlFileName = _xmlFileName;
 
    return parseFileName();
 }
 
-bool RasterInfo::setImageFileName( QString &_imageFileName )
+bool RasterInfo::setImageFileName( string &_imageFileName )
 {
   imageFileName = _imageFileName;
 
    return parseFileName();
 }
 
-QString RasterInfo::imgFileName() const
+string RasterInfo::imgFileName() const
 {
-   if( imageFileName.isEmpty() )
-      return QString();
+   if( imageFileName == "" )
+      return string();
    return imageFileName;
 }
 
-QString RasterInfo::getXmlFileName() const
+string RasterInfo::getXmlFileName() const
 {
-   if( xmlFileName.isEmpty() )
-      return QString();
+   if( xmlFileName == "" )
+      return string();
    return xmlFileName;
 }
 
-bool RasterInfo::setAuthor( const QString &name, const QString &company, const QString &email )
+bool RasterInfo::setAuthor( const string &name, const string &company, const string &email )
 {
    aName = name.length()?name:"Unknown";
    aCompany = company.length()?company:"Unknown";
    aEmail = email.length()?email:"Unknown";
 
-   tempAName = new QString( aName );
-   tempACompany = new QString( aCompany );
-   tempAEmail = new QString( aEmail );
+   tempAName = new string( aName );
+   tempACompany = new string( aCompany );
+   tempAEmail = new string( aEmail );
 
    return true;
 }
@@ -105,37 +107,37 @@ bool RasterInfo::setUL( double ul_X, double ul_Y )
    return true;
 }
 
-bool RasterInfo::setPixelDescription( const QString &dataType, double pixelSize, double fillValue, double noDataValue )
+bool RasterInfo::setPixelDescription( const string &dataType, double pixelSize, double fillValue, double noDataValue )
 {
    return setDataType( dataType ) && setPixelSize( pixelSize ) && setFillValue( fillValue ) && setNoDataValue( noDataValue );
 }
 
-bool RasterInfo::setPixelDescription( bool isSigned, int bitsCount, const QString &type, double pixelSize, double fillValue, double noDataValue )
+bool RasterInfo::setPixelDescription( bool isSigned, int bitsCount, const string &type, double pixelSize, double fillValue, double noDataValue )
 {
    return setDataType( isSigned, bitsCount, type ) && setPixelSize( pixelSize ) && setFillValue( fillValue ) && setNoDataValue( noDataValue );
 }
 
-bool RasterInfo::setDataType( const QString &dataType )
+bool RasterInfo::setDataType( const string &dataType )
 {
    //Handles "Unsigned/Signed 8/16/32 Bit Integer"
    //    and "Signed 32/64 Bit IEEE Float"
 
-   if( dataType.contains( "Signed" ) > 0 )
+  if( dataType.find( "Signed" ) != string::npos )
       signd = true;
    else
       signd = false;
 
-   if( dataType.contains( "64" ) > 0 )
+   if( dataType.find( "64" ) != string::npos )
       bits = 64;
-   else if( dataType.contains( "16" ) > 0 )
+   else if( dataType.find( "16" ) != string::npos )
       bits = 16;
-   else if( dataType.contains( "32" ) > 0 )
+   else if( dataType.find( "32" ) != string::npos )
       bits = 32;
    else //( dataType.contains( "8" ) > 0 )
       bits = 8;
 
-   if( dataType.contains("IEEE", Qt::CaseInsensitive) > 0 || 
-	   dataType.contains("Float", Qt::CaseInsensitive) > 0 )
+   if( dataType.find("IEEE")  !=  string::npos
+       || dataType.find("Float") !=  string::npos)
    {
       datatype = "IEEE Float";
       signd = true;
@@ -143,10 +145,10 @@ bool RasterInfo::setDataType( const QString &dataType )
    else
       datatype = "Integer";
 
-   return !dataType.isNull() && bits != 0;
+   return !dataType.empty() && bits != 0;
 }
 
-bool RasterInfo::setDataType( bool isSigned, int bitsCount, const QString &type )
+bool RasterInfo::setDataType( bool isSigned, int bitsCount, const string &type )
 {
    signd = isSigned;
 
@@ -160,7 +162,7 @@ bool RasterInfo::setDataType( bool isSigned, int bitsCount, const QString &type 
    else
       datatype = "Integer";
 
-   return bitsCount > 0 && !type.isNull();
+   return bitsCount > 0 && !type.empty();
 }
 
 bool RasterInfo::setPixelSize( double pixelSize )
@@ -195,12 +197,14 @@ bool RasterInfo::setNoDataValue( double noDataValue )
 }
 
 
-QString RasterInfo::fullDataType() const
+string RasterInfo::fullDataType() const
 {
-	QString ret;
+        string ret;
+        std::stringstream out;
 	
 	ret = signd ? "Signed " : "Unsigned ";
-	ret += QString("%1 Bit ").arg( bits );
+        out << bits;
+ret += out.str() + "Bit ";
 	ret += datatype;
 
 	return ret;	
@@ -277,21 +281,18 @@ bool RasterInfo::save()
    return save( xmlFileName );
 }
 
-bool RasterInfo::load( QString _xmlFileName )
+bool RasterInfo::load( string _xmlFileName )
 {
+
+  ifstream ifile(_xmlFileName.c_str(), ifstream::in);
+
    defaults();
    xmlFileName = _xmlFileName;
    parseFileName();
 
-   if( QFile::exists( xmlFileName ) )
+   if(ifile)
    {
       return loadXml();
-   }
-   else if( QFile::exists( imageFileName + ".img.info" ) )
-   {
-      loadInfo();
-      save();
-      QFile::remove( imageFileName + ".img.info" );
    }
    else
    {
@@ -301,23 +302,23 @@ bool RasterInfo::load( QString _xmlFileName )
    return true;
 }
 
-bool RasterInfo::save( QString _xmlFileName )
+bool RasterInfo::save( string _xmlFileName )
 {
    bool returnValue = false;
 
-   if( !_xmlFileName.isNull() )
+   if( !_xmlFileName.empty() )
    {
      xmlFileName = _xmlFileName;
-      parseFileName();
+     parseFileName();
    }
 
    try
    {
       RasterXML r;
 
-	  r.setAuthorName( tempAName->toAscii() );
-	  r.setAuthorCompany( tempACompany->toAscii() );
-	  r.setAuthorEmail( tempAEmail->toAscii() );
+	  r.setAuthorName( tempAName->c_str() );
+	  r.setAuthorCompany( tempACompany->c_str() );
+	  r.setAuthorEmail( tempAEmail->c_str() );
 
       r.setUlCorner( ulx, uly );
       r.setRows( row );
@@ -325,7 +326,7 @@ bool RasterInfo::save( QString _xmlFileName )
 
       r.setSigned( signd );
       r.setBits( bits );
-      r.setDataType( datatype.toAscii() );
+      r.setDataType( datatype.c_str() );
       r.setPixelSize( pixsize );
       r.setFillValue( fillval );
       r.setNoDataValue( noval );
@@ -334,27 +335,27 @@ bool RasterInfo::save( QString _xmlFileName )
       r.setHasNoDataValue( hasNoDataVal );
 
       r.setProjNumber( projcode );
-      r.setProjName( projNames[projcode].toAscii() );
+      r.setProjName( projNames[projcode] );
       r.setZone( zonecode );
       r.setDatumNumber( datumcode );
-      r.setDatumName( spheroidNames[datumcode].toAscii() );
+      r.setDatumName( spheroidNames[datumcode] );
       r.setUnitsNumber( unitcode );
-      r.setUnitsName( unitNames[unitcode].toAscii() );
+      r.setUnitsName( unitNames[unitcode] );
 
       char variation = 'a';
       if( projcode == 8 && gctpParams[8] == 1 )
          variation = 'b';
       if( ( projcode == 20 || projcode == 22 ) && gctpParams[12] == 1 )
          variation = 'b';
-      QStringList paramNames( gctpNames(projcode, variation) );
+      vector<string> paramNames( gctpNames(projcode, variation) );
       for( int i = 0; i < 15; ++i )
-         r.setParam( i, gctpParams[i], nameMeanings(paramNames[i]).toAscii() );
+         r.setParam( i, gctpParams[i], nameMeanings(paramNames[i]).c_str() );
 
-      returnValue =  r.save( QString( xmlFileName ).toAscii() );
+      returnValue =  r.save( string( xmlFileName ).c_str() );
    }
-   catch( XMLException exception )
+   catch( ...  )
    {
-      QMessageBox::critical( NULL, "Error", exception.getMessage() );
+     //      QMessageBox::critical( NULL, "Error", exception.getMessage() );
       returnValue = false;
    }
 
@@ -379,9 +380,10 @@ bool RasterInfo::parseFileName()
 
 void RasterInfo::loadInfo()
 {
+  /*
    QFile *file = new QFile( imageFileName + ".img.info" );
    file->open( QIODevice::ReadOnly );
-   QStringList inFile( QString( file->readAll() ).split('\n') );
+   stringList inFile( string( file->readAll() ).split('\n') );
    file->close();
    delete file;
 
@@ -402,11 +404,12 @@ void RasterInfo::loadInfo()
    uly = inFile[6].right( inFile[6].length() - breakPoint - 1 ).toDouble();
 
    ////////15 GCTP Params
-   QStringList gctpValues = QString( inFile[7] ).split( " " );
+   stringList gctpValues = string( inFile[7] ).split( " " );
    for( int i = 0; i < 15; ++i )
       gctpParams[i] = gctpValues[i].toDouble();
 
    setDataType( inFile[8] ); //Data Type
+  */
 }
 
 bool RasterInfo::loadXml()
@@ -415,7 +418,7 @@ bool RasterInfo::loadXml()
 
    try
    {
-      RasterXML xml( QString( xmlFileName ).toAscii() );
+      RasterXML xml( string( xmlFileName ).c_str() );
 
       aName = xml.getAuthorName();
       aCompany = xml.getAuthorCompany();
@@ -446,9 +449,9 @@ bool RasterInfo::loadXml()
 
       returnValue = true;
    }
-   catch( XMLException exception )
+   catch( ... )
    {
-      QMessageBox::critical( NULL, "XML File Error", exception.getMessage() );
+     //      QMessageBox::critical( NULL, "XML File Error", exception.getMessage() );
       returnValue = false;
    }
 
@@ -457,9 +460,11 @@ bool RasterInfo::loadXml()
 
 bool RasterInfo::remove()
 {
-   QFile thisfile( xmlFileName );
-   if( thisfile.exists() )
-      return thisfile.remove();
+  ifstream file( xmlFileName.c_str() );
+   if( file ) {
+     file.close();
+     return std::remove(xmlFileName.c_str());
+   }
 
    return true;
 }
@@ -478,7 +483,7 @@ bool RasterInfo::ready()
    if( bits == 0 )
       return false;
 
-   if( datatype.isNull() )
+   if( datatype.empty() )
       return false;
 
    if( !(pixsize > 0) )
@@ -502,11 +507,11 @@ bool RasterInfo::notReady()
 
 void RasterInfo::defaults()
 {
-   xmlFileName = QString::null;
+   xmlFileName = "";
 
-   aName = QString::null;  // "" author
-   aCompany = QString::null;
-   aEmail = QString::null;
+   aName = "";  // "" author
+   aCompany = "";
+   aEmail = "";
 
    row = 0;                // 0x0
    col = 0;
@@ -572,7 +577,7 @@ bool RasterInfo::fakeIt()
 {
    datumcode = 19; unitcode = 2;
 
-   if( datatype.isNull() )
+   if( datatype.empty() )
    {
       signd = true;
       bits = 8;

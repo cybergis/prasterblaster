@@ -6,18 +6,18 @@
 #include <mpi.h>
 
 
-#include <QImage>
-#include <QString>
+//#include <QImage>
+//#include <QString>
 
 #include <cstdio>
-
+/*
 #include "gctp_cpp/projection.h"
 #include "gctp_cpp/transformer.h"
 #include "gctp_cpp/hammer.h"
 #include "projectedraster.hh"
 #include "reprojector.hh"
 #include "rasterreader.hh"
-
+*/
 #include <gdal_priv.h>
 
 namespace mpi = boost::mpi;

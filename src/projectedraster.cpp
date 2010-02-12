@@ -385,7 +385,7 @@ bool ProjectedRaster::loadImgRaster(std::string filename)
 		gctpParams[i] = in_info.gctpParam(i);
 	}	
 
-	if (in_info.dataType().toStdString() == "Integer") {
+	if (in_info.dataType() == "Integer") {
 		if (in_info.isSigned()) {
 			switch (in_info.bitCount()) {
 			case 8:

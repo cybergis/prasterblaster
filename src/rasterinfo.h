@@ -4,28 +4,30 @@
 #ifndef RASTERINFO_H
 #define RASTERINFO_H
 
-#include <QString>
+#include <string>
+
+using namespace std;
 
 class RasterInfo
 {
 public:
    //Constuctors and Destructor
    RasterInfo();
-   RasterInfo( const QString &xmlFileName );
+   RasterInfo( const string &xmlFileName );
    RasterInfo( const RasterInfo &src );
    ~RasterInfo();
 
    //Files
-   bool setXmlFileName( QString &xmlFileName );
-   bool setImageFileName( QString &imageFilename );
-   QString imgFileName() const;// {return fileName + ".img";}
-   QString getXmlFileName() const;// {return fileName + ".xml";}
+   bool setXmlFileName( string &xmlFileName );
+   bool setImageFileName( string &imageFilename );
+   string imgFileName() const;// {return fileName + ".img";}
+   string getXmlFileName() const;// {return fileName + ".xml";}
 
    //Author
-   bool setAuthor( const QString &name, const QString &company, const QString &email );
-   QString author() const {return aName;}
-   QString company() const {return aCompany;}
-   QString email() const {return aEmail;}
+   bool setAuthor( const string &name, const string &company, const string &email );
+   string author() const {return aName;}
+   string company() const {return aCompany;}
+   string email() const {return aEmail;}
 
    //Area
    bool setArea( double ul_X, double ul_Y, int rows, int cols );
@@ -36,18 +38,18 @@ public:
    int cols() const {return col;}
 
    //Pixel Description
-   bool setPixelDescription( const QString &dataType, double pixelSize, double fillValue, double noDataValue );
-   bool setPixelDescription( bool isSigned, int bitsCount, const QString &type, double pixelSize, double fillValue, double noDataValue );
-   bool setDataType( const QString &dataType );
-   bool setDataType( bool isSigned, int bitsCount, const QString &type );
+   bool setPixelDescription( const string &dataType, double pixelSize, double fillValue, double noDataValue );
+   bool setPixelDescription( bool isSigned, int bitsCount, const string &type, double pixelSize, double fillValue, double noDataValue );
+   bool setDataType( const string &dataType );
+   bool setDataType( bool isSigned, int bitsCount, const string &type );
    bool setPixelSize( double pixelSize );
    bool setFillValue( double fillValue );
    bool setNoDataValue( double noDataValue );
-   QString dataType() const {return datatype;}
-   QString fullDataType() const;	//returns isSigned + bitCount + dataType 
+   string dataType() const {return datatype;}
+   string fullDataType() const;	//returns isSigned + bitCount + dataType 
    bool isSigned() const {return signd;}
    int bitCount() const {return bits;}
-   QString type() const {return datatype;}
+   string type() const {return datatype;}
    double pixelSize() const {return pixsize;}
    double fillValue() const {return fillval;}
    double noDataValue() const {return noval;}
@@ -74,9 +76,9 @@ public:
 
    //I/O
    bool load();
-   bool load( QString xmlFileName );
+   bool load( string xmlFileName );
    bool save( );
-   bool save( QString xmlFileName );
+   bool save( string xmlFileName );
    bool remove();
    bool saveToTiff();
 
@@ -93,15 +95,15 @@ public:
    void loadInfo();
    bool loadXml();
 
-   QString xmlFileName;
-   QString imageFileName;
+   string xmlFileName;
+   string imageFileName;
 
-   QString  aName;
-   QString  aCompany;
-   QString  aEmail;
+   string  aName;
+   string  aCompany;
+   string  aEmail;
 
    //Used to keep hold of aName, aCompany, and aEmail between functions
-   QString *tempAName, *tempACompany, *tempAEmail; 
+   string *tempAName, *tempACompany, *tempAEmail; 
 
    double   ulx;
    double   uly;
@@ -111,7 +113,7 @@ public:
    bool     signd;
 
    int      bits;
-   QString  datatype;
+   string  datatype;
    double   pixsize;
    double   fillval;
    double   noval;
