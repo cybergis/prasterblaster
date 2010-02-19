@@ -1,6 +1,4 @@
 
-#include <QString>
-
 #include <string>
 #include <sstream>
 #include <cstring>
@@ -58,7 +56,7 @@ ProjectedRaster::ProjectedRaster(string _filename)
 			ready = false;
 			return;
 		} 
-	
+
 		ref = strdup(dataset->GetProjectionRef());
 
 		if (ref == 0) {
@@ -70,6 +68,7 @@ ProjectedRaster::ProjectedRaster(string _filename)
 		geo[1] = -1;
 		dataset->GetGeoTransform(geo);
 		pixel_size = geo[1];
+		type = (dataset->GetRasterBand(1))->GetRasterDataType();
 		
 		// Setup projection
 		ugh = &ref;
@@ -91,6 +90,7 @@ ProjectedRaster::ProjectedRaster(string _filename)
 		ready = status;
 	}
 	
+
 	return;
 }
 
@@ -129,17 +129,23 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	}
 	  
 	// Set options
-//	options = CSLSetNameValue( options, "INTERLEAVE", "PIXEL" );
-//	options = CSLSetNameValue( options, "BIGTIFF", "YES" );
-//	options = CSLSetNameValue( options, "TILED", "YES" );
-//	options = CSLSetNameValue( options, "COMPRESS", "NONE" );
+	options = CSLSetNameValue( options, "INTERLEAVE", "PIXEL" );
+	options = CSLSetNameValue( options, "BIGTIFF", "YES" );
+	options = CSLSetNameValue( options, "TILED", "YES" );
+	options = CSLSetNameValue( options, "COMPRESS", "NONE" );
 
 	printf("Creating dataset! %d cols, %d rows, %d bands\n",
 	       num_cols, num_rows, band_count);
+
+
 	dataset = driver->Create(filename.c_str(), num_cols, num_rows, 
 				 band_count, pixel_type,
-				 0);
-/*
+				 options);
+
+	
+
+	printf("Opened...\n\n\n");
+
 	if (dataset == 0 || proj == 0) {
 		ready = false;
 		return;
@@ -149,32 +155,40 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	
 	band = dataset->GetRasterBand(1);
 
+	raster[0] = 200;
 	band->RasterIO(GF_Write, 0, 0, 8, 8, raster, 8, 8, GDT_Byte, 0, 0);
+
 
 	// Setup georeferencing
 	OGRSpatialReference srs;
 	long zone = -1;
-	
+
+	/*
 	if (projection->number() == _UTM) {
 		zone = (int)((UTM*)projection)->zone();
 	}
 	srs.importFromUSGS((long)projection->number(), 
 			    zone,
 			    projection->params(),
-			    (long)projection->datum(),
-			    TRUE);
+			   (long)projection->datum());
+	srs.Fixup();
 	srs.exportToWkt(&wkt);
 	printf("WKT YO: %s\n", wkt);
 	dataset->SetProjection(wkt);
 	CPLFree(wkt);
-		
-	
+	*/
 
+	srs.SetProjCS(projection->name().c_str());
+	srs.SetWellKnownGeogCS( "EPSG:4052" );
+	srs.exportToWkt(&wkt);
+	printf("WKT YO: %s\n", wkt);
+	dataset->SetProjection(wkt);
+	CPLFree(wkt);
 	ready = true;
 
 	if (options != 0)
 		CSLDestroy(options);
-*/
+
 	return;
 }
 
@@ -284,19 +298,7 @@ int ProjectedRaster::getColCount()
 
 GDALDataType ProjectedRaster::getPixelType()
 {
-	GDALRasterBand *band = 0;
-	GDALDataType type = GDT_Unknown;
-	
-	if ( dataset == 0) {
-		return type;
-	}
-
-	band = dataset->GetRasterBand(1);
-	if (band == 0) {
-		return type;
-	} 
-	
-	return band->GetRasterDataType();
+	return type;
 }
 
 int ProjectedRaster::bitsPerPixel() 
@@ -364,6 +366,65 @@ double* ProjectedRaster::getGctpParams()
 	return gctpParams;
 }
 
+
+bool ProjectedRaster::readRaster(int firstRow, int numRows, void *data)
+{
+	bool success = false;
+	
+	if (isReady() && dataset == 0) { // img file
+		ifstream ifs(filename.c_str(), ifstream::in);
+
+		// TODO: Verify parameters!
+
+		if (ifs.good()) {
+			ifs.seekg(firstRow * cols);
+			ifs.read((char*)data, 
+				 numRows * cols * (GDALGetDataTypeSize(type)/8));
+		} 
+	} else if (isReady() && dataset != 0) { // GTiff
+		if( dataset->RasterIO(GF_Read, 0, firstRow,
+				  cols, numRows,
+				  data, cols, numRows,
+				  type, dataset->GetRasterCount(),
+				      NULL, 0, 0, 0) == CE_None) {
+			success = true;
+		}
+			
+	}
+
+		return success;
+}
+
+bool ProjectedRaster::writeRaster(int firstRow, int numRows, void *data)
+{	
+		bool success = false;
+	
+	if (isReady() && dataset == 0) { // img file
+		ofstream ofs(filename.c_str(), ifstream::out);
+
+		// TODO: Verify parameters!
+
+		if (ofs.good()) {
+			ofs.seekp(firstRow * cols);
+			ofs.read((char*)data, 
+				 numRows * cols * (GDALGetDataTypeSize(type)/8));
+		} 
+	} else if (isReady() && dataset != 0) { // GTiff
+		if( dataset->RasterIO(GF_Write, 0, firstRow,
+				  cols, numRows,
+				  data, cols, numRows,
+				  type, dataset->GetRasterCount(),
+				      NULL, 0, 0, 0) == CE_None) {
+			success = true;
+		}
+			
+	}
+
+		return success;
+
+	
+	return false;
+}
 
 bool ProjectedRaster::loadImgRaster(std::string filename)
 {

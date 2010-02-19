@@ -90,8 +90,8 @@ This constructor takes a single arguments, filename, representing
 	double* getGctpParams();
 
 	// IO
-	void readRaster(int xOff, int yOff, int xSize, int ySize, void* data);
-	void writeRaster(int xOff, int yOff, int xSize, int ySize, void* data);
+	bool readRaster(int firstRow, int numRows, void* data);
+	bool writeRaster(int firstRow, int numRows, void* data);
 
 	// Members
 	double ul_x, ul_y;

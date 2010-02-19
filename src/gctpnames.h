@@ -7,8 +7,6 @@
 #include <string>
 #include <vector>
 
-#include <QStringList>
-
 using namespace std;
 
 namespace
