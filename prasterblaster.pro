@@ -10,6 +10,9 @@ LIBS += -lgdal -lmpi -lmpi_cxx -lboost_python -lpython2.6 -lboost_mpi -lboost_se
 QMAKE_CXXFLAGS_DEBUG += -pg
 OBJECTS_DIR=./build
 QMAKE_LIBDIR_FLAGS +=  -L../gctp_cpp -Wl,-R../gctp_cpp -L/usr/lib/openmpi/1.3.2-gcc/lib/
+QMAKE_CC=mpicc
+QMAKE_CXX=mpic++
+QMAKE_LINK=mpic++
 CONFIG += debug
 
 # Input
