@@ -406,7 +406,7 @@ bool ProjectedRaster::writeRaster(int firstRow, int numRows, void *data)
 
 		if (ofs.good()) {
 			ofs.seekp(firstRow * cols);
-			ofs.read((char*)data, 
+			ofs.write((char*)data, 
 				 numRows * cols * (GDALGetDataTypeSize(type)/8));
 		} 
 	} else if (isReady() && dataset != 0) { // GTiff

@@ -30,9 +30,9 @@ int main(int argc, char *argv[])
 {
 	double ul_x, ul_y, lr_x, lr_y;
  	long int rows, cols;
-	//	mpi::environment env(argc, argv);
+	mpi::environment env(argc, argv);
 
-	//	mpi::communicator world;
+	mpi::communicator world;
 
 
 	rows = cols = 0;
