@@ -44,20 +44,29 @@ void Reprojector::parallelReproject(int rank, int numProcs)
 	long in_rows, in_cols, out_rows, out_cols;
 	mpi::communicator world;
 	vector<char> ot;
+	vector<unsigned char> indata, outdata;
 
 	t.setInput(*output->getProjection());
 	t.setOutput(*input->getProjection());
   
 	in_rows = input->getRowCount();
 	in_cols = input->getColCount();
-	out_rows = output->getRowCount()/numProcs;
+	out_rows = output->getRowCount()/numProcs + (output->getRowCount() % numProcs);
 	out_cols = output->getColCount();
-	in_pixsize = 8;
-	out_pixsize = 8;
+	in_pixsize = input->getPixelSize();
+	out_pixsize = input->getPixelSize();
 	in_ulx = input->ul_x;
 	in_uly = input->ul_y;
 	out_ulx = output->ul_x;
 	out_uly = output->ul_y - (rank * ((out_rows * out_pixsize)/numProcs));
+
+
+	// Set size of input and output vectors
+	indata.resize(in_cols * in_rows * (input->bitsPerPixel()/8), 0);
+	outdata.resize(out_cols * out_rows * (input->bitsPerPixel()/8), 0);
+
+	// Read raster data
+	input->readRaster(0, in_rows, &(indata[0]));
 
 	temp.units = METER;
 	for (int y = 0; y < out_rows; ++y) {
@@ -83,8 +92,13 @@ void Reprojector::parallelReproject(int rank, int numProcs)
 			temp.x /= in_pixsize;
 			temp.y /= out_pixsize;
 			// temp is now scaled to input raster coords, now resample!
-			resampler(input->data, temp.x, temp.y, in_cols, 
-				  output->data, x, y, out_cols);
+			//			printf("Pixsize! %f %f\n", in_pixsize, out_pixsize);
+			printf("About to sample the point: (%f %f) to (%d %d)\n",
+			       temp.x, temp.y, x, y);
+
+			resampler(&(indata[0]), temp.x, temp.y, in_cols, 
+				  &(outdata[0]), x, y, out_cols);
+
 
 		}
 	}

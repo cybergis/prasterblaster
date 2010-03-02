@@ -63,13 +63,18 @@ This constructor takes a single arguments, filename, representing
 			Projection *proj,
 			double ulx, double uly);
 
+	ProjectedRaster(string filename,
+			ProjectedRaster *input,
+			Projection *output_proj,
+			GDALDataType pixel_type,
+			double pixel_size);
+
 /*!
   Destructor
  */
 	~ProjectedRaster();
 
 
-	void* getData();
 	Projection* getProjection();
         bool isReady();
 	bool write(string filename);
@@ -98,6 +103,7 @@ This constructor takes a single arguments, filename, representing
 	int rows, cols;
 	GDALDataType type;
 	double pixel_size;
+	int band_count;
 
 	// File Description
 	std::string filename;

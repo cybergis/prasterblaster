@@ -7,6 +7,8 @@
 
 
 #include <cstdio>
+#include <cstring>
+
 
 #include "gctp_cpp/projection.h"
 #include "gctp_cpp/transformer.h"
@@ -33,18 +35,21 @@ int main(int argc, char *argv[])
 	mpi::environment env(argc, argv);
 
 	mpi::communicator world;
-
+	vector<unsigned char> *dat = 0;
+	
 
 	rows = cols = 0;
 	ProjectedRaster in("/home/dmattli/Desktop/mmr/veg_geographic_1deg.img");
+	//	ProjectedRaster in("/home/dmattli/Desktop/example.tif");
 	if (in.isReady() == true) {
 		printf("Image read!\n");
 	}
 
 
+
 	Projection *outproj;
 	outproj = new Mollweide(params, METER, in.getDatum());
-
+	/*
 	FindMinBox(&in, outproj, in.bitsPerPixel(), ul_x, ul_y, lr_x, lr_y);
 	FindMinBox(&in, outproj, in.bitsPerPixel(), ul_x, ul_y, lr_x, lr_y);
 	rows = (ul_y-lr_y) / in.getPixelSize();
@@ -55,13 +60,25 @@ int main(int argc, char *argv[])
 			    in.getRowCount(), in.getColCount(), 
 			    in.getPixelType(), in.getPixelSize(), 
 			    in.bandCount(), outproj, ul_x, ul_y);
+	*/
+	ProjectedRaster out("/home/dmattli/Desktop/test/test.tif",
+			    &in,
+			    outproj,
+			    in.getPixelType(),
+			    in.getPixelSize());
 
-	if (!out.isReady()) {
-		printf("Error in output raster...\n");
-		return -1;
-	} 
+	delete outproj;
+	
+	if (!(in.isReady() && out.isReady())) {
+		printf("Error in opening rasters\n");
+		return 1;
+	}
 
-	//x	Reprojector rp(&in, &out); 
+	Reprojector re(&in, &out);
+	re.parallelReproject(world.rank(), world.size());
+
+	
+	//	Reprojector rp(&in, &out); 
 	//	rp.reproject();
 
 	//	if (world.rank() == 0) {

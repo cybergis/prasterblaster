@@ -57,6 +57,10 @@ ProjectedRaster::ProjectedRaster(string _filename)
 			return;
 		} 
 
+		cols = dataset->GetRasterXSize();
+		rows = dataset->GetRasterYSize();
+		
+		
 		ref = strdup(dataset->GetProjectionRef());
 
 		if (ref == 0) {
@@ -68,7 +72,12 @@ ProjectedRaster::ProjectedRaster(string _filename)
 		geo[1] = -1;
 		dataset->GetGeoTransform(geo);
 		pixel_size = geo[1];
+		ul_x = geo[0];
+		ul_y = geo[3];
 		type = (dataset->GetRasterBand(1))->GetRasterDataType();
+		band_count = dataset->GetRasterCount();
+		cols = dataset->GetRasterXSize();
+		rows = dataset->GetRasterYSize();
 		
 		// Setup projection
 		ugh = &ref;
@@ -87,6 +96,7 @@ ProjectedRaster::ProjectedRaster(string _filename)
 		
 	} else { // Filename specifies imagine binary raster
 		bool status = loadImgRaster(filename);
+		band_count = 1;
 		ready = status;
 	}
 	
@@ -96,8 +106,8 @@ ProjectedRaster::ProjectedRaster(string _filename)
 
 ProjectedRaster::ProjectedRaster(string _filename, 
 				 int num_rows, int num_cols, 
-				 GDALDataType pixel_type, double pixel_size,
-				 int band_count,
+				 GDALDataType pixel_type, double _pixel_size,
+				 int _band_count,
 				 Projection *proj,
 				 double ulx, double uly)
 {
@@ -115,7 +125,11 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	dataset = 0;
 	data = 0;
 	band = 0;
-	rows = cols = -1;
+	band_count = _band_count;
+	rows = num_rows;
+	cols = num_cols;
+	pixel_size = _pixel_size;
+	type = pixel_type;
 
 	GDALAllRegister();
 
@@ -133,19 +147,13 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	options = CSLSetNameValue( options, "BIGTIFF", "YES" );
 	options = CSLSetNameValue( options, "TILED", "YES" );
 	options = CSLSetNameValue( options, "COMPRESS", "NONE" );
-
-	printf("Creating dataset! %d cols, %d rows, %d bands\n",
-	       num_cols, num_rows, band_count);
-
+	options = CSLSetNameValue( options, "PHOTOMETRIC", "MINISBLACK");
 
 	dataset = driver->Create(filename.c_str(), num_cols, num_rows, 
 				 band_count, pixel_type,
 				 options);
 
 	
-
-	printf("Opened...\n\n\n");
-
 	if (dataset == 0 || proj == 0) {
 		ready = false;
 		return;
@@ -155,8 +163,100 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	
 	band = dataset->GetRasterBand(1);
 
-	raster[0] = 200;
-	band->RasterIO(GF_Write, 0, 0, 8, 8, raster, 8, 8, GDT_Byte, 0, 0);
+
+	// Setup georeferencing
+	OGRSpatialReference srs;
+	long zone = -1;
+
+	/*
+	if (projection->number() == _UTM) {
+		zone = (int)((UTM*)projection)->zone();
+	}
+	srs.importFromUSGS((long)projection->number(), 
+			    zone,
+			    projection->params(),
+			   (long)projection->datum());
+	srs.Fixup();
+	srs.exportToWkt(&wkt);
+	printf("WKT YO: %s\n", wkt);
+	dataset->SetProjection(wkt);
+	CPLFree(wkt);
+	*/
+
+	srs.SetProjCS(projection->name().c_str());
+	srs.SetWellKnownGeogCS( "EPSG:4052" );
+	srs.exportToWkt(&wkt);
+	printf("WKT YO: %s\n", wkt);
+	dataset->SetProjection(wkt);
+	CPLFree(wkt);
+	ready = true;
+
+	if (options != 0)
+		CSLDestroy(options);
+
+	return;
+}
+
+ProjectedRaster::ProjectedRaster(string _filename,
+				 ProjectedRaster *input,
+				 Projection *output_proj,
+				 GDALDataType pixel_type,
+				 double _pixel_size)
+{
+	double lr_x, lr_y;
+	const char *format = "GTiff";
+	GDALDriver *driver;
+	GDALRasterBand *band;
+	char **options = 0; 
+	GByte raster[8*8];
+	char *wkt = 0;
+	double geotransform[6] = { 444720, 30, 0, 3751320, 0, -30 };
+
+
+	projection = output_proj->copy();
+	filename = _filename;
+	dataset = 0;
+	data = 0;
+	band = 0;
+	band_count = input->bandCount();
+	rows = -1;
+	cols = -1;
+	pixel_size = _pixel_size;
+	type = pixel_type;
+
+	FindMinBox(input, output_proj, pixel_size, ul_x, ul_y, lr_x, lr_y);
+	rows = (ul_y-lr_y) / input->getPixelSize();
+	cols = (lr_x-ul_x) / input->getPixelSize();
+	
+	GDALAllRegister();
+
+	driver = GetGDALDriverManager()->GetDriverByName(format);
+
+	if( driver == NULL ) {
+		ready = false;
+		return;
+	}
+	  
+	// Set options
+	options = CSLSetNameValue( options, "INTERLEAVE", "PIXEL" );
+	options = CSLSetNameValue( options, "BIGTIFF", "YES" );
+	options = CSLSetNameValue( options, "TILED", "YES" );
+	options = CSLSetNameValue( options, "COMPRESS", "NONE" );
+//	options = CSLSetNameValue( options, "PHOTOMETRIC", "MINISBLACK");
+
+	dataset = driver->Create(filename.c_str(), cols, rows,
+				 band_count, pixel_type,
+				 options);
+
+	
+	if (dataset == 0 || projection == 0) {
+		ready = false;
+		return;
+	}
+
+	dataset->SetGeoTransform(geotransform);
+	
+	band = dataset->GetRasterBand(1);
 
 
 	// Setup georeferencing
@@ -227,63 +327,6 @@ Projection* ProjectedRaster::getProjection()
 	return projection->copy();
 }
 
-void* ProjectedRaster::getData()
-{
-	return data;
-}
-
-bool ProjectedRaster::write(string filename)
-{
-	GDALDataset *ds;
-	GDALDriver *driver;
-	OGRSpatialReference sr;
-	Projection *proj;
-	char **options = 0;
-	char *wkt;
-	double transforms[6];
-
-	GDALAllRegister();
-
-	driver = GetGDALDriverManager()->GetDriverByName("GTiff");
-/*  
-	// Initialize spatial reference
-	// Projection, gctp params, units, and datum
-	proj = getProjection();
-	if (getProjection()->number() == _UTM) {
-		sr.importFromUSGS((long)proj->number(), ((UTM*)proj)->zone(),
-				  proj->params(), (long)proj->datum());
-	} else {
-		sr.importFromUSGS((long)proj->number(),  0,
-				  proj->params(), (long)proj->datum());
-	}
-	sr.SetLinearUnits(SRS_UL_METER, 1);
-	sr.exportToWkt( &wkt );
-
-	// Create Dataset
-	ds = driver->Create(filename.c_str(), getColCount(),
-			    getRowCount(), getBitCount()/8, 
-			    GDT_Byte, options);
-  
-
-
-	if (ds != 0) {
-		// TODO: Support more than one band
-		printf("Writing raster: %d cols %d rows\n", getColCount(), getRowCount());
-		if (ds->RasterIO(GF_Write, 0, 0, getColCount(), getRowCount(),
-				 getData(), getColCount(), getRowCount(),
-				 GDT_Byte, 1, 0, 0, 0, 0) == CE_Failure) {
-			printf("RasterIO failed...\n");
-			return false;
-		}
-
-		ds->SetProjection(wkt);
-		GDALClose(ds);
-		return true;
-	}
-*/	
-	return false;
-
-}
 
 int ProjectedRaster::getRowCount()
 {
@@ -380,14 +423,19 @@ bool ProjectedRaster::readRaster(int firstRow, int numRows, void *data)
 			ifs.seekg(firstRow * cols);
 			ifs.read((char*)data, 
 				 numRows * cols * (GDALGetDataTypeSize(type)/8));
+			if (!(ifs.fail() || ifs.bad())) {
+				success = true;
+			}
+				
 		} 
 	} else if (isReady() && dataset != 0) { // GTiff
+		printf("Raster Type: %d\n", type);
 		if( dataset->RasterIO(GF_Read, 0, firstRow,
-				  cols, numRows,
-				  data, cols, numRows,
-				  type, dataset->GetRasterCount(),
+				      cols, numRows,
+				      data, cols, numRows,
+				      type, bandCount(),
 				      NULL, 0, 0, 0) == CE_None) {
-			success = true;
+			success = true; 
 		}
 			
 	}
@@ -397,12 +445,18 @@ bool ProjectedRaster::readRaster(int firstRow, int numRows, void *data)
 
 bool ProjectedRaster::writeRaster(int firstRow, int numRows, void *data)
 {	
-		bool success = false;
+	bool success = false;
+
+	if (firstRow < 0 || numRows > rows || data == 0) {
+		return false;
+	}
+		
 	
 	if (isReady() && dataset == 0) { // img file
 		ofstream ofs(filename.c_str(), ifstream::out);
 
 		// TODO: Verify parameters!
+		
 
 		if (ofs.good()) {
 			ofs.seekp(firstRow * cols);
@@ -411,9 +465,9 @@ bool ProjectedRaster::writeRaster(int firstRow, int numRows, void *data)
 		} 
 	} else if (isReady() && dataset != 0) { // GTiff
 		if( dataset->RasterIO(GF_Write, 0, firstRow,
-				  cols, numRows,
-				  data, cols, numRows,
-				  type, dataset->GetRasterCount(),
+				      cols, numRows,
+				      data, cols, numRows,
+				      type, bandCount(),
 				      NULL, 0, 0, 0) == CE_None) {
 			success = true;
 		}
@@ -494,106 +548,5 @@ bool ProjectedRaster::loadImgRaster(std::string filename)
 
 
 	return true;
-}
-
-bool ProjectedRaster::readImgRaster(std::string filename)
-{
-	string::size_type idx = filename.find('.');
-	string imgname = filename.substr(0, idx) + ".img";
-	string xmlname = filename.substr(0, idx) + ".xml";
-	RasterInfo in_info(xmlname.c_str());
-	int fd = -1;
-	int readsize = 0;
-	int rastersize = in_info.rows() * in_info.cols();
-	GDALDriver *driver = 0;
-	char **options = 0;
-	std::stringstream out;
-
-	driver = GetGDALDriverManager()->GetDriverByName("MEM");
-
-	if (driver == 0) {
-		printf("Memory driver not found!\n");
-		return false;
-	}
-	
-	// Allocate memory for raster
-	
-
-	// Read in image data
-	errno = 0;
-	fd = open(imgname.c_str(), O_RDONLY);
-	readsize = read(fd, data, 
-			rastersize*(in_info.bitCount()/8));
-	if (readsize != (rastersize * (in_info.bitCount()/8))) {
-		printf("Read error: %d!\n", readsize);
-		printf("Supposed to be: %d\n", rastersize*(in_info.bitCount()/8));
-		printf("ERROR: %s\n", strerror(errno));
-				return false;
-	}
-	close(fd);
-	
-	printf("Index: %d\n", idx);
-	printf("image name: %s, xml name %s\n", imgname.c_str(), xmlname.c_str());
-
-	out << "MEM:::DATAPOINTER=" << data
-	    << ",PIXELS=" << in_info.cols()
-	    << ",LINES=" << in_info.rows()
-	    << ",BANDS=1" << "DATATYPE=Byte";
-	dataset = driver->Create(out.str().c_str(), in_info.cols(), in_info.rows(), 
-				 1, GDT_Byte, 0);
-
-/*
-	if (subIndex < subCount - 1)
-		rastersize = subrastersize * in_info.cols();
-	else
-		rastersize = (subrastersize + suboverflow) * in_info.cols();
-	
-	data = calloc(rastersize, in_info.bitCount()/8);
-	if (data == 0) {
-		printf("Data allocation failed\n");
-		return false;
-	}
-
-	// Read in image data
-	errno = 0;
-	fd = open(imgname.c_str(), O_RDONLY);
-	lseek(fd, rastersize * subIndex, SEEK_SET);
-	readsize = read(fd, data, 
-			rastersize*(in_info.bitCount()/8));
-	if (readsize != (rastersize * (in_info.bitCount()/8))) {
-		printf("Read error: %d!\n", readsize);
-		printf("Supposed to be: %d\n", rastersize*(in_info.bitCount()/8));
-		printf("ERROR: %s\n", strerror(errno));
-				return false;
-	}
-	close(fd);
-
-	// Setup projection
-	int num_rows = in_info.rows();
-	
-
-	setProjection((ProjCode)in_info.projectionNumber());
-	setUL(in_info.ul_X(), in_info.ul_Y());
-	setUL(in_info.ul_X(), 
-	      in_info.ul_Y() - (subrastersize * in_info.pixelSize()));
-	setDatum((ProjDatum)in_info.datumNumber());
-	setRowCount(num_rows);
-	if (subIndex < subCount -1) {
-		setRowCount(subrastersize);
-	} else {
-		setRowCount(subrastersize + suboverflow);
-	}
-	setColCount(in_info.cols());
-	setPixelSize(in_info.pixelSize());
-	if (in_info.isSigned())
-		setSigned();
-	else
-		setUnsigned();
-	setUnit((ProjUnit)in_info.unitNumber());
-	setGctpParams(in_info.allGctpParams());
-	setBitCount(in_info.bitCount());
-  
-	return true;
-*/
 }
 
