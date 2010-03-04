@@ -23,7 +23,7 @@ using namespace pRPL;
 
 Reprojector::Reprojector(PRProcess _prc, ProjectedRaster *_input, ProjectedRaster *_output) 
 	:
-	prc(_prc), input(_input), output(_output), input_layer(_prc)
+	prc(_prc), input(_input), output(_output), input_layer(_prc), output_layer(_prc)
 {
 	vector<CellCoord> coords;
 
@@ -33,9 +33,7 @@ Reprojector::Reprojector(PRProcess _prc, ProjectedRaster *_input, ProjectedRaste
 	minx = miny = 1e+37;
 	resampler = &resampler::nearest_neighbor<unsigned char>;
 	
-	Neighborhood<unsigned char> output_hood;
-
-	if (_prc.isMaster()) {
+	if (prc.isMaster()) {
 		// Initialize input layer
 		input_layer.newCellSpace();
 		input_layer.cellSpace()->initMem(SpaceDims(input->getColCount()*input->bandCount()
@@ -49,11 +47,12 @@ Reprojector::Reprojector(PRProcess _prc, ProjectedRaster *_input, ProjectedRaste
 		} 
 	
 		// Initialize output layer
-		input_layer.newCellSpace();
-		input_layer.cellSpace()->initMem(SpaceDims(output->getColCount()*output->bandCount()
+		output_layer.newCellSpace();
+		output_layer.cellSpace()->initMem(SpaceDims(output->getColCount()*output->bandCount()
 							   *output->bitsPerPixel()/8,
 							   output->getRowCount()*output->bandCount()
 							   *output->bitsPerPixel()/8));
+		output_layer.newNbrhood(coords);
 	}
 	return;
 };
@@ -74,7 +73,15 @@ void Reprojector::parallelReproject()
 	} else {
 		printf("\nBroadcast successful!\n");
 	}
-	
+/*
+	if(!output_layer.smplDcmpDstrbt(SMPL_ROW, prc.nPrcs(), 1, false)) {
+		cerr << "\nError during output distribution! \n" << endl;
+		return;
+
+	} else {
+		printf("\n Decomposition of output successful! \n");
+	}
+*/	
 
 /*
 	// We assume input is filled with raster goodness
