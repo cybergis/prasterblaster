@@ -1,31 +1,46 @@
-
+/* 
+   Programmer: David Mattli
+*/
 
 #ifndef REPROJECTOR_HH
 #define REPROJECTOR_HH
 
 #include <vector>
 
-#include "gctp_cpp/projection.h"
+
+#include "pRPL/prProcess.h"
+#include "pRPL/neighborhood.h"
+#include "pRPL/cellSpace.h"
+#include "pRPL/layer.h"
+
+//#include "gctp_cpp/projection.h"
 
 #include "projectedraster.hh"
+#include "resampler.hh"
+
+using namespace pRPL;
+using resampler::resampler_func;
 
 class Reprojector
 {
 public:
-	Reprojector(ProjectedRaster *_input, ProjectedRaster *_output);
+	Reprojector(PRProcess prc, 
+		    ProjectedRaster *_input, 
+		    ProjectedRaster *_output);
 	~Reprojector();
 	void reproject();
-	void parallelReproject(int rank, int numProcs);
+	void parallelReproject();
 
 private:
 	double maxx, minx, maxy, miny;
 	ProjectedRaster *input;
 	ProjectedRaster *output;
-	void (*resampler)(void *inraster, double in_x,
-			  double in_y, unsigned long in_cols,
-			  void *outraster,
-			  unsigned long out_x, unsigned long out_y,
-			  unsigned long out_cols);
+	PRProcess prc;
+	Layer<unsigned char> input_layer;
+	Layer<unsigned char> output_layer;
+
+
+	resampler_func resampler;
 };
 
 void FindMinBox(ProjectedRaster *input, Projection *outproj,

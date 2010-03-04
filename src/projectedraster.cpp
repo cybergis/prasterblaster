@@ -12,9 +12,9 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include <gdal.h>
-#include <gdal_priv.h>
-#include <ogr_spatialref.h>
+#include <gdal/gdal.h>
+#include <gdal/gdal_priv.h>
+#include <gdal/ogr_spatialref.h>
 
 #include "rasterinfo.h"
 #include "gctp_cpp/transformer.h"
@@ -186,7 +186,6 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	srs.SetProjCS(projection->name().c_str());
 	srs.SetWellKnownGeogCS( "EPSG:4052" );
 	srs.exportToWkt(&wkt);
-	printf("WKT YO: %s\n", wkt);
 	dataset->SetProjection(wkt);
 	CPLFree(wkt);
 	ready = true;
@@ -227,7 +226,7 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	FindMinBox(input, output_proj, pixel_size, ul_x, ul_y, lr_x, lr_y);
 	rows = (ul_y-lr_y) / input->getPixelSize();
 	cols = (lr_x-ul_x) / input->getPixelSize();
-	
+
 	GDALAllRegister();
 
 	driver = GetGDALDriverManager()->GetDriverByName(format);
@@ -281,7 +280,6 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	srs.SetProjCS(projection->name().c_str());
 	srs.SetWellKnownGeogCS( "EPSG:4052" );
 	srs.exportToWkt(&wkt);
-	printf("WKT YO: %s\n", wkt);
 	dataset->SetProjection(wkt);
 	CPLFree(wkt);
 	ready = true;

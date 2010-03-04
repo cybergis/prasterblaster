@@ -1,10 +1,16 @@
 
 #include <cstdio>
-#include <vector>
 
-#include <boost/mpi/environment.hpp>
-#include <boost/mpi/communicator.hpp>
-#include <boost/mpi/collectives.hpp>
+#include <gdal/gdal.h>
+#include <gdal/gdal_priv.h>
+
+#include "pRPL/prProcess.h"
+#include "pRPL/neighborhood.h"
+#include "pRPL/cellSpace.h"
+#include "pRPL/layer.h"
+#include "pRPL/basicTypes.h"
+
+#include "reproject_transition.hh"
 
 #include "gctp_cpp/projection.h"
 #include "gctp_cpp/transformer.h"
@@ -13,29 +19,64 @@
 #include "reprojector.hh"
 #include "resampler.hh"
 
-namespace mpi = boost::mpi;
+using namespace pRPL;
 
-Reprojector::Reprojector(ProjectedRaster *_input, ProjectedRaster *_output) :
-  input(_input), output(_output)
+Reprojector::Reprojector(PRProcess _prc, ProjectedRaster *_input, ProjectedRaster *_output) 
+	:
+	prc(_prc), input(_input), output(_output), input_layer(_prc)
 {
+	vector<CellCoord> coords;
+
+	coords.push_back(CellCoord(0,0));
+
 	maxx = maxy = 0;
 	minx = miny = 1e+37;
+	resampler = &resampler::nearest_neighbor<unsigned char>;
+	
+	Neighborhood<unsigned char> output_hood;
 
-	resampler = &nearest_neighbor<unsigned char>;
+	if (_prc.isMaster()) {
+		// Initialize input layer
+		input_layer.newCellSpace();
+		input_layer.cellSpace()->initMem(SpaceDims(input->getColCount()*input->bandCount()
+							   *input->bitsPerPixel()/8,
+							   input->getRowCount()*input->bandCount()
+							   *input->bitsPerPixel()/8));
 
-
+		// Initialize input layer with raster
+		if (!input->readRaster(0, input->getRowCount(), (*(input_layer.cellSpace()))[0])) {
+			// Problem...
+		} 
+	
+		// Initialize output layer
+		input_layer.newCellSpace();
+		input_layer.cellSpace()->initMem(SpaceDims(output->getColCount()*output->bandCount()
+							   *output->bitsPerPixel()/8,
+							   output->getRowCount()*output->bandCount()
+							   *output->bitsPerPixel()/8));
+	}
 	return;
 };
 
 Reprojector::~Reprojector()
 {
-  
-  
-	return;
+
+
+return;
 }
 
-void Reprojector::parallelReproject(int rank, int numProcs)
+void Reprojector::parallelReproject()
 {
+
+	if (!input_layer.broadcast()) {
+		cerr << "\nError during input broadcast!\n" << std::endl;
+		return;
+	} else {
+		printf("\nBroadcast successful!\n");
+	}
+	
+
+/*
 	// We assume input is filled with raster goodness
 	Transformer t;
 	Coordinate temp, temp2;
@@ -102,13 +143,13 @@ void Reprojector::parallelReproject(int rank, int numProcs)
 
 		}
 	}
-
+*/
 	return;
 }
 
 void Reprojector::reproject()
 {
-	parallelReproject(0, 1);
+	parallelReproject();
 
 }
 
@@ -132,7 +173,7 @@ void FindMinBox(ProjectedRaster *input, Projection *outproj, double out_pixsize,
 	ul_y = input->ul_y;
 	cols = input->getColCount();
 	rows = input->getRowCount();
-	pixsize = 8;
+	pixsize = out_pixsize;
   
 	t.setInput(*input->getProjection());
 	t.setOutput(*outproj);

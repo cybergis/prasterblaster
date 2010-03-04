@@ -1,4 +1,8 @@
+SUBDIRS = pRPL
+
 bin_PROGRAMS = prasterblaster
+prasterblaster_LDFLAGS = $(all_libraries) -LpRPL
+prasterblaster_LDADD = -lprp
 prasterblaster_SOURCES =  projectedraster.cpp \
                  rasterinfo.cpp \
 	         reprojector.cpp \
@@ -9,3 +13,5 @@ prasterblaster_SOURCES =  projectedraster.cpp \
                  rasterxml.cpp \
                  driver.cpp \
                  resampler.cpp
+
+AM_CPPFLAGS = $(all_includes) -IpRPL
