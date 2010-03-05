@@ -14,5 +14,6 @@ AC_CONFIG_FILES([
  Makefile  
  src/Makefile
  src/pRPL/Makefile
+ src/gctp_cpp/Makefile
 ])  
 AC_OUTPUT  
