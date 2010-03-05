@@ -13,7 +13,7 @@
 #include "reprojector.hh"
 #include "rasterreader.hh"
 
-#include <gdal/gdal_priv.h>
+#include <gdal_priv.h>
 
 
 double params[15] =  { 6370997.000000, 

@@ -1,8 +1,8 @@
 
 #include <cstdio>
 
-#include <gdal/gdal.h>
-#include <gdal/gdal_priv.h>
+#include <gdal.h>
+#include <gdal_priv.h>
 
 #include "pRPL/prProcess.h"
 #include "pRPL/neighborhood.h"

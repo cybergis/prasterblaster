@@ -3,7 +3,7 @@
 #ifndef RESAMPLER_HH
 #define RESAMPLER_HH
 
-#include <gdal/gdal.h>
+#include <gdal.h>
 
 namespace resampler 
 {

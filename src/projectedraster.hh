@@ -26,8 +26,8 @@
 
 #include <string>
 
-#include <gdal/gdal.h>
-#include <gdal/gdal_priv.h>
+#include <gdal.h>
+#include <gdal_priv.h>
 
 #include "gctp_cpp/constants.h"
 #include "gctp_cpp/projection.h"
