@@ -418,10 +418,11 @@ bool ProjectedRaster::readRaster(int firstRow, int numRows, void *data)
 		// TODO: Verify parameters!
 
 		if (ifs.good()) {
+			printf("Reading from rows:  %d cols %d\n\n", rows, cols);
 			ifs.seekg(firstRow * cols);
 			ifs.read((char*)data, 
 				 numRows * cols * (GDALGetDataTypeSize(type)/8));
-			if (!(ifs.fail() || ifs.bad())) {
+			if (!(ifs.fail() || ifs.bad() || !ifs.eof())) {
 				success = true;
 			}
 				

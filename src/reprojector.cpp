@@ -35,6 +35,7 @@ Reprojector::Reprojector(PRProcess _prc, ProjectedRaster *_input, ProjectedRaste
 	
 	if (prc.isMaster()) {
 		// Initialize input layer
+/*
 		input_layer.newCellSpace();
 		input_layer.cellSpace()->initMem(SpaceDims(input->getColCount()*input->bandCount()
 							   *input->bitsPerPixel()/8,
@@ -44,14 +45,19 @@ Reprojector::Reprojector(PRProcess _prc, ProjectedRaster *_input, ProjectedRaste
 		// Initialize input layer with raster
 		if (!input->readRaster(0, input->getRowCount(), (*(input_layer.cellSpace()))[0])) {
 			// Problem...
-		} 
-	
+		} else {
+			printf("\nReading input raster successful...\n");
+		}
+*/
 		// Initialize output layer
 		output_layer.newCellSpace();
 		output_layer.cellSpace()->initMem(SpaceDims(output->getColCount()*output->bandCount()
 							   *output->bitsPerPixel()/8,
 							   output->getRowCount()*output->bandCount()
 							   *output->bitsPerPixel()/8));
+		printf("Output cellspace rows %d cols %d size: %d\n", 
+		       output_layer.cellSpace()->nRows(),
+		       output_layer.cellSpace()->nCols(), output_layer.cellSpace()->size());
 		output_layer.newNbrhood(coords);
 	}
 	return;
@@ -66,22 +72,25 @@ return;
 
 void Reprojector::parallelReproject()
 {
-
+/*
 	if (!input_layer.broadcast()) {
 		cerr << "\nError during input broadcast!\n" << std::endl;
+		prc.abort();
 		return;
 	} else {
 		printf("\nBroadcast successful!\n");
 	}
-/*
-	if(!output_layer.smplDcmpDstrbt(SMPL_ROW, prc.nPrcs(), 1, false)) {
+*/
+
+	if(!output_layer.smplDcmpDstrbt(SMPL_ROW, prc.nPrcs())) {
 		cerr << "\nError during output distribution! \n" << endl;
+		prc.abort();
 		return;
 
 	} else {
 		printf("\n Decomposition of output successful! \n");
 	}
-*/	
+
 
 /*
 	// We assume input is filled with raster goodness

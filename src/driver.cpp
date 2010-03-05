@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 		ProjectedRaster in("/home/dmattli/Desktop/mmr/veg_geographic_1deg.img");
 		//	ProjectedRaster in("/home/dmattli/Desktop/example.tif");
 		if (in.isReady() == true) {
-			printf("Image read!\n");
+			printf("Image opened!\n");
 		}
 
 		Projection *outproj;
