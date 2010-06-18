@@ -30,57 +30,69 @@ int main(int argc, char *argv[])
 
 	vector<unsigned char> *dat = 0;
 	PRProcess prc(MPI_COMM_WORLD);
+	ProjectedRaster *out;
 	Reprojector *re = 0;
+
+        rows = cols = 0;
 
 	prc.init(argc, argv);
 
-	rows = cols = 0;
+
+	if (argc < 3) {
+                if (prc.isMaster())
+                        printf("usage: prasterblaster <input raster path> <output raster path>\n");
+                prc.abort();
+                return(1);
+        }
 	
+
+        ProjectedRaster in(argv[1]);
+
+        if (in.isReady() == true) {
+                if(prc.isMaster())
+                        printf("Input raster opened.\n");
+        } else {
+                
+                prc.abort();
+                return 1;
+        }
+
+	Projection *outproj;
+	outproj = new Mollweide(params, METER, in.getDatum());
+
 	if (prc.isMaster()) {
-		ProjectedRaster in("/home/dmattli/Desktop/mmr/veg_geographic_1deg.img");
-		//	ProjectedRaster in("/home/dmattli/Desktop/example.tif");
-		if (in.isReady() == true) {
-			printf("Image opened!\n");
-		}
+		out = new ProjectedRaster(argv[2],
+					  &in,
+					  outproj,
+					  in.getPixelType(),
+					  in.getPixelSize());
 
-		Projection *outproj;
-		outproj = new Mollweide(params, METER, in.getDatum());
-		/*
-		  FindMinBox(&in, outproj, in.bitsPerPixel(), ul_x, ul_y, lr_x, lr_y);
-		  FindMinBox(&in, outproj, in.bitsPerPixel(), ul_x, ul_y, lr_x, lr_y);
-		  rows = (ul_y-lr_y) / in.getPixelSize();
-		  cols = (lr_x-ul_x) / in.getPixelSize();
-
-
-		  ProjectedRaster out("/home/dmattli/Desktop/test/test.tif", 
-		  in.getRowCount(), in.getColCount(), 
-		  in.getPixelType(), in.getPixelSize(), 
-		  in.bandCount(), outproj, ul_x, ul_y);
-		*/
-		ProjectedRaster out("/home/dmattli/Desktop/test/test.tif",
-				    &in,
-				    outproj,
-				    in.getPixelType(),
-				    in.getPixelSize());
-
-
-	
-		if (!(in.isReady() && out.isReady())) {
-			printf("Error in opening rasters\n");
-			return 1;
-		}
-	
-		re = new Reprojector(prc, &in, &out);
-		re->parallelReproject();
-
-		// Cleanup
-		delete re;
-		delete outproj;	
-	} else { // Non-master
-		re = new Reprojector(prc, 0, 0);
-		re->parallelReproject();
-		delete re;
+		delete out;
+		out = 0;
+		prc.sync();
+		printf("synced!\n");
+	} else {
+		prc.sync();
 	}
 
+	out = new ProjectedRaster(argv[2]);
+
+	if (out != 0 && !(in.isReady() && out->isReady())) {
+		printf("Error in opening rasters\n");
+		prc.finalize();
+		return 1;
+	}
+	
+
+	re = new Reprojector(prc, &in, out);
+	re->parallelReproject();
+
+	// Cleanup
+	delete re;
+	delete out;
+	delete outproj;	
+
+	prc.finalize();
+	
 	return 0;
 }

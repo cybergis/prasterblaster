@@ -31,7 +31,9 @@ public:
 	void reproject();
 	void parallelReproject();
 
+
 private:
+	void reprojectChunk(int firstRow, int numRows);
 	double maxx, minx, maxy, miny;
 	ProjectedRaster *input;
 	ProjectedRaster *output;
@@ -42,6 +44,13 @@ private:
 
 	resampler_func resampler;
 };
+void FindMinBox2(double in_ul_x, double in_ul_y,
+		 double in_pix_size,
+		 int rows, int cols, 
+		 Projection *inproj,
+		 Projection *outproj,
+		 double out_pixsize,
+		 double &_ul_x, double &_ul_y, double &_lr_x, double &_lr_y);
 
 void FindMinBox(ProjectedRaster *input, Projection *outproj,
 		double out_pixsize,

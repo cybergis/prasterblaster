@@ -429,8 +429,10 @@ void Util::sphdz(long isph, double* parm, double* r_major, double* r_minor, doub
 		------------------------------------------------------*/
 		if (jsph > (SPHDCT - 1))
 		{
-			printf("Invalid spheroid selection -- INFORMATIONAL");
-			printf("Reset to 0 -- INFORMATIONAL");
+		  /*
+		  printf("Invalid spheroid selection -- INFORMATIONAL");
+		  			printf("Reset to 0 -- INFORMATIONAL");
+		  */
 			jsph = 0;
 		}
 		/* Assign the radius argument to the standard radius value

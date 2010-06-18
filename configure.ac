@@ -8,6 +8,7 @@ AC_PROG_CXX([mpiCC mpiCXX mpic++])
 
 
 AC_PROG_LIBTOOL
+AM_PATH_CHECK()
 
 #AC_CHECK_LIB(mpi, MPI_Init, [], [echo "MPI not found!"; exit 1])
 AX_BOOST_PYTHON
@@ -30,5 +31,6 @@ AC_CONFIG_FILES([
  src/Makefile
  src/pRPL/Makefile
  src/gctp_cpp/Makefile
+ tests/Makefile
 ])  
 AC_OUTPUT  

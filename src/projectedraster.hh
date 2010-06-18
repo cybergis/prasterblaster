@@ -1,4 +1,4 @@
-/**
+       /**
  * @file
  * @author  David Mattli
  * @version 1.0
@@ -42,13 +42,24 @@ using namespace std; // Don't do this :(
   This class represents a raster with a projection and location.
 */
 
+struct RasterChunk
+{
+	~RasterChunk();
+	int num_rows, num_cols;
+	double ul_x, ul_y;
+	double pixel_size;
+	GDALDataType type;
+	Projection *projection;
+	char* data;
+};
+
 class ProjectedRaster
 {
 public:
 	//! Constructor
 /*! 
 This constructor takes a single arguments, filename, representing
-	the path to the raster to be opened.
+the path to the raster to be opened.
 */
 
 	ProjectedRaster(string _filename);
@@ -97,6 +108,13 @@ This constructor takes a single arguments, filename, representing
 	// IO
 	bool readRaster(int firstRow, int numRows, void* data);
 	bool writeRaster(int firstRow, int numRows, void* data);
+	bool readVector(int firstRow, int numRows, vector<unsigned char>*); 
+	bool writeVector(int firstRow, int numRows, vector<unsigned char>* data);
+	RasterChunk* makeChunk(int firstRow, int numRows);
+	bool readChunk(RasterChunk* chunk);
+	bool writeChunk(RasterChunk* chunk);
+	
+	
 
 	// Members
 	double ul_x, ul_y;
@@ -125,5 +143,6 @@ private:
         ProjectedRaster& operator=(ProjectedRaster& a);
 	bool ready;
 };
+
 
 #endif //RASTER_HH

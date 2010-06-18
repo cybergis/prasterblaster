@@ -261,6 +261,7 @@ initMem(const SpaceDims& dims) {
   }
   else {
     _dims = dims;
+    printf("VECTOR SIZE: %d, rows %d, cols %d\n", dims.size(), dims.nRows(), dims.nCols());
     _matrix = new elemType[dims.size()];
     if(!_matrix) {
       cerr << __FILE__ << " " << __FUNCTION__ \
