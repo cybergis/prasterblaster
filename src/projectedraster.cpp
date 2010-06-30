@@ -110,6 +110,7 @@ ProjectedRaster::ProjectedRaster(string _filename)
 		bool status = loadImgRaster(filename);
 		band_count = 1;
 		ready = status;
+		
 	}
 	
 
@@ -156,7 +157,7 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	  
 	// Set options
 	options = CSLSetNameValue( options, "INTERLEAVE", "PIXEL" );
-	options = CSLSetNameValue( options, "BIGTIFF", "YES" );
+	options = CSLSetNameValue( options, "BIGTIFF", "NO" );
 	options = CSLSetNameValue( options, "TILED", "YES" );
 	options = CSLSetNameValue( options, "COMPRESS", "NONE" );
 	options = CSLSetNameValue( options, "PHOTOMETRIC", "MINISBLACK");
@@ -253,7 +254,7 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	if(filename != "") {
 		// Set options
 		options = CSLSetNameValue( options, "INTERLEAVE", "PIXEL" );
-//		options = CSLSetNameValue( options, "BIGTIFF", "YES" );
+		options = CSLSetNameValue( options, "BIGTIFF", "NO" );
 		options = CSLSetNameValue( options, "TILED", "YES" );
 		options = CSLSetNameValue( options, "COMPRESS", "NONE" );
 		options = CSLSetNameValue( options, "PHOTOMETRIC", "MINISWHITE");
@@ -295,7 +296,14 @@ ProjectedRaster::ProjectedRaster(string _filename,
 //		srs.importFromUSGS(projsys, zone, output_proj->params(), datum);
 		srs.Fixup();
 		srs.exportToWkt(&wkt);
-		dataset->SetProjection(wkt);
+		CPLErr err = dataset->SetProjection(wkt);
+		if (err = CE_None) {
+			
+		} else if (err = CE_Failure)  {
+			fprintf(stderr, "Error setting projection."
+			       "Was GDAL compiled with GTiff support?\n");
+			ready = false;
+		}
 		dataset->FlushCache();
 		GDALClose(dataset);
 		CPLFree(wkt);
@@ -334,7 +342,8 @@ ProjectedRaster::~ProjectedRaster()
 
 bool ProjectedRaster::isReady()
 {
-	if ((projection != 0) && (projection->error() == 0)) {
+	if ((projection != 0) && (projection->error() == 0)
+	    && ready) {
 		return true;
 	}  else {
 		return false;
@@ -639,8 +648,11 @@ bool ProjectedRaster::loadImgRaster(std::string filename)
 	}
 	
 	// Setup projection
-	projection = Transformer::convertProjection((ProjCode)in_info.projectionNumber());
+	projection = 
+	  Transformer::convertProjection((ProjCode)in_info.projectionNumber());
+
 	if (projection == 0) {
+
 		return false;
 	}
 	projection->setUnits((ProjUnit)in_info.unitNumber());

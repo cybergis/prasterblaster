@@ -21,6 +21,8 @@ double params[15] =  { 6370997.000000,
 		       0, 0, 0, 0, 0, 
 		       0, 0, 0, 0, 0};
 
+char *usage = "usage: prasterblaster <input raster path> <output raster path>\n";
+
 
 
 int main(int argc, char *argv[]) 
@@ -39,13 +41,14 @@ int main(int argc, char *argv[])
 
 
 	if (argc < 3) {
-                if (prc.isMaster())
-                        printf("usage: prasterblaster <input raster path> <output raster path>\n");
+		if (prc.isMaster()) {
+			printf(usage);
+		}
                 prc.abort();
-                return(1);
+		return 0;
         }
 	
-
+	
         ProjectedRaster in(argv[1]);
 
         if (in.isReady() == true) {
@@ -76,13 +79,26 @@ int main(int argc, char *argv[])
 	}
 
 	out = new ProjectedRaster(argv[2]);
-
-	if (out != 0 && !(in.isReady() && out->isReady())) {
-		printf("Error in opening rasters\n");
+	if (out == 0) {
+		fprintf(stderr, "Error reopening output raster\n");
 		prc.finalize();
 		return 1;
+
 	}
 	
+	if (!in.isReady()) {
+		fprintf(stderr, "Error opening input raster!\n");
+		prc.finalize();
+		return 1;
+
+	}
+
+	if (!out->isReady()) {
+		fprintf(stderr, "Error opening output raster!\n");
+		prc.finalize();
+		return 1;
+
+	}
 
 	re = new Reprojector(prc, &in, out);
 	re->parallelReproject();

@@ -53,7 +53,7 @@ void Reprojector::parallelReproject()
 	long in_rows, in_cols, out_rows, out_cols, out_chunk;
 	vector<char> ot;
 
-	out_chunk = 2;
+	out_chunk = 10;
 
 	t.setInput(*output->getProjection());
 	t.setOutput(*input->getProjection());
@@ -69,41 +69,29 @@ void Reprojector::parallelReproject()
 	out_ulx = output->ul_x;
 	out_uly = output->ul_y - (prc.id() * ((out_rows * out_pixsize)/prc.nPrcs()));
 
-/*
- *
- *
- *
- // CHANGE THAT 2 TO SOMETHING ELSE!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
- *
- *
- *
- */
-
-	if (prc.id() == 0)
-		return;
-	
 //	for (int i = 0; i < 2; ++i) {
 //		reprojectChunk(90,15*i);
 //	}
 
-/*
-	for (int i = out_rows * prc.id(); i < out_rows + (prc.id()*out_rows); 
+	for (int i = out_rows * prc.id(); i < out_rows + (prc.id()*out_rows) - out_chunk; 
 	     i += out_chunk) {
+	  /*
 		printf("id: %d::::Reprojecting from %d up to %d\n", 
 		       prc.id(),
 		       i, i + out_chunk);
-		reprojectChunk(i, out_chunk+1);
+	  */
+		reprojectChunk(i, out_chunk);
 	}
-*/
 
-	reprojectChunk(300, 20);
-/*
-	if (prc.id() == 1) {
-		reprojectChunk(out_rows + (prc.nPrcs()*out_rows),
-			       output->getRowCount() - out_rows +
-			       (prc.nPrcs()*out_rows));
+//	reprojectChunk(out_rows + (prc.id()*out_rows) - out_chunk,
+		       
+
+	if (prc.id() == 0) {
+		reprojectChunk(output->getRowCount() 
+			       - output->getRowCount() % prc.nPrcs(),
+			       output->getRowCount() % prc.nPrcs());
 	}
-*/
+
 
 	return;
 }
@@ -118,7 +106,9 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 	vector<char> inraster, outraster;
 
 	if (firstRow + numRows > output->getRowCount()) {
-		fprintf(stderr, "Invalid chunk range...\n");
+		fprintf(stderr, "Invalid chunk range... %d is > %d\n",
+			firstRow + numRows,
+			output->getRowCount());
 		fflush(stderr);
 		return;
 	}
@@ -148,8 +138,9 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 
 	in_lr.x = input->ul_x + (in_pixsize * in_cols);
 
+	long in_first_row = (input->ul_y - in_ul.y) / in_pixsize;
 	in_rows = (long)((in_ul.y - in_lr.y) / in_pixsize);
-	in_rows += 5;
+//	in_rows += 5;
 
 	// Setup raster vectors
 	size_t s = out_rows;
@@ -162,8 +153,8 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 	inraster.resize(s);
 	
 	// Read input file
-	if (input->readRaster(firstRow, numRows, &(inraster[0]))) {
-		printf("Read %d rows\n", numRows);
+	if (input->readRaster(in_first_row, in_rows, &(inraster[0]))) {
+	  //		printf("Read %d rows\n", numRows);
 	} else {
 		printf("Error Reading input!\n");
 	}
@@ -222,6 +213,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 				ss += (long unsigned int)temp1.x;
 				outraster.at(x + (y * out_cols)) =
 					inraster.at(ss);
+
 			} catch(std::exception) {
 				s = out_rows;
 				s *= out_cols;
