@@ -158,7 +158,7 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	// Set options
 	options = CSLSetNameValue( options, "INTERLEAVE", "PIXEL" );
 	options = CSLSetNameValue( options, "BIGTIFF", "NO" );
-	options = CSLSetNameValue( options, "TILED", "YES" );
+	options = CSLSetNameValue( options, "TILED", "NO" );
 	options = CSLSetNameValue( options, "COMPRESS", "NONE" );
 	options = CSLSetNameValue( options, "PHOTOMETRIC", "MINISBLACK");
 
@@ -255,7 +255,7 @@ ProjectedRaster::ProjectedRaster(string _filename,
 		// Set options
 		options = CSLSetNameValue( options, "INTERLEAVE", "PIXEL" );
 		options = CSLSetNameValue( options, "BIGTIFF", "NO" );
-		options = CSLSetNameValue( options, "TILED", "YES" );
+		options = CSLSetNameValue( options, "TILED", "NO" );
 		options = CSLSetNameValue( options, "COMPRESS", "NONE" );
 		options = CSLSetNameValue( options, "PHOTOMETRIC", "MINISWHITE");
 		options = CSLSetNameValue( options, "PROFILE", "GDALGeoTiff");
@@ -485,7 +485,7 @@ bool ProjectedRaster::writeRaster(int firstRow, int numRows, void *data)
 {	
 	bool success = false;
 
-	if (firstRow < 0 || numRows > rows || data == 0) {
+	if (firstRow < 0 || numRows +firstRow > rows || data == 0) {
 		fprintf(stderr,"Write Boink #1\n");
 		fflush(stderr);
 			

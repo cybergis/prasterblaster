@@ -33,6 +33,8 @@ public:
 
 
 private:
+
+	vector<vector<int> > getIndices(int size, int count);
 	void reprojectChunk(int firstRow, int numRows);
 	double maxx, minx, maxy, miny;
 	ProjectedRaster *input;

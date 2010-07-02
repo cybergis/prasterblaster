@@ -44,6 +44,24 @@ Reprojector::~Reprojector()
 return;
 }
 
+vector<vector<int> > Reprojector::getIndices(int size, int count)
+{
+	vector< vector<int> > vec(count);
+	int rsize = size / count;
+	int overflow = size % count;
+
+
+	for (int i = 0; i < count; ++i) {
+
+		for (int j = 0; j < count; ++j) {
+			
+		}
+		
+	}
+
+	
+
+}
 void Reprojector::parallelReproject()
 {
 	Transformer t;
@@ -52,8 +70,9 @@ void Reprojector::parallelReproject()
 	double in_pixsize, out_pixsize;
 	long in_rows, in_cols, out_rows, out_cols, out_chunk;
 	vector<char> ot;
+	int chunk_count = 0;
 
-	out_chunk = 10;
+	out_chunk = 13;
 
 	t.setInput(*output->getProjection());
 	t.setOutput(*input->getProjection());
@@ -69,27 +88,20 @@ void Reprojector::parallelReproject()
 	out_ulx = output->ul_x;
 	out_uly = output->ul_y - (prc.id() * ((out_rows * out_pixsize)/prc.nPrcs()));
 
-//	for (int i = 0; i < 2; ++i) {
-//		reprojectChunk(90,15*i);
-//	}
+	if (prc.id() != 2) {
 
-	for (int i = out_rows * prc.id(); i < out_rows + (prc.id()*out_rows) - out_chunk; 
-	     i += out_chunk) {
-	  /*
-		printf("id: %d::::Reprojecting from %d up to %d\n", 
-		       prc.id(),
-		       i, i + out_chunk);
-	  */
-		reprojectChunk(i, out_chunk);
 	}
 
-//	reprojectChunk(out_rows + (prc.id()*out_rows) - out_chunk,
-		       
+	for (int i = 0; i < out_rows - out_chunk; i += out_chunk) {
+		reprojectChunk(i + out_rows * prc.id(), out_chunk);
+		++chunk_count;
+	}
 
-	if (prc.id() == 0) {
-		reprojectChunk(output->getRowCount() 
-			       - output->getRowCount() % prc.nPrcs(),
-			       output->getRowCount() % prc.nPrcs());
+
+	if (chunk_count * out_chunk < out_rows) {
+		reprojectChunk(out_rows * prc.id() + chunk_count * out_chunk + 1, 
+			       out_rows - chunk_count * out_chunk);
+			       
 	}
 
 
@@ -140,7 +152,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 
 	long in_first_row = (input->ul_y - in_ul.y) / in_pixsize;
 	in_rows = (long)((in_ul.y - in_lr.y) / in_pixsize);
-//	in_rows += 5;
+	in_rows += 1;
 
 	// Setup raster vectors
 	size_t s = out_rows;
@@ -161,6 +173,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 
 	for (int y = 0; y < out_rows; ++y) {
 		for (int x = 0; x < out_cols; ++x) {
+			outraster.at(y*out_cols) = 127;
 
 			temp1.x = ((double)x * out_pixsize) + out_ul.x;
 //			temp1.y = ((double)y * out_pixsize) - out_ul.y;
@@ -191,11 +204,11 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 			temp1.y /= out_pixsize;
 			// temp is now scaled to input raster coords, now resample!
 			if ( in_rows - (int)temp1.y <= 0 ) {
-			printf("Input size %d cols, %d rows\n",
-			       in_cols, in_rows);
-			printf("Sanity check: %d, %d\n",
-			       ((unsigned int)temp1.x),
-			       ((unsigned int)temp1.y));
+				printf("Input size %d cols, %d rows\n",
+				       in_cols, in_rows);
+				printf("Sanity check: %d, %d\n",
+				       ((unsigned int)temp1.x),
+				       ((unsigned int)temp1.y));
 			
 			continue;
 			}
