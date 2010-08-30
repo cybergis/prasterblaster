@@ -27,14 +27,6 @@
 
 using namespace std;
 
-RasterChunk::~RasterChunk()
-{
-	delete projection;
-	free(data);
-	return;
-	
-}
-
 ProjectedRaster::ProjectedRaster(string _filename)
 {
 	OGRSpatialReference sr;
@@ -563,32 +555,6 @@ bool ProjectedRaster::writeVector(int firstRow, int numRows,
 
 }
 
-RasterChunk* ProjectedRaster::makeChunk(int firstRow, int numRows)
-{
-	RasterChunk *rc = new RasterChunk;
-
-	rc->num_rows = numRows;
-	rc->num_cols = cols;
-	rc->ul_x = ul_x + pixel_size * firstRow;
-	rc->ul_y = ul_y + pixel_size * firstRow;
-	rc->pixel_size = pixel_size;
-	rc->type = type;
-	rc->projection = projection->copy();
-
-	rc->data = (char*)malloc(band_count * rc->num_rows * rc->num_cols * (bitsPerPixel()/8));
-
-	readRaster(firstRow, numRows, rc->data);
-
-	if (rc->data == 0) {
-		delete rc;
-		delete projection;
-		return 0;
-	}
-
-		
-			  
-
-}
 
 bool ProjectedRaster::loadImgRaster(std::string filename)
 {

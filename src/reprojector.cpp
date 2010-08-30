@@ -22,13 +22,13 @@
 
 using namespace pRPL;
 
-Reprojector::Reprojector(PRProcess _prc, ProjectedRaster *_input, ProjectedRaster *_output) 
+
+Reprojector::Reprojector(ProjectedRaster *_input, ProjectedRaster *_output) 
 	:
-	prc(_prc), input(_input), output(_output), input_layer(_prc), output_layer(_prc)
+	input(_input), output(_output)
 {
-	vector<CellCoord> coords;
-
-
+	MPI_Comm_size(MPI_COMM_WORLD,&numprocs); 
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank); 
 	maxx = maxy = 0;
 	minx = miny = 1e+37;
 	resampler = &resampler::nearest_neighbor<unsigned char>;
@@ -40,28 +40,10 @@ Reprojector::Reprojector(PRProcess _prc, ProjectedRaster *_input, ProjectedRaste
 Reprojector::~Reprojector()
 {
 
-
-return;
+	return;
 }
 
-vector<vector<int> > Reprojector::getIndices(int size, int count)
-{
-	vector< vector<int> > vec(count);
-	int rsize = size / count;
-	int overflow = size % count;
 
-
-	for (int i = 0; i < count; ++i) {
-
-		for (int j = 0; j < count; ++j) {
-			
-		}
-		
-	}
-
-	
-
-}
 void Reprojector::parallelReproject()
 {
 	Transformer t;
@@ -69,39 +51,39 @@ void Reprojector::parallelReproject()
 	double in_ulx, in_uly, out_ulx, out_uly;
 	double in_pixsize, out_pixsize;
 	long in_rows, in_cols, out_rows, out_cols, out_chunk;
-	vector<char> ot;
 	int chunk_count = 0;
 
-	out_chunk = 13;
+	out_chunk = 14;
 
 	t.setInput(*output->getProjection());
 	t.setOutput(*input->getProjection());
   
 	in_rows = input->getRowCount();
 	in_cols = input->getColCount();
-	out_rows = output->getRowCount()/prc.nPrcs();// + (output->getRowCount() % prc.nPrcs());
+	out_rows = output->getRowCount()/numprocs + 1; 
 	out_cols = output->getColCount();
 	in_pixsize = input->getPixelSize();
 	out_pixsize = input->getPixelSize();
 	in_ulx = input->ul_x;
 	in_uly = input->ul_y;
 	out_ulx = output->ul_x;
-	out_uly = output->ul_y - (prc.id() * ((out_rows * out_pixsize)/prc.nPrcs()));
+	out_uly = output->ul_y - (rank * ((out_rows * out_pixsize)/numprocs));
 
-	if (prc.id() != 2) {
-
-	}
-
-	for (int i = 0; i < out_rows - out_chunk; i += out_chunk) {
-		reprojectChunk(i + out_rows * prc.id(), out_chunk);
+	for (int i = out_rows*rank;
+	     i <= MIN((out_rows*(rank+1)) - out_chunk, output->getRowCount()-out_chunk); 
+	     i += out_chunk) {
+		reprojectChunk(i, out_chunk);
 		++chunk_count;
 	}
 
 
-	if (chunk_count * out_chunk < out_rows) {
-		reprojectChunk(out_rows * prc.id() + chunk_count * out_chunk + 1, 
+	if (chunk_count * out_chunk < out_rows && (rank != numprocs-1)) {
+		if (out_rows * rank + chunk_count * out_chunk >= output->getRowCount())
+			return;
+		
+		reprojectChunk(out_rows * rank + chunk_count * out_chunk, 
 			       out_rows - chunk_count * out_chunk);
-			       
+		
 	}
 
 
@@ -116,6 +98,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 	double in_pixsize, out_pixsize;
 	long in_rows, in_cols, out_rows, out_cols, out_chunk;
 	vector<char> inraster, outraster;
+	Area area;
 
 	if (firstRow + numRows > output->getRowCount()) {
 		fprintf(stderr, "Invalid chunk range... %d is > %d\n",
@@ -136,13 +119,11 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 	out_ul.y = output->ul_y - firstRow * out_pixsize;
 	in_cols = input->getColCount();
 	
-	FindMinBox2(out_ul.x, out_ul.y, out_pixsize,
-		    out_rows, out_cols,
-		    outproj, inproj,
-		    in_pixsize,
-		    in_ul.x, in_ul.y, 
-		    in_lr.x, in_lr.y);
-
+	area = FindMinBox2(out_ul.x, out_ul.y, out_pixsize,
+			   out_rows, out_cols,
+			   outproj, inproj,
+			   in_pixsize);
+	
 
 	in_ul.x = input->ul_x;
 	if (in_ul.y > input->ul_y)
@@ -171,9 +152,18 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 		printf("Error Reading input!\n");
 	}
 
+	if (0 == 0) { //Resampling is continuous
+	  for (int y = 0; y < out_rows; ++y)  {
+	    for (int x = 0; x < out_cols; ++x) {
+	      
+	    }
+	  }
+	    
+	}  else { // Resampling is discrete
+
 	for (int y = 0; y < out_rows; ++y) {
 		for (int x = 0; x < out_cols; ++x) {
-			outraster.at(y*out_cols) = 127;
+			outraster.at(y*out_cols) = 127; // REMOVE THIS
 
 			temp1.x = ((double)x * out_pixsize) + out_ul.x;
 //			temp1.y = ((double)y * out_pixsize) - out_ul.y;
@@ -183,6 +173,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 			outproj->forward(temp2.x, temp2.y,
 					 &temp2.x, &temp2.y);
 			if (abs(temp1.x - temp2.x) > 0.0001) {
+				// Overlap detected, abandon ship!
 				continue;
 			}
 
@@ -191,11 +182,8 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 			temp1.y = ((double)y * out_pixsize) - out_ul.y;
 
 
-//			printf("OUTPUT COORDS: %f %f\n", temp1.x, temp1.y);
 			outproj->inverse(temp1.x, temp1.y, &temp1.x, &temp1.y);
-//			printf("INPUT COORDS: %f %f\n", temp1.x, temp1.y);
-			inproj->forward(temp1.x, temp1.y, &temp1.x, &temp1.y);
-//			printf("INPUT COORDS: %f %f\n", temp1.x, temp1.y);
+			inproj-> forward(temp1.x, temp1.y, &temp1.x, &temp1.y);
 
 			// temp now contains coords to input projection
 			temp1.x -= in_ul.x;
@@ -210,16 +198,10 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 				       ((unsigned int)temp1.x),
 				       ((unsigned int)temp1.y));
 			
-			continue;
+				continue;
 			}
 
 			
-/*
-			resampler(&(inraster[0]), temp1.x, temp1.y, in_cols, 
-				  &(outraster[0]), x, y, out_cols);
-*/
-
-
 			try {
 				unsigned long ss = (long unsigned int)temp1.y;
 				ss *= in_cols;
@@ -243,7 +225,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 			}
 		}
 	}
-
+	}
 	// Write output raster
 	output->writeRaster(firstRow, numRows, &(outraster[0]));
 
@@ -260,130 +242,13 @@ void Reprojector::reproject()
 
 }
 
-void FindMinBox(RasterChunk *input, RasterChunk *output)
-{
-	double ul_x, ul_y;
-	double pixsize; // in METER!
-	Coordinate temp;
-	Transformer t;
-	double maxx, minx, maxy, miny;
-	double ul_lon, ul_lat, lr_lon, lr_lat;
-	Projection *inproj = input->projection;
-	Projection *outproj = output->projection;
 
-	maxx = maxy = 0;
-	minx = miny = 1e+37;
-
-	ul_x = input->ul_x;
-	ul_y = input->ul_y;
-	pixsize = input->pixel_size;
-  
-	t.setInput(*(inproj->copy()));
-	t.setOutput(*(outproj->copy()));
-
-	// Find geographic corners of input
-	inproj->inverse(ul_x, ul_y, &ul_lon, &ul_lat);
-	inproj->inverse(ul_x+(input->num_cols*pixsize), 
-					ul_y-(input->num_rows*pixsize), 
-					&lr_lon, 
-					&lr_lat);
-	double delta_east = (lr_lon-ul_lon)/input->num_cols, 
-		delta_north = (ul_lat-lr_lat)/input->num_rows;
-
-	// Calculate minbox
-	temp.x = ul_x;
-	temp.y = ul_y;
-	temp.units = METER;
-
-	// Check top of map
-	for (int x = 0; x < input->num_cols; ++x) {
-		temp.x = (double)x*pixsize + ul_x;
-		temp.y = ul_y;
-		t.transform(&temp);
-		if (temp.x < minx) minx = temp.x;
-		if (temp.x > maxx) maxx = temp.x;
-		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
-		temp.x = ul_lon + (x*delta_east);
-		temp.y = ul_lat;
-		outproj->forward(temp.x, temp.y, &(temp.x), &(temp.y));
-		if (temp.x < minx) minx = temp.x;
-		if (temp.x > maxx) maxx = temp.x;
-		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
-	}
-
-	// Check bottom of map
-	for (int x = 0; x < input->num_cols; ++x) {
-		temp.x = (double)x*pixsize + ul_x;
-		temp.y = (double)-input->num_cols*pixsize + ul_y;
-		t.transform(&temp);
-		if (temp.x < minx) minx = temp.x;
-		if (temp.x > maxx) maxx = temp.x;
-		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
-		temp.x = ul_lon + (x * delta_east);
-		temp.y = ul_lat - (input->num_rows*delta_north);
-		outproj->forward(temp.x, temp.y, &(temp.x), &(temp.y));
-		if (temp.x < minx) minx = temp.x;
-		if (temp.x > maxx) maxx = temp.x;
-		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
-
-	}
- 
-	// Check Left side
-	for (int y = 0; y < input->num_rows; ++y) {
-		temp.x = ul_x;
-		temp.y = (double)-y*(pixsize+1) + ul_y;
-		t.transform(&temp);
-		if (temp.x < minx) minx = temp.x;
-		if (temp.x > maxx) maxx = temp.x;
-		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
-		temp.x = ul_lon;
-		temp.y = ul_lat - (y*delta_north);
-		outproj->forward(temp.x, temp.y, &(temp.x), &(temp.y));
-		if (temp.x < minx) minx = temp.x;
-		if (temp.x > maxx) maxx = temp.x;
-		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
-	}
-
-	// Check right side
-	for (int y = 0; y < input->num_rows; ++y) {
-		temp.x = (double)input->num_cols*(1+pixsize) + ul_x;
-		temp.y = (double)-y*pixsize + ul_y;
-		t.transform(&temp);
-		if (temp.x < minx) minx = temp.x;
-		if (temp.x > maxx) maxx = temp.x;
-		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
-		temp.x = ul_lon + (input->num_cols * delta_east);
-		temp.y = ul_lat - (y * delta_north);
-		outproj->forward(temp.x, temp.y, &(temp.x), &(temp.y));
-		if (temp.x < minx) minx = temp.x;
-		if (temp.x > maxx) maxx = temp.x;
-		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
-	}
-
-	// Set outputs
-	output->ul_x = minx;
-	output->ul_y = maxy;
-
-
-
-
-}
-
-void FindMinBox2(double in_ul_x, double in_ul_y,
+Area FindMinBox2(double in_ul_x, double in_ul_y,
 		 double in_pix_size,
 		 int rows, int cols, 
 		 Projection *inproj,
 		 Projection *outproj,
-		 double out_pixsize,
-		 double &_ul_x, double &_ul_y, double &_lr_x, double &_lr_y)
+		 double out_pixsize)
 {
 	double ul_x, ul_y;
 	double pixsize; // in METER!
@@ -391,6 +256,7 @@ void FindMinBox2(double in_ul_x, double in_ul_y,
 	Transformer t;
 	double maxx, minx, maxy, miny;
 	double ul_lon, ul_lat, lr_lon, lr_lat;
+	Area area;
 
 	maxx = maxy = 0;
 	minx = miny = 1e+37;
@@ -490,10 +356,11 @@ void FindMinBox2(double in_ul_x, double in_ul_y,
 	}
 
 	// Set outputs
-	_ul_x = minx;
-	_ul_y = maxy;
-	_lr_x = maxx;
-	_lr_y = miny;
+	area.ul.x = minx;
+	area.ul.y = maxx;
+	area.lr.x = maxx;
+	area.lr.y = miny;
+	
 
 
  	outproj->inverse(minx, maxy, &temp.x, &temp.y);
