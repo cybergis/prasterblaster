@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include <mpi.h>
 
 #include "gctp_cpp/projection.h"
 #include "gctp_cpp/transformer.h"
@@ -31,20 +32,20 @@ int main(int argc, char *argv[])
  	long int rows, cols;
 
 	vector<unsigned char> *dat = 0;
-	PRProcess prc(MPI_COMM_WORLD);
 	ProjectedRaster *out;
 	Reprojector *re = 0;
+	int rank;
 
         rows = cols = 0;
 
-	prc.init(argc, argv);
-
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank); 
 
 	if (argc < 3) {
-		if (prc.isMaster()) {
+		if (rank == 0) {
 			printf(usage);
 		}
-                prc.abort();
+		MPI_Abort(MPI_COMM_WORLD, -1);
 		return 0;
         }
 	
@@ -52,18 +53,18 @@ int main(int argc, char *argv[])
         ProjectedRaster in(argv[1]);
 
         if (in.isReady() == true) {
-                if(prc.isMaster())
+                if(rank == 0)
                         printf("Input raster opened.\n");
         } else {
                 
-                prc.abort();
+		MPI_Abort(MPI_COMM_WORLD, -1);
                 return 1;
         }
 
 	Projection *outproj;
 	outproj = new Mollweide(params, METER, in.getDatum());
 
-	if (prc.isMaster()) {
+	if (rank == 0) {
 		out = new ProjectedRaster(argv[2],
 					  &in,
 					  outproj,
@@ -72,35 +73,35 @@ int main(int argc, char *argv[])
 
 		delete out;
 		out = 0;
-		prc.sync();
+		MPI_Barrier(MPI_COMM_WORLD);
 		printf("synced!\n");
 	} else {
-		prc.sync();
+		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
 	out = new ProjectedRaster(argv[2]);
 	if (out == 0) {
 		fprintf(stderr, "Error reopening output raster\n");
-		prc.finalize();
+		MPI_Finalize();
 		return 1;
 
 	}
 	
 	if (!in.isReady()) {
 		fprintf(stderr, "Error opening input raster!\n");
-		prc.finalize();
+		MPI_Finalize();
 		return 1;
 
 	}
 
 	if (!out->isReady()) {
 		fprintf(stderr, "Error opening output raster!\n");
-		prc.finalize();
+		MPI_Finalize();
 		return 1;
 
 	}
 
-	re = new Reprojector(prc, &in, out);
+	re = new Reprojector(&in, out);
 	re->parallelReproject();
 
 	// Cleanup
@@ -108,7 +109,7 @@ int main(int argc, char *argv[])
 	delete out;
 	delete outproj;	
 
-	prc.finalize();
+	MPI_Finalize();
 	
 	return 0;
 }

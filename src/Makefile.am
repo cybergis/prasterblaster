@@ -1,4 +1,4 @@
-SUBDIRS = pRPL gctp_cpp
+SUBDIRS = gctp_cpp 
 
 AM_CFLAGS = -W -Wall -Wcast-align -Wstrict-prototypes -Wmissing \
 		-prototypes -Wpointer-arith -Wshadow -Wsign-compare \
@@ -15,12 +15,12 @@ librasterblaster_la_SOURCES = projectedraster.cpp \
                  tinyxmlparser.cpp \
                  rasterxml.cpp \
 		 resampler.cpp
-librasterblaster_la_LDFLAGS = $(all_libraries) -LpRPL -Lgctp_cpp
-librasterblaster_la_LIBADD = -lprp -lgctp_cpp -lmpi
+librasterblaster_la_LDFLAGS = $(all_libraries)  -Lgctp_cpp
+librasterblaster_la_LIBADD =  -lgctp_cpp -lmpi
 
 bin_PROGRAMS = prasterblaster
-prasterblaster_LDFLAGS = $(all_libraries) -LpRPL -Lgctp_cpp
-prasterblaster_LDADD = -lprp -lgctp_cpp -lmpi -lrasterblaster
+prasterblaster_LDFLAGS = $(all_libraries)  -Lgctp_cpp
+prasterblaster_LDADD =  -lgctp_cpp -lmpi -lrasterblaster
 prasterblaster_SOURCES =  driver.cpp
 
 AM_CPPFLAGS = $(all_includes) -IpRPL -Igctp_cpp

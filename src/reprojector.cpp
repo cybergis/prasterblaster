@@ -147,85 +147,138 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 	
 	// Read input file
 	if (input->readRaster(in_first_row, in_rows, &(inraster[0]))) {
-	  //		printf("Read %d rows\n", numRows);
+		//		printf("Read %d rows\n", numRows);
 	} else {
 		printf("Error Reading input!\n");
 	}
-
-	if (0 == 0) { //Resampling is continuous
-	  for (int y = 0; y < out_rows; ++y)  {
-	    for (int x = 0; x < out_cols; ++x) {
-	      
-	    }
-	  }
-	    
-	}  else { // Resampling is discrete
-
-	for (int y = 0; y < out_rows; ++y) {
-		for (int x = 0; x < out_cols; ++x) {
-			outraster.at(y*out_cols) = 127; // REMOVE THIS
-
-			temp1.x = ((double)x * out_pixsize) + out_ul.x;
-//			temp1.y = ((double)y * out_pixsize) - out_ul.y;
-			temp1.y = out_ul.y - ((double)y * out_pixsize);
-
-			outproj->inverse(temp1.x, temp1.y, &temp2.x, &temp2.y);
-			outproj->forward(temp2.x, temp2.y,
-					 &temp2.x, &temp2.y);
-			if (abs(temp1.x - temp2.x) > 0.0001) {
-				// Overlap detected, abandon ship!
-				continue;
-			}
-
-			temp1.x = out_ul.x + ((double)x * out_pixsize);
-//			temp1.y = out_ul.y - ((double)y * out_pixsize);
-			temp1.y = ((double)y * out_pixsize) - out_ul.y;
-
-
-			outproj->inverse(temp1.x, temp1.y, &temp1.x, &temp1.y);
-			inproj-> forward(temp1.x, temp1.y, &temp1.x, &temp1.y);
-
-			// temp now contains coords to input projection
-			temp1.x -= in_ul.x;
-			temp1.y += in_ul.y;
-			temp1.x /= in_pixsize;
-			temp1.y /= out_pixsize;
-			// temp is now scaled to input raster coords, now resample!
-			if ( in_rows - (int)temp1.y <= 0 ) {
-				printf("Input size %d cols, %d rows\n",
-				       in_cols, in_rows);
-				printf("Sanity check: %d, %d\n",
-				       ((unsigned int)temp1.x),
-				       ((unsigned int)temp1.y));
-			
-				continue;
-			}
-
-			
-			try {
-				unsigned long ss = (long unsigned int)temp1.y;
-				ss *= in_cols;
-				ss += (long unsigned int)temp1.x;
-				outraster.at(x + (y * out_cols)) =
-					inraster.at(ss);
-
-			} catch(std::exception) {
-				s = out_rows;
-				s *= out_cols;
-				s *= output->bitsPerPixel()/8;
+	
+	if (0 == 0) { //Resampling is categorical
+		for (int y = 0; y < out_rows; ++y)  {
+			for (int x = 0; x < out_cols; ++x) {
+				// Determine location of equivalent input pixel
+				outraster.at(y*out_cols) = 127; // REMOVE THIS
 				
-				printf("----------------------------------\n");
-				printf("Error writing (%d %d) to (%d %d)\n",
-				       (unsigned int)temp1.x, (unsigned int)temp1.y, x, y);
-				printf("Input Raster: (%d cols, %d rows)\n"
-				       "Output Raster: (%d cols, %d rows)\n",
-				       in_cols, in_rows, out_cols, out_rows);
-				printf("----------------------------------\n");
+				temp1.x = ((double)x * out_pixsize) + out_ul.x;
+				temp1.y = out_ul.y - ((double)y * out_pixsize);
+				
+				outproj->inverse(temp1.x, temp1.y, &temp2.x, &temp2.y);
+				outproj->forward(temp2.x, temp2.y,
+						 &temp2.x, &temp2.y);
+				if (abs(temp1.x - temp2.x) > 0.0001) {
+					// Overlap detected, abandon ship!
+					continue;
+				}
+				
+				temp1.x = out_ul.x + ((double)x * out_pixsize);
+				temp1.y = ((double)y * out_pixsize) - out_ul.y;
+				temp2 = temp1;
+				
+				// Now we are going to assign temp1 as the UL
+				// of our pixel and temp2 as LR
+				temp1.x -= out_pixsize/2;
+				temp1.y += out_pixsize/2;
+				temp2.x += out_pixsize/2;
+				temp2.y -= out_pixsize/2;
+				
+				outproj->inverse(temp1.x, temp1.y, &temp1.x, &temp1.y);
+				inproj-> forward(temp1.x, temp1.y, &temp1.x, &temp1.y);
+				outproj->inverse(temp2.x, temp2.y, &temp2.x, &temp2.y);
+				inproj-> forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
+				// temp1/temp2 now contain coords to input projection
+				temp1.x -= in_ul.x;
+				temp1.y += in_ul.y;
+				temp1.x /= in_pixsize;
+				temp1.y /= in_pixsize;
+				temp2.x -= in_ul.x;
+				temp2.y += in_ul.y;
+				temp2.x /= in_pixsize;
+				temp2.y /= in_pixsize;
+
+				// temp1&2 are now scaled to input raster coords, now resample!
+				// But does the rectangle defined by temp1 and temp2 actually
+				// contain any points? If not use nearest-neighbor...
+				if (temp1.x - temp2.x < 1.0 ||
+				    temp2.y - temp1.y < 1.0) {
+					// Use nearest-neighbor resampling.
+				} else {
+					// Proceed with categorical resampling
+					for (int y = temp2.y - temp1.y; y != 0; --y) {
+
+					}
+				}
+				
 
 			}
 		}
+		
+	}  else { // Resampling is continuous
+		
+		for (int y = 0; y < out_rows; ++y) {
+			for (int x = 0; x < out_cols; ++x) {
+				outraster.at(y*out_cols) = 127; // REMOVE THIS
+				
+				temp1.x = ((double)x * out_pixsize) + out_ul.x;
+				temp1.y = out_ul.y - ((double)y * out_pixsize);
+				
+				outproj->inverse(temp1.x, temp1.y, &temp2.x, &temp2.y);
+				outproj->forward(temp2.x, temp2.y,
+						 &temp2.x, &temp2.y);
+				if (abs(temp1.x - temp2.x) > 0.0001) {
+					// Overlap detected, abandon ship!
+					continue;
+				}
+				
+				temp1.x = out_ul.x + ((double)x * out_pixsize);
+				temp1.y = ((double)y * out_pixsize) - out_ul.y;
+				
+				
+				outproj->inverse(temp1.x, temp1.y, &temp1.x, &temp1.y);
+				inproj-> forward(temp1.x, temp1.y, &temp1.x, &temp1.y);
+				// temp now contains coords to input projection
+
+				temp1.x -= in_ul.x;
+				temp1.y += in_ul.y;
+				temp1.x /= in_pixsize;
+				temp1.y /= in_pixsize;
+				// temp is now scaled to input raster coords, now resample!
+				if ( in_rows - (int)temp1.y <= 0 ) {
+					printf("Input size %d cols, %d rows\n",
+					       in_cols, in_rows);
+					printf("Sanity check: %d, %d\n",
+					       ((unsigned int)temp1.x),
+					       ((unsigned int)temp1.y));
+			
+					continue;
+				}
+
+			
+				try {
+					unsigned long ss = (long unsigned int)temp1.y;
+					ss *= in_cols;
+					ss += (long unsigned int)temp1.x;
+					outraster.at(x + (y * out_cols)) =
+						inraster.at(ss);
+
+				} catch(std::exception) {
+					s = out_rows;
+					s *= out_cols;
+					s *= output->bitsPerPixel()/8;
+				
+					printf("----------------------------------\n");
+					printf("Error writing (%d %d) to (%d %d)\n",
+					       (unsigned int)temp1.x, (unsigned int)temp1.y, x, y);
+					printf("Input Raster: (%d cols, %d rows)\n"
+					       "Output Raster: (%d cols, %d rows)\n",
+					       in_cols, in_rows, out_cols, out_rows);
+					printf("----------------------------------\n");
+
+				}
+			}
+
+		}
+		
 	}
-	}
+
 	// Write output raster
 	output->writeRaster(firstRow, numRows, &(outraster[0]));
 
