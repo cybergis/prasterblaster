@@ -8,16 +8,41 @@
 
 using namespace std;
 
+/*! ProjectedRaster class.
+ *
+ * This class parses and writes raster configuration files
+ */
+
 class RasterInfo
 {
 public:
    //Constuctors and Destructor
+  //! Constructor
+  /*!
+   * This constructor takes no arguments. 
+   */
    RasterInfo();
+
+   //! Constructor
+   /*!
+    * This constructor takes a filename argument. The file specified
+    * will be parsed.
+    */ 
    RasterInfo( const string &xmlFileName );
+
+   //! Constructor
+   /*!
+    * This constructor takes another RasterInfo object as an argument
+    * and produces a copy.
+    */
    RasterInfo( const RasterInfo &src );
    ~RasterInfo();
 
    //Files
+   //! A normal member taking a string argument
+   /*!
+    * This function sets the filename of the associated xml configuration
+    */
    bool setXmlFileName( string &xmlFileName );
    bool setImageFileName( string &imageFilename );
    string imgFileName() const;// {return fileName + ".img";}

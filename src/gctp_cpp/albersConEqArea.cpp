@@ -2,6 +2,9 @@
 #include "albersConEqArea.h"
 #include <math.h>
 #include <stdio.h>
+#include <string>
+
+#include <ogr_spatialref.h>
 
 AlbersConEqArea::AlbersConEqArea()
 : Projection(), m_c(0.0), m_e(0.0), m_es(0.0), m_rh(0.0), m_ns0(0.0)
@@ -151,8 +154,29 @@ void AlbersConEqArea::_forward(double lon, double lat)
 }
 
 
+std::string AlbersConEqArea::wkt()
+{
+	OGRSpatialReference sr;
+	int epsg = DATUM2EPSG[datum()];
+	char **wkt = 0;
+	std::string output = "";
+	OGRErr err;
 
+	sr.SetProjCS("Albers Conic Equal Area");
+	if (epsg != -1) {
+		sr.importFromEPSG(epsg);
+		sr.SetACEA(param(2), param(3), param(5), param(4), param(6), param(7));
+		err = sr.exportToPrettyWkt(wkt);
+	} else {
+		return output;
+	}
 
+	if (err == OGRERR_NONE) {
+		output = *wkt;
+		OGRFree(wkt);
+	}
 
+	return output;
+}
 
 

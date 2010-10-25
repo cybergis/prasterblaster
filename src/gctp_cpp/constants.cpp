@@ -4,6 +4,43 @@
 
 
 
+// EPSG Values for supported Datums
+int DATUM2EPSG[SPHDCT]= {
+	4008, // CLARKE_1866
+	4010, // CLARKE_1880
+	4004, // Bessel
+	-1,   // International 1967
+	-1,   // International 1909
+	4043, // WGS 72
+	4042, // EVEREST
+	4760, // WGS 66
+	4019, // GRS 1980
+	4001, // AIRY
+	4018, // MODIFIED_EVEREST
+	4002, // MODIFIED_AIRY
+	4326, // WGS_84
+	-1,   // SOUTHEAST_ASIA
+	4003, // AUSTRALIAN_NATIONAL
+	7024, // KRASSOVSKY (	KRASSOWSKY )
+	7053, // HOUGH
+	-1,   // MERCURY_1960
+	-1,   // MODIFIED_MERCURY_1968
+	//	4052, // EARTH (Clarke 1866 Authalic Sphere)
+	37008, // EARTH
+	4006, // BESSEL_1841_NAMIBIA
+	7016, // EVEREST_SABAH
+	-1,   // EVEREST_INDIA_1956
+	7018, // EVEREST_MALAYSIA_1969
+	-1,   // EVEREST_MALAY_1948
+	-1,   // EVEREST_PAKISTAN
+	7022, // HAYFORD
+	7020, // HELMERT_1906
+	7021, // INDONESIAN_1974
+	4618, // SOUTH_AMERICAN_1969
+	-1    // WGS_60
+};
+
+
 //unit conversion factors
 
  double factors[6][6] = {

@@ -1,6 +1,8 @@
 #ifndef MOLLWEIDE_H
 #define MOLLWEIDE_H
 
+#include <string>
+
 #include "projection.h"
 
 //!This is the object used for the Mollweide projection.
@@ -11,6 +13,7 @@ public:
 	
 	Mollweide(double gctpParams[],  ProjUnit units, ProjDatum dat);
 		
+	std::string wkt();
 protected:
 
 	//! See documentation for Projection

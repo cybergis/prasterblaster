@@ -1,3 +1,8 @@
+
+#include <string>
+
+#include <ogr_spatialref.h>
+
 #include "mollweide.h"
 
 Mollweide::Mollweide(): Projection() 
@@ -88,3 +93,29 @@ void Mollweide::_inverse(double x, double y)
 
 }
 
+std::string Mollweide::wkt()
+{
+	OGRSpatialReference sr;
+	int epsg = DATUM2EPSG[datum()];
+	char **wkt = 0;
+	std::string output = "";
+	OGRErr err;
+
+	sr.SetProjCS("Mollweide");
+	if (epsg != -1) {
+		sr.importFromEPSG(epsg);
+		sr.SetMollweide(param(4), param(6), param(7));
+		err = sr.exportToPrettyWkt(wkt);
+	} else {
+		return output;
+	}
+
+	if (err == OGRERR_NONE) {
+		printf("WKT GCTP: %s DATUM: %d\n", *wkt, datum());
+		output = *wkt;
+		OGRFree(wkt);
+	}
+
+	return output;
+
+}

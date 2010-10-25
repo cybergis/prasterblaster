@@ -2,6 +2,8 @@
 #define ALBER_CON_EQ_AREA_H
 #include "projection.h"
 
+#include <string>
+
 //! This is the object used for the Albers Conical Equal-Area projection
 class AlbersConEqArea: public Projection {
 public:
@@ -10,9 +12,11 @@ public:
 
 	//! Initialize all fields neccessary to perform our forward and inverse transformations.
 	AlbersConEqArea(double gctpParameters[], ProjUnit units, ProjDatum dat);
+
+	std::string wkt();
 	
 protected:
-  
+
   //! Constant C.
   double m_c;
 

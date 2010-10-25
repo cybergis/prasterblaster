@@ -47,3 +47,4 @@ void Hammer::_forward(double lon, double lat)
 	m_x_coord = m_falseEasting + fac * 2.0 * cos(lat) * sin(dlon / 2.0);
 	m_y_coord = m_falseNorthing + fac * sin(lat);
 }
+

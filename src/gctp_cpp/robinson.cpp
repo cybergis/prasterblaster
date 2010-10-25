@@ -1,3 +1,6 @@
+
+#include <ogr_spatialref.h>
+
 #include "robinson.h"
 
 Robinson::Robinson() : Projection()
@@ -222,4 +225,28 @@ void Robinson::_forward(double lon, double lat)
 void Robinson::_init()
 {
 	return;
+}
+
+std::string Robinson::wkt()
+{
+	OGRSpatialReference sr;
+	int epsg = DATUM2EPSG[datum()];
+	char **wkt = 0;
+	std::string output = "";
+	OGRErr err;
+
+	sr.SetProjCS("Robinson");
+	if (epsg != -1) {
+		sr. importFromEPSG(epsg);
+		sr.SetRobinson(param(4), param(6), param(7));
+		err = sr.exportToPrettyWkt(wkt);
+	} else {
+		return output;
+	}
+	
+	if (err == OGRERR_NONE) {
+		output = *wkt;
+		OGRFree(wkt);
+	}
+  
 }

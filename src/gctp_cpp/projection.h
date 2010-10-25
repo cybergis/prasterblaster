@@ -57,6 +57,9 @@ class Projection
 	*/
 	void inverse ( double x, double y, double* lon = NULL, double* lat = NULL );
 
+	//! Get the WKT describing this projection
+	virtual std::string wkt ();
+
 	//! Get the x coordinate from the most recent forward() call.
 	double x () {return m_x_coord;}
 
@@ -80,7 +83,7 @@ class Projection
 
 	//! Get a specific parameter in the gctp parameter array.
 	double param(size_t index);
-
+	
 	//! Get the name of the projection.
 	std::string name() {return m_name;}
 
@@ -181,7 +184,7 @@ protected:
 
 	//! The numeric identifier of the projection.
     ProjCode m_number;
-    
+
 	//! The numeric identifier for the units of this projection.
 	ProjUnit m_unitCode;
 
@@ -299,8 +302,6 @@ protected:
 	virtual void _inverse(double x, double y) = 0;
 
 	void loadFromParams();
-
-
 
 };
 

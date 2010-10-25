@@ -22,8 +22,8 @@ double params[15] =  { 6370997.000000,
 		       0, 0, 0, 0, 0, 
 		       0, 0, 0, 0, 0};
 
-char *usage = "usage: prasterblaster <input raster path> <output raster path>\n";
-
+char *usage = "usage: prasterblaster <input raster path> <output raster path> " 
+  "<out raster description path(xml)>\n";
 
 
 int main(int argc, char *argv[]) 
@@ -41,14 +41,13 @@ int main(int argc, char *argv[])
 	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank); 
 
-	if (argc < 3) {
+	if (argc < 4) {
 		if (rank == 0) {
 			printf(usage);
 		}
 		MPI_Abort(MPI_COMM_WORLD, -1);
 		return 0;
         }
-	
 	
         ProjectedRaster in(argv[1]);
 
@@ -61,41 +60,37 @@ int main(int argc, char *argv[])
                 return 1;
         }
 
-	Projection *outproj;
-	outproj = new Mollweide(params, METER, in.getDatum());
 
 	if (rank == 0) {
 		out = new ProjectedRaster(argv[2],
-					  &in,
-					  outproj,
-					  in.getPixelType(),
-					  in.getPixelSize());
-
+					  argv[3]);
 		delete out;
 		out = 0;
 		MPI_Barrier(MPI_COMM_WORLD);
-		printf("synced!\n");
+		printf("Output raster created and nodes synced!\n");
 	} else {
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
+
+	// Now we re-open the output raster on each node.
 	out = new ProjectedRaster(argv[2]);
 	if (out == 0) {
-		fprintf(stderr, "Error reopening output raster\n");
+		fprintf(stderr, "Output allocation failed, something is very wrong!\n");
 		MPI_Finalize();
 		return 1;
 
 	}
 	
 	if (!in.isReady()) {
-		fprintf(stderr, "Error opening input raster!\n");
+		fprintf(stderr, "Error opening input raster, not ready!\n");
 		MPI_Finalize();
 		return 1;
 
 	}
 
 	if (!out->isReady()) {
-		fprintf(stderr, "Error opening output raster!\n");
+		fprintf(stderr, "Error opening output raster, not ready!\n");
 		MPI_Finalize();
 		return 1;
 
@@ -107,7 +102,6 @@ int main(int argc, char *argv[])
 	// Cleanup
 	delete re;
 	delete out;
-	delete outproj;	
 
 	MPI_Finalize();
 	

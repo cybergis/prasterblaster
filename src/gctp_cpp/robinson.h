@@ -2,6 +2,8 @@
 #ifndef ROBINSON_H
 #define ROBINSON_H
 
+#include <string>
+
 #include "projection.h"
 
 //! This is the object used for the Robinson projection.
@@ -11,6 +13,7 @@ public:
 
 	Robinson();
 	Robinson(double gctpParams[], ProjUnit units, ProjDatum dat);
+	std::string wkt();
 
 protected:
 	

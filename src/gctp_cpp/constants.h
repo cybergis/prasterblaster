@@ -347,6 +347,7 @@ enum ProjDatum {
 };
 
 
+extern int DATUM2EPSG[SPHDCT];
 
 //unit conversion factors
 

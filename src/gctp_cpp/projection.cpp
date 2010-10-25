@@ -1,3 +1,7 @@
+
+
+#include <string>
+
 #include "projection.h"
 #include "transformer.h"
 
@@ -226,9 +230,7 @@ void Projection::init()
 }
 
 
-
-
-
-
-
-
+std::string Projection::wkt()
+{
+  return std::string("");
+}

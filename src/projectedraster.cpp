@@ -49,57 +49,10 @@ ProjectedRaster::ProjectedRaster(string _filename)
 	found = filename.rfind("img");
 
 	if (found == string::npos) { // Filename doesn't end in img, assuming GTiff
-
-		dataset = (GDALDataset*)GDALOpen( _filename.c_str(), GA_Update );
-
-		if (dataset == 0) {
-			ready = false;
-			return;
-		} 
-
-		cols = dataset->GetRasterXSize();
-		rows = dataset->GetRasterYSize();
-		
-		
-		ref = strdup(dataset->GetProjectionRef());
-
-		if (ref == 0) {
-			ready = false;
-			return;
-		}
-
-		double geo[6];
-		geo[1] = -1;
-		dataset->GetGeoTransform(geo);
-		pixel_size = geo[1];
-		ul_x = geo[0];
-		ul_y = geo[3];
-		type = (dataset->GetRasterBand(1))->GetRasterDataType();
-		band_count = dataset->GetRasterCount();
-		cols = dataset->GetRasterXSize();
-		rows = dataset->GetRasterYSize();
-		
-		// Setup projection
-		ugh = &ref;
-		sr.importFromWkt(ugh);
-
-		sr.exportToUSGS(&projsys, &zone, &params, &datum);
-		projection = Transformer::convertProjection((ProjCode)projsys);
-		if (projection == 0) {
-			ready = false;
-			return;
-		}
-		if ((ProjCode)projsys == _UTM)
-			((UTM*)projection)->setZone(zone);
-		projection->setParams(params);
-		projection->setDatum((ProjDatum)datum);
-		projection->setUnits(METER);
-
-//		free(ref);
-		ready = true;
-		
+		ready = loadRaster(filename);
 	} else { // Filename specifies imagine binary raster
-		bool status = loadImgRaster(filename);
+		_filename.replace(found-1, 4, ".xml");
+		bool status = configureFromXml(_filename);
 		band_count = 1;
 		ready = status;
 		
@@ -116,89 +69,40 @@ ProjectedRaster::ProjectedRaster(string _filename,
 				 Projection *proj,
 				 double ulx, double uly)
 {
-	const char *format = "GTiff";
-	GDALDriver *driver;
-	GDALRasterBand *band;
-	char **options = 0; 
-	GByte raster[8*8];
-	char *wkt = 0;
-	double geotransform[6] = { 444720, 30, 0, 3751320, 0, -30 };
-
-	projection = 0;
 	filename = _filename;
-	projection = 0;
-	dataset = 0;
-	data = 0;
-	band = 0;
+	projection = proj;
 	band_count = _band_count;
 	rows = num_rows;
 	cols = num_cols;
 	pixel_size = _pixel_size;
 	type = pixel_type;
+	ul_x = ulx;
+	ul_y = ulx;
+
+	dataset = 0;
+
+	ready = makeRaster();
+
+	return;
+}
+
+
+ProjectedRaster::ProjectedRaster(string _filename,
+				 string xmlDescription)
+{
+	projection = 0;
+	filename = _filename;
+	projection = 0;
+	dataset = 0;
+	data = 0;
+	rows = cols = -1;
 
 	GDALAllRegister();
+	bool status = configureFromXml(xmlDescription);
+	band_count = 1;
+	ready = status;
 
-	projection = proj;
-
-	driver = GetGDALDriverManager()->GetDriverByName(format);
-
-	if( driver == NULL ) {
-		ready = false;
-		return;
-	}
-	  
-	// Set options
-	options = CSLSetNameValue( options, "INTERLEAVE", "PIXEL" );
-	options = CSLSetNameValue( options, "BIGTIFF", "NO" );
-	options = CSLSetNameValue( options, "TILED", "NO" );
-	options = CSLSetNameValue( options, "COMPRESS", "NONE" );
-	options = CSLSetNameValue( options, "PHOTOMETRIC", "MINISBLACK");
-
-	dataset = driver->Create(filename.c_str(), num_cols, num_rows, 
-				 band_count, pixel_type,
-				 options);
-
-	
-	if (dataset == 0 || proj == 0) {
-		ready = false;
-		return;
-	}
-
-	dataset->SetGeoTransform(geotransform);
-	
-	band = dataset->GetRasterBand(1);
-
-
-	// Setup georeferencing
-	OGRSpatialReference srs;
-	long zone = -1;
-
-	/*
-	if (projection->number() == _UTM) {
-		zone = (int)((UTM*)projection)->zone();
-	}
-	srs.importFromUSGS((long)projection->number(), 
-			    zone,
-			    projection->params(),
-			   (long)projection->datum());
-	srs.Fixup();
-	srs.exportToWkt(&wkt);
-	printf("WKT YO: %s\n", wkt);
-	dataset->SetProjection(wkt);
-	CPLFree(wkt);
-	*/
-	
-//	srs.SetProjCS(projection->name().c_str());
-//	srs.SetWellKnownGeogCS( "EPSG:4052" );
-	srs.importFromUSGS(proj->number(), 0, proj->params(), proj->datum());
-
-	srs.exportToWkt(&wkt);
-	dataset->SetProjection(wkt);
-	CPLFree(wkt);
-	ready = true;
-
-	if (options != 0)
-		CSLDestroy(options);
+	ready = makeRaster();
 
 	return;
 }
@@ -237,7 +141,7 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	GDALAllRegister();
 
 	driver = GetGDALDriverManager()->GetDriverByName(format);
-
+/*
 	if( driver == NULL ) {
 		ready = false;
 		return;
@@ -278,17 +182,8 @@ ProjectedRaster::ProjectedRaster(string _filename,
 		long projsys, datum;
 		double *params;
 
-//		srs.SetProjCS(projection->name().c_str());
-//		srs.SetWellKnownGeogCS( "EPSG:4052" );
-		srs.importFromUSGS(output_proj->number(), 0, 
-				   output_proj->params(), output_proj->datum());
-		srs.SetLinearUnits("SRS_UL_METER", 1);
-//		projsys = output_proj->number();
-//		datum = output_proj->datum();
-//		srs.importFromUSGS(projsys, zone, output_proj->params(), datum);
-		srs.Fixup();
-		srs.exportToWkt(&wkt);
-		CPLErr err = dataset->SetProjection(wkt);
+
+		CPLErr err = dataset->SetProjection(projection->wkt().c_str());
 		if (err = CE_None) {
 			
 		} else if (err = CE_Failure)  {
@@ -308,8 +203,14 @@ ProjectedRaster::ProjectedRaster(string _filename,
 		if (options != 0)
 			CSLDestroy(options);
 	}
+*/
+	
+	ready = false;
 	return;
 }
+
+
+
 
 ProjectedRaster::~ProjectedRaster()
 {
@@ -529,41 +430,16 @@ bool ProjectedRaster::writeRaster(int firstRow, int numRows, void *data)
 	return false;
 }
 
-bool ProjectedRaster::readVector(int firstRow, int numRows, 
-						   vector<unsigned char>* data)
+bool ProjectedRaster::configureFromXml(std::string xmlfilename)
 {
-	vector<unsigned char> *buf;
+	RasterInfo in_info(xmlfilename.c_str());
+	int rastersize = in_info.rows() * in_info.cols();
 
-	buf = new vector<unsigned char>(numRows * cols * GDALGetDataTypeSize(type)/8);
-	
-	if(readRaster(firstRow, numRows, &(*buf)[0]) == false) {
-		delete buf;
-		buf = 0;
-	}	
-	
-	return buf;
-
-}
-
-bool ProjectedRaster::writeVector(int firstRow, int numRows, 
-						    vector<unsigned char>* data)
-{
-	if (writeRaster(firstRow, numRows, &(*data)[0]) == false) {
+	if (!in_info.ready()) {
 		return false;
 	}
 
 
-}
-
-
-bool ProjectedRaster::loadImgRaster(std::string filename)
-{
-	string::size_type idx = filename.find('.');
-	string imgname = filename.substr(0, idx) + ".img";
-	string xmlname = filename.substr(0, idx) + ".xml";
-	RasterInfo in_info(xmlname.c_str());
-	int rastersize = in_info.rows() * in_info.cols();
-	
 	rows = in_info.rows();
 	cols = in_info.cols();
 	
@@ -612,7 +488,7 @@ bool ProjectedRaster::loadImgRaster(std::string filename)
 		else
 			type = GDT_Float64;
 	}
-	
+
 	// Setup projection
 	projection = 
 	  Transformer::convertProjection((ProjCode)in_info.projectionNumber());
@@ -625,7 +501,128 @@ bool ProjectedRaster::loadImgRaster(std::string filename)
 	projection->setDatum((ProjDatum)in_info.datumNumber());
 	projection->setParams(in_info.allGctpParams());
 
-
 	return true;
 }
 
+bool ProjectedRaster::loadImgRaster(string rasterFilename, string xmlFilename)
+{
+	
+
+}
+
+bool ProjectedRaster::loadRaster(string filename)
+{
+	projection = 0;
+	projection = 0;
+	dataset = 0;
+	data = 0;
+	rows = cols = -1;
+	char *ref, **ugh;
+	long projsys, zone, datum;
+	double params[18];
+	double *p;
+	OGRSpatialReference sr;
+	
+
+	GDALAllRegister();	
+	
+	dataset = (GDALDataset*)GDALOpen( filename.c_str(), GA_Update );
+	
+	if (dataset == 0) {
+		return false;
+	} 
+	
+	cols = dataset->GetRasterXSize();
+	rows = dataset->GetRasterYSize();
+	
+	
+	ref = strdup(dataset->GetProjectionRef());
+	
+	if (ref == 0) {
+		fprintf(stderr, "Error reading projection ref\n");
+		return false;
+	}
+	
+	double geo[6];
+	dataset->GetGeoTransform(geo);
+	pixel_size = geo[1];
+	ul_x = geo[0];
+	ul_y = geo[3];
+	type = (dataset->GetRasterBand(1))->GetRasterDataType();
+	band_count = dataset->GetRasterCount();
+	cols = dataset->GetRasterXSize();
+	rows = dataset->GetRasterYSize();
+
+	// Setup projection
+	ugh = &ref;
+	sr.importFromWkt(ugh);
+	
+	p = &(params[0]);
+	sr.exportToUSGS(&projsys, &zone, &p, &datum);
+	projection = Transformer::convertProjection((ProjCode)projsys);
+	if (projection == 0) {
+		fprintf(stderr, "Error building projection, num %d...\n", projsys);
+		return false;
+	}
+	if ((ProjCode)projsys == _UTM)
+		((UTM*)projection)->setZone(zone);
+	projection->setParams(params);
+	projection->setDatum((ProjDatum)datum);
+
+	projection->setUnits(METER);
+	
+	return true;
+}
+
+bool ProjectedRaster::makeRaster()
+{
+	const char *format = "GTiff";
+	GDALDriver *driver;
+	GDALRasterBand *band;
+	char **options = 0; 
+	GByte raster[8*8];
+	char *wkt = 0;
+	double geotransform[6] = { 444720, 30, 0, 3751320, 0, -30 };
+
+	GDALAllRegister();
+
+	driver = GetGDALDriverManager()->GetDriverByName(format);
+
+	if( driver == NULL ) {
+		return false;
+	}
+	  
+	// Set options
+	options = CSLSetNameValue( options, "INTERLEAVE", "PIXEL" );
+	options = CSLSetNameValue( options, "BIGTIFF", "NO" );
+	options = CSLSetNameValue( options, "TILED", "NO" );
+	options = CSLSetNameValue( options, "COMPRESS", "NONE" );
+	options = CSLSetNameValue( options, "PHOTOMETRIC", "MINISBLACK");
+
+	dataset = driver->Create(filename.c_str(), cols, rows, 
+				 band_count, type,
+				 options);
+
+	
+	if (dataset == 0 || projection == 0) {
+		return false;
+	}
+
+	// Setup georeferencing
+	OGRSpatialReference srs;
+	long zone = -1;
+
+	geotransform[0] = ul_x;
+	geotransform[3] = ul_y;
+	geotransform[4] = geotransform[2] = 0.0;
+	geotransform[1] = geotransform[5] = pixel_size;
+	dataset->SetGeoTransform(geotransform);
+	dataset->SetProjection(projection->wkt().c_str());
+
+
+	if (options != 0)
+		CSLDestroy(options);
+
+	return true;
+
+}

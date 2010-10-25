@@ -29,7 +29,6 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([  
  Makefile  
  src/Makefile
- src/pRPL/Makefile
  src/gctp_cpp/Makefile
  src/python/Makefile
  tests/Makefile
