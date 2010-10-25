@@ -30,7 +30,6 @@ AC_CONFIG_FILES([
  Makefile  
  src/Makefile
  src/gctp_cpp/Makefile
- src/python/Makefile
  tests/Makefile
 ])  
 AC_OUTPUT  
