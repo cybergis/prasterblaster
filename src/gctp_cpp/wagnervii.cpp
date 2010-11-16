@@ -53,3 +53,5 @@ void WagnerVII::_inverse(double x, double y)
 	m_latitude = Util::asinz(y * sin(c) / (1.24104 * 0.90631 * p));
 	m_longitude = Util::adjust_lon(m_centerLon + 3.0 * atan2(x * tan(c), 2.66723 * p));
 }
+
+

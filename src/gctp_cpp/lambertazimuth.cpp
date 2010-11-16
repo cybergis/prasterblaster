@@ -90,3 +90,4 @@ void LambertAzimuthal::_inverse(double x, double y)
 	else 
 		m_latitude = m_centerLat;
 }
+

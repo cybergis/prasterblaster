@@ -90,3 +90,5 @@ void Polyconic::_inverse(double x, double y)
 	}
 
 }
+
+

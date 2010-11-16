@@ -101,3 +101,5 @@ void PolarStereo::_inverse(double x, double y)
 	}
 
 }
+
+

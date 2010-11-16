@@ -286,3 +286,4 @@ void AlaskaConformal::_inverse(double x, double y)
 	m_longitude = Util::adjust_lon (m_centerLon + atan2((xp * sinz), (rh * m_cosCenterLat * cosz - yp *
 					m_sinCenterLat * sinz)));
 }
+

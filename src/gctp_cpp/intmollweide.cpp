@@ -167,3 +167,5 @@ void IntMollweide::_inverse(double x, double y)
 		setError(IN_BREAK);
 
 }
+
+

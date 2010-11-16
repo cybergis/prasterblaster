@@ -108,3 +108,5 @@ void GenVertNSP::_inverse(double x, double y)
 		return;
 	m_longitude = Util::adjust_lon(m_centerLon + atan2((x * sinz * m_cosCenterLat), (con * rh)));
 }
+
+

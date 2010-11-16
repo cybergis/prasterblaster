@@ -89,3 +89,4 @@ void Gnomonic::_inverse(double x, double y)
 
 	m_longitude = Util::adjust_lon(m_centerLon + atan2((x * sinz * m_cosCenterLat), (con * rh)));
 }
+

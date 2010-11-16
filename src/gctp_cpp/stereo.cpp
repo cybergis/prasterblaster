@@ -98,3 +98,4 @@ void Stereo::_inverse(double x, double y)
 	}
 }
 	
+

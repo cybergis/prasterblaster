@@ -92,3 +92,4 @@ void Orthographic::_inverse(double x, double y)
 	if ((fabs(con) >= EPSLN) || (fabs(x) >= EPSLN))
 		m_longitude = Util::adjust_lon(m_centerLon + atan2((x * sinz * m_cosCenterLat), (con * rh)));
 }
+

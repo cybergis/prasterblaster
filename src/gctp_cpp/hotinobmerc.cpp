@@ -291,3 +291,5 @@ void HotineObMerc::setAzimuth(double angle)
 	setInit();
 }
 
+
+

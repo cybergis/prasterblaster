@@ -64,3 +64,4 @@ void WagnerIV::_inverse(double x, double y)
 	m_longitude = Util::adjust_lon(m_centerLon + (x / (0.86310 * m_radius * cos(theta))));
 	m_latitude = asin((2.0 * theta + sin(2.0 * theta)) / 2.9604205062);
 }
+

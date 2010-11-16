@@ -50,3 +50,5 @@ inline bool comparable( const Coordinate &c1, const Coordinate &c2, double delta
 }
 
 #endif
+
+

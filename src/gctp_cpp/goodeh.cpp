@@ -261,3 +261,5 @@ void GoodeH::_inverse(double x, double y)
 	if (region ==11 && (m_longitude < 1.3962634016 || m_longitude > PI + EPSLN))
 		setError(IN_BREAK);
 }
+
+

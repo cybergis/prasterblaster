@@ -121,3 +121,4 @@ void OblatedEqArea::_inverse(double x, double y)
 								   cos_z - m_sinLatO * sin_z * cos_diff_angle)));
 
 }
+

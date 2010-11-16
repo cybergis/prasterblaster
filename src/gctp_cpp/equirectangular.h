@@ -26,3 +26,5 @@ class Equirectangular : public Projection
 };
 
 #endif
+
+

@@ -48,3 +48,5 @@ void Hammer::_forward(double lon, double lat)
 	m_y_coord = m_falseNorthing + fac * sin(lat);
 }
 
+
+

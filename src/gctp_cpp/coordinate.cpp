@@ -21,3 +21,5 @@ void Coordinate::copy( const Coordinate &c )
    y = c.y;
    units = c.units;
 }
+
+
