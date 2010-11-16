@@ -181,7 +181,8 @@ void SpaceObMerc::setAlf(double val)
 void SpaceObMerc::_inverse(double x, double y)
 {
 	double tlon,conv,sav,sd,sdsq,blon,dif,st,defac,actan,tlat,dd,bigk,bigk2,xlamt;
-	double sl,scl,dlat,dlon;
+	double sl,scl,dlon;
+	double dlat = 0.0;
 	long inumb;
 
 	/* Inverse equations. Begin inverse computation with approximation for tlon. 
@@ -250,7 +251,8 @@ void SpaceObMerc::_forward(double lon, double lat)
 	double delta_lon;
 	double rlm,tabs,tlam,xlam,c,xlamt,ab2,ab1,xlamp,sav;
 	double d,sdsq,sd,tanlg,xtan,tphi,dp,rlm2;
-	double scl,tlamp,conv,delta_lat,radlt,radln;
+	double scl = 0.0;
+	double tlamp,conv,delta_lat,radlt,radln;
 	bool end = false;
 	/* Forward equations
 	-----------------*/

@@ -270,6 +270,8 @@ Projection* Transformer::convertProjection( ProjCode projectionCode )
       break;
    case USDEF: // What is this?
       break;
+   case NONE:
+      break;
    }
 
    return proj;

@@ -99,8 +99,8 @@ void AlaskaConformal::_forward(double lon, double lat)
 	double ai;
 	double br;
 	double bi;
-	double arn;
-	double ain;
+	double arn = 0.0; 
+	double ain = 0.0;
 	double chi;
 	double r;
 	long j;
@@ -165,8 +165,8 @@ void AlaskaConformal::_inverse(double x, double y)
 	double cr;
 	double di;
 	double dr;
-	double arn;
-	double ain;
+	double arn = 0.0;
+	double ain = 0.0;
 	double crn;
 	double cin;
 	double fxyr;

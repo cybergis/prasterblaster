@@ -248,6 +248,8 @@ std::string Robinson::wkt()
 		output = *wkt;
 		OGRFree(wkt);
 	}
+	
+	return ""; // Should never happen...
   
 }
 

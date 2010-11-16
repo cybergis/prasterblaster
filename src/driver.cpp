@@ -28,10 +28,8 @@ char *usage = "usage: prasterblaster <input raster path> <output raster path> "
 
 int main(int argc, char *argv[]) 
 {
-	double ul_x, ul_y, lr_x, lr_y;
  	long int rows, cols;
 
-	vector<unsigned char> *dat = 0;
 	ProjectedRaster *out;
 	Reprojector *re = 0;
 	int rank;

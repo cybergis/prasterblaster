@@ -29,7 +29,8 @@ void HotineObMerc::_init()
 	double con,com;
 	double h,l,ts1,ts2;
 	double j,p,dlon;
-	double f,g,gama;
+	double f = 0.0;
+	double g,gama;
 	double sinphi;
 
 

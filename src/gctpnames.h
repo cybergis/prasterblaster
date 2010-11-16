@@ -478,7 +478,7 @@ namespace
        "Sphere of Radius 6370997 meters", 
        "Unknown" 
      };
-
+   /*
    // A list of common named pixel sizes sorted by decreasing values
    const char *pixelSizes[] =
      {
@@ -512,6 +512,7 @@ namespace
        "Unsigned 8 Bit Integer", 
        "Signed 8 Bit Integer" 
      };
+   */
 }
 
 #endif

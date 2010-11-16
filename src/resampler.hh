@@ -15,8 +15,8 @@ namespace resampler
 
 	typedef void(*resampler_func)(void *src_raster,
 				      long center_index,
-				      long index_width,
-				      long index_height,
+				      long pixel_width,
+				      long pixel_height,
 				      long *index_array,
 				      void *dest_pixel);
 
@@ -27,11 +27,13 @@ namespace resampler
 	template <typename T>
 	void nearest_neighbor(void *src_raster,
 			      long center_index,
-			      long index_width,
-			      long index_height,
+			      long pixel_width,
+			      long pixel_height,
 			      long *index_array,
 			      void *dest_pixel)
 	{
+		long temp = pixel_width = pixel_height = *index_array; // remove this line
+		temp++;
 		*(T*)dest_pixel = ((T*)src_raster)[center_index];
 		return;
 	}

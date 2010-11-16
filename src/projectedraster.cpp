@@ -30,10 +30,6 @@ using namespace std;
 ProjectedRaster::ProjectedRaster(string _filename)
 {
 	OGRSpatialReference sr;
-	char *ref = 0;
-	char **ugh = 0;
-	double *params = 0;
-	long int zone, projsys, datum;
 	size_t found;
 
 	projection = 0;
@@ -77,7 +73,7 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	pixel_size = _pixel_size;
 	type = pixel_type;
 	ul_x = ulx;
-	ul_y = ulx;
+	ul_y = uly;
 
 	dataset = 0;
 
@@ -117,11 +113,6 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	const char *format = "GTiff";
 	GDALDriver *driver;
 	GDALRasterBand *band;
-	char **options = 0; 
-	GByte raster[8*8];
-	char *wkt = 0;
-	double geotransform[6] = { 444720, 30, 0, 3751320, 0, -30 };
-
 
 	projection = output_proj->copy();
 	filename = _filename;
@@ -135,8 +126,8 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	type = pixel_type;
 
  	FindMinBox(input, output_proj, pixel_size, ul_x, ul_y, lr_x, lr_y);
-	rows = (ul_y-lr_y) / input->getPixelSize();
-	cols = (lr_x-ul_x) / input->getPixelSize();
+	rows = (int)ceil((ul_y-lr_y) / input->getPixelSize());
+	cols = (int)ceil((lr_x-ul_x) / input->getPixelSize());
 
 	GDALAllRegister();
 
@@ -433,7 +424,6 @@ bool ProjectedRaster::writeRaster(int firstRow, int numRows, void *data)
 bool ProjectedRaster::configureFromXml(std::string xmlfilename)
 {
 	RasterInfo in_info(xmlfilename.c_str());
-	int rastersize = in_info.rows() * in_info.cols();
 
 	if (!in_info.ready()) {
 		return false;
@@ -506,8 +496,10 @@ bool ProjectedRaster::configureFromXml(std::string xmlfilename)
 
 bool ProjectedRaster::loadImgRaster(string rasterFilename, string xmlFilename)
 {
+	rasterFilename = "";
+	xmlFilename  = "";
 	
-
+	return false;
 }
 
 bool ProjectedRaster::loadRaster(string filename)
@@ -561,7 +553,7 @@ bool ProjectedRaster::loadRaster(string filename)
 	sr.exportToUSGS(&projsys, &zone, &p, &datum);
 	projection = Transformer::convertProjection((ProjCode)projsys);
 	if (projection == 0) {
-		fprintf(stderr, "Error building projection, num %d...\n", projsys);
+		fprintf(stderr, "Error building projection, num %ld...\n", projsys);
 		return false;
 	}
 	if ((ProjCode)projsys == _UTM)
@@ -578,10 +570,7 @@ bool ProjectedRaster::makeRaster()
 {
 	const char *format = "GTiff";
 	GDALDriver *driver;
-	GDALRasterBand *band;
 	char **options = 0; 
-	GByte raster[8*8];
-	char *wkt = 0;
 	double geotransform[6] = { 444720, 30, 0, 3751320, 0, -30 };
 
 	GDALAllRegister();
@@ -610,7 +599,6 @@ bool ProjectedRaster::makeRaster()
 
 	// Setup georeferencing
 	OGRSpatialReference srs;
-	long zone = -1;
 
 	geotransform[0] = ul_x;
 	geotransform[3] = ul_y;

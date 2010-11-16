@@ -59,7 +59,7 @@ void Reprojector::parallelReproject()
         Coordinate temp, temp2;
         double in_ulx, in_uly, out_ulx, out_uly;
         double in_pixsize, out_pixsize;
-        long in_rows, in_cols, out_rows, out_cols, out_chunk;
+        long in_rows, in_cols, out_rows, out_cols;
 	vector<long> chunk_sizes(chunk_count, (long)floor(output->getRowCount()/(double)chunk_count));
 	vector<long> chunk_assignments(chunk_count, numprocs-1);
 
@@ -107,7 +107,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
         Coordinate temp1, temp2;
         Coordinate in_ul, in_lr, out_ul;
         double in_pixsize, out_pixsize;
-        long in_rows, in_cols, out_rows, out_cols, out_chunk;
+        long in_rows, in_cols, out_rows, out_cols;
         vector<char> inraster, outraster;
         Area area;
 
@@ -142,7 +142,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 
         in_lr.x = input->ul_x + (in_pixsize * in_cols);
 
-        long in_first_row = (input->ul_y - in_ul.y) / in_pixsize;
+        long in_first_row = (long)((input->ul_y - in_ul.y) / in_pixsize);
         in_rows = (long)((in_ul.y - in_lr.y) / in_pixsize);
         in_rows += 1;
 
@@ -213,9 +213,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 					// Use nearest-neighbor resampling.
 				} else {
 					// Proceed with categorical resampling
-					for (int y = temp2.y - temp1.y; y != 0; --y) {
 
-					}
 				}
 				
 
@@ -327,7 +325,9 @@ Area FindMinBox2(double in_ul_x, double in_ul_y,
 
 	ul_x = in_ul_x;
 	ul_y = in_ul_y;
+	pixsize = in_pix_size;
 	pixsize = out_pixsize;
+	
   
 	t.setInput(*(inproj->copy()));
 	t.setOutput(*(outproj->copy()));
@@ -433,7 +433,7 @@ Area FindMinBox2(double in_ul_x, double in_ul_y,
 //	       temp.x, temp.y, outproj->lon(), outproj->lat());
   
 
-
+	return area;
 }
 
 
@@ -532,7 +532,7 @@ void FindMinBox(ProjectedRaster *input, Projection *outproj, double out_pixsize,
 	}
 
 	// Check right side
-	for (int x = -1 * (cols*.1); x < cols*.1; ++x) {
+	for (int x = (int)(-1 * (cols*.1)); x < cols*.1; ++x) {
 		for (int y = 0; y < rows; ++y) {
 			temp.x = ((double)cols+x)*(1+pixsize) + ul_x;
 			temp.y = (double)-y*pixsize + ul_y;
