@@ -38,7 +38,7 @@ long Reprojector::startIndex(long chunk_number, vector<long> chunk_sizes)
 {
 	long index = 0;
 	
-	if (chunk_number >= chunk_sizes.size())
+	if ((unsigned long)chunk_number >= chunk_sizes.size())
 		return -1;
 
 	if (chunk_number == 0) {
@@ -60,7 +60,7 @@ void Reprojector::parallelReproject()
         double in_ulx, in_uly, out_ulx, out_uly;
         double in_pixsize, out_pixsize;
         long in_rows, in_cols, out_rows, out_cols, out_chunk;
-	vector<long> chunk_sizes(chunk_count, floor(output->getRowCount()/(double)chunk_count));
+	vector<long> chunk_sizes(chunk_count, (long)floor(output->getRowCount()/(double)chunk_count));
 	vector<long> chunk_assignments(chunk_count, numprocs-1);
 
         t.setInput(*output->getProjection());
@@ -77,7 +77,7 @@ void Reprojector::parallelReproject()
         out_ulx = output->ul_x;
         out_uly = output->ul_y - (rank * ((out_rows * out_pixsize)/numprocs));
 
-	long total_rows = numprocs * floor(output->getRowCount()/(double)numprocs);
+	long total_rows = numprocs * (long)floor(output->getRowCount()/(double)numprocs);
 	if (total_rows < output->getRowCount()) {
 		long difference = output->getRowCount() - total_rows;
 		chunk_sizes.back() += difference;
@@ -87,13 +87,13 @@ void Reprojector::parallelReproject()
 	for (int i=0, proc=0; i < chunk_count - chunk_dist; i += chunk_dist, ++proc)
 	{
 		for (int j=0; j<chunk_dist; ++j) {
-			chunk_assignments[i+j] = proc;
+			chunk_assignments.at(i+j) = proc;
 		}
 	}
 
 	for (int i = 0; i < chunk_count; ++i) {
 		if (chunk_assignments[i] == rank) {
-			reproject_chunk(startIndex(i, chunk_sizes));
+			reprojectChunk(startIndex(i, chunk_sizes), chunk_sizes[i]);
 		}
 	}
 	
