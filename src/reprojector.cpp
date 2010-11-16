@@ -1,17 +1,10 @@
 
 #include <cstdio>
+#include <vector>
 
 #include <mpi.h>
 #include <gdal.h>
 #include <gdal_priv.h>
-
-#include "pRPL/prProcess.h"
-#include "pRPL/neighborhood.h"
-#include "pRPL/cellSpace.h"
-#include "pRPL/layer.h"
-#include "pRPL/basicTypes.h"
-
-#include "reproject_transition.hh"
 
 #include "gctp_cpp/projection.h"
 #include "gctp_cpp/transformer.h"
@@ -20,139 +13,157 @@
 #include "reprojector.hh"
 #include "resampler.hh"
 
-using namespace pRPL;
-
 
 Reprojector::Reprojector(ProjectedRaster *_input, ProjectedRaster *_output) 
-	:
-	input(_input), output(_output)
+        :
+        input(_input), output(_output)
 {
-	MPI_Comm_size(MPI_COMM_WORLD,&numprocs); 
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank); 
-	maxx = maxy = 0;
-	minx = miny = 1e+37;
-	resampler = &resampler::nearest_neighbor<unsigned char>;
+        MPI_Comm_size(MPI_COMM_WORLD,&numprocs); 
+        MPI_Comm_rank(MPI_COMM_WORLD,&rank); 
+        maxx = maxy = 0;
+        minx = miny = 1e+37;
+        resampler = &resampler::nearest_neighbor<unsigned char>;
 
 
-	return;
+        return;
 };
 
 Reprojector::~Reprojector()
 {
 
-	return;
+        return;
 }
 
+long Reprojector::startIndex(long chunk_number, vector<long> chunk_sizes)
+{
+	long index = 0;
+	
+	if (chunk_number >= chunk_sizes.size())
+		return -1;
+
+	if (chunk_number == 0) {
+		return index;
+	} else {
+		for (int i = 0; i < chunk_number; ++i) {
+			index += chunk_sizes[i];
+		}
+	}
+
+	return index;
+}
 
 void Reprojector::parallelReproject()
 {
-	Transformer t;
-	Coordinate temp, temp2;
-	double in_ulx, in_uly, out_ulx, out_uly;
-	double in_pixsize, out_pixsize;
-	long in_rows, in_cols, out_rows, out_cols, out_chunk;
-	int chunk_count = 0;
+	int chunk_count = numprocs * 2;
+        Transformer t;
+        Coordinate temp, temp2;
+        double in_ulx, in_uly, out_ulx, out_uly;
+        double in_pixsize, out_pixsize;
+        long in_rows, in_cols, out_rows, out_cols, out_chunk;
+	vector<long> chunk_sizes(chunk_count, floor(output->getRowCount()/(double)chunk_count));
+	vector<long> chunk_assignments(chunk_count, numprocs-1);
 
-	out_chunk = 14;
-
-	t.setInput(*output->getProjection());
-	t.setOutput(*input->getProjection());
+        t.setInput(*output->getProjection());
+        t.setOutput(*input->getProjection());
   
-	in_rows = input->getRowCount();
-	in_cols = input->getColCount();
-	out_rows = output->getRowCount()/numprocs + 1; 
-	out_cols = output->getColCount();
-	in_pixsize = input->getPixelSize();
-	out_pixsize = input->getPixelSize();
-	in_ulx = input->ul_x;
-	in_uly = input->ul_y;
-	out_ulx = output->ul_x;
-	out_uly = output->ul_y - (rank * ((out_rows * out_pixsize)/numprocs));
+        in_rows = input->getRowCount();
+        in_cols = input->getColCount();
+        out_rows = output->getRowCount()/numprocs + 1; 
+        out_cols = output->getColCount();
+        in_pixsize = input->getPixelSize();
+        out_pixsize = input->getPixelSize();
+        in_ulx = input->ul_x;
+        in_uly = input->ul_y;
+        out_ulx = output->ul_x;
+        out_uly = output->ul_y - (rank * ((out_rows * out_pixsize)/numprocs));
 
-	for (int i = out_rows*rank;
-	     i <= MIN((out_rows*(rank+1)) - out_chunk, output->getRowCount()-out_chunk); 
-	     i += out_chunk) {
-		reprojectChunk(i, out_chunk);
-		++chunk_count;
+	long total_rows = numprocs * floor(output->getRowCount()/(double)numprocs);
+	if (total_rows < output->getRowCount()) {
+		long difference = output->getRowCount() - total_rows;
+		chunk_sizes.back() += difference;
 	}
 
-
-	if (chunk_count * out_chunk < out_rows && (rank != numprocs-1)) {
-		if (out_rows * rank + chunk_count * out_chunk >= output->getRowCount())
-			return;
-		
-		reprojectChunk(out_rows * rank + chunk_count * out_chunk, 
-			       out_rows - chunk_count * out_chunk);
-		
+	long chunk_dist = chunk_count / numprocs;
+	for (int i=0, proc=0; i < chunk_count - chunk_dist; i += chunk_dist, ++proc)
+	{
+		for (int j=0; j<chunk_dist; ++j) {
+			chunk_assignments[i+j] = proc;
+		}
 	}
 
+	for (int i = 0; i < chunk_count; ++i) {
+		if (chunk_assignments[i] == rank) {
+			reproject_chunk(startIndex(i, chunk_sizes));
+		}
+	}
+	
 
-	return;
+        return;
 }
 
 void Reprojector::reprojectChunk(int firstRow, int numRows)
 {
-	Projection *outproj, *inproj;
-	Coordinate temp1, temp2;
-	Coordinate in_ul, in_lr, out_ul;
-	double in_pixsize, out_pixsize;
-	long in_rows, in_cols, out_rows, out_cols, out_chunk;
-	vector<char> inraster, outraster;
-	Area area;
+        Projection *outproj, *inproj;
+        Coordinate temp1, temp2;
+        Coordinate in_ul, in_lr, out_ul;
+        double in_pixsize, out_pixsize;
+        long in_rows, in_cols, out_rows, out_cols, out_chunk;
+        vector<char> inraster, outraster;
+        Area area;
 
-	if (firstRow + numRows > output->getRowCount()) {
-		fprintf(stderr, "Invalid chunk range... %d is > %d\n",
-			firstRow + numRows,
-			output->getRowCount());
-		fflush(stderr);
-		return;
-	}
+        if (firstRow + numRows > output->getRowCount()) {
+                fprintf(stderr, "Invalid chunk range... %d is > %d\n",
+                        firstRow + numRows,
+                        output->getRowCount());
+                fflush(stderr);
+                return;
+        }
 
-	out_pixsize = output->getPixelSize();
-	in_pixsize = input->getPixelSize();
-	outproj = output->getProjection();
-	inproj = input->getProjection();
+        out_pixsize = output->getPixelSize();
+        in_pixsize = input->getPixelSize();
+        outproj = output->getProjection();
+        inproj = input->getProjection();
 
-	out_rows = numRows;
-	out_cols = output->getColCount();
-	out_ul.x = output->ul_x;
-	out_ul.y = output->ul_y - firstRow * out_pixsize;
-	in_cols = input->getColCount();
-	
-	area = FindMinBox2(out_ul.x, out_ul.y, out_pixsize,
-			   out_rows, out_cols,
-			   outproj, inproj,
-			   in_pixsize);
-	
+        out_rows = numRows;
+        out_cols = output->getColCount();
+        out_ul.x = output->ul_x;
+        out_ul.y = output->ul_y - firstRow * out_pixsize;
+        in_cols = input->getColCount();
+        
+        area = FindMinBox2(out_ul.x, out_ul.y, out_pixsize,
+                           out_rows, out_cols,
+                           outproj, inproj,
+                           in_pixsize);
+        
 
-	in_ul.x = input->ul_x;
-	if (in_ul.y > input->ul_y)
-		in_ul.y = input->ul_y;
+        in_ul.x = input->ul_x;
+        if (in_ul.y > input->ul_y)
+                in_ul.y = input->ul_y;
 
-	in_lr.x = input->ul_x + (in_pixsize * in_cols);
+        in_lr.x = input->ul_x + (in_pixsize * in_cols);
 
-	long in_first_row = (input->ul_y - in_ul.y) / in_pixsize;
-	in_rows = (long)((in_ul.y - in_lr.y) / in_pixsize);
-	in_rows += 1;
+        long in_first_row = (input->ul_y - in_ul.y) / in_pixsize;
+        in_rows = (long)((in_ul.y - in_lr.y) / in_pixsize);
+        in_rows += 1;
 
-	// Setup raster vectors
-	size_t s = out_rows;
-	s *= out_cols;
-	s *= output->bitsPerPixel()/8;
-	outraster.resize(s);
-	s = in_rows;
-	s *= in_cols;
-	s *= output->bitsPerPixel()/8;
-	inraster.resize(s);
-	
-	// Read input file
-	if (input->readRaster(in_first_row, in_rows, &(inraster[0]))) {
-		//		printf("Read %d rows\n", numRows);
-	} else {
-		printf("Error Reading input!\n");
-	}
-	
-	if (0 == 0) { //Resampling is categorical
+        // Setup raster vectors
+        size_t s = out_rows;
+        s *= out_cols;
+        s *= output->bitsPerPixel()/8;
+        outraster.resize(s);
+        s = in_rows;
+        s *= in_cols;
+        s *= output->bitsPerPixel()/8;
+        inraster.resize(s);
+        
+        // Read input file
+        if (input->readRaster(in_first_row, in_rows, &(inraster[0]))) {
+                //              printf("Read %d rows\n", numRows);
+        } else {
+                printf("Error Reading input!\n");
+        }
+        
+        if (0 == 0) { //Resampling is categorical
 		for (int y = 0; y < out_rows; ++y)  {
 			for (int x = 0; x < out_cols; ++x) {
 				// Determine location of equivalent input pixel
@@ -164,7 +175,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 				outproj->inverse(temp1.x, temp1.y, &temp2.x, &temp2.y);
 				outproj->forward(temp2.x, temp2.y,
 						 &temp2.x, &temp2.y);
-				if (abs(temp1.x - temp2.x) > 0.0001) {
+				if (fabs(temp1.x - temp2.x) > 0.0001) {
 					// Overlap detected, abandon ship!
 					continue;
 				}
@@ -223,7 +234,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 				outproj->inverse(temp1.x, temp1.y, &temp2.x, &temp2.y);
 				outproj->forward(temp2.x, temp2.y,
 						 &temp2.x, &temp2.y);
-				if (abs(temp1.x - temp2.x) > 0.0001) {
+				if (fabs(temp1.x - temp2.x) > 0.0001) {
 					// Overlap detected, abandon ship!
 					continue;
 				}
@@ -242,9 +253,9 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 				temp1.y /= in_pixsize;
 				// temp is now scaled to input raster coords, now resample!
 				if ( in_rows - (int)temp1.y <= 0 ) {
-					printf("Input size %d cols, %d rows\n",
+					printf("Input size %ld cols, %ld rows\n",
 					       in_cols, in_rows);
-					printf("Sanity check: %d, %d\n",
+					printf("Sanity check: %ud, %ud\n",
 					       ((unsigned int)temp1.x),
 					       ((unsigned int)temp1.y));
 			
@@ -265,10 +276,10 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 					s *= output->bitsPerPixel()/8;
 				
 					printf("----------------------------------\n");
-					printf("Error writing (%d %d) to (%d %d)\n",
+					printf("Error writing (%ud %ud) to (%d %d)\n",
 					       (unsigned int)temp1.x, (unsigned int)temp1.y, x, y);
-					printf("Input Raster: (%d cols, %d rows)\n"
-					       "Output Raster: (%d cols, %d rows)\n",
+					printf("Input Raster: (%ld cols, %ld rows)\n"
+					       "Output Raster: (%ld cols, %ld rows)\n",
 					       in_cols, in_rows, out_cols, out_rows);
 					printf("----------------------------------\n");
 

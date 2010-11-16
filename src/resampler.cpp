@@ -9,6 +9,8 @@ namespace resampler
 // code. Don't call it.
   void never_call_me()
   {
+
+    /*
 	  nearest_neighbor<unsigned char>(0,0,0,0,0,0,0,0);
 	  nearest_neighbor<signed char>(0,0,0,0,0,0,0,0);
 	  nearest_neighbor<int>(0,0,0,0,0,0,0,0);
@@ -17,6 +19,7 @@ namespace resampler
 	  nearest_neighbor<unsigned long>(0,0,0,0,0,0,0,0);
 	  nearest_neighbor<float>(0,0,0,0,0,0,0,0);
 	  nearest_neighbor<double>(0,0,0,0,0,0,0,0);
+    */
   }
   
 }

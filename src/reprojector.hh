@@ -50,6 +50,7 @@ public:
 
 
 private:
+	long startIndex(long process_number, vector<long> process_sizes);
 	void reprojectChunk(int firstRow, int numRows);
 	int numprocs, rank;
 	double maxx, minx, maxy, miny;
