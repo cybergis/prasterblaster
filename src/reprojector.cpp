@@ -163,139 +163,86 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
                 printf("Error Reading input!\n");
         }
         
-        if (0 == 0) { //Resampling is categorical
-		for (int y = 0; y < out_rows; ++y)  {
-			for (int x = 0; x < out_cols; ++x) {
-				// Determine location of equivalent input pixel
-				outraster.at(y*out_cols) = 127; // REMOVE THIS
-				
-				temp1.x = ((double)x * out_pixsize) + out_ul.x;
-				temp1.y = out_ul.y - ((double)y * out_pixsize);
-				
-				outproj->inverse(temp1.x, temp1.y, &temp2.x, &temp2.y);
-				outproj->forward(temp2.x, temp2.y,
-						 &temp2.x, &temp2.y);
-				if (fabs(temp1.x - temp2.x) > 0.0001) {
-					// Overlap detected, abandon ship!
-					continue;
-				}
-				
-				temp1.x = out_ul.x + ((double)x * out_pixsize);
-				temp1.y = ((double)y * out_pixsize) - out_ul.y;
-				temp2 = temp1;
-				
-				// Now we are going to assign temp1 as the UL
-				// of our pixel and temp2 as LR
-				temp1.x -= out_pixsize/2;
-				temp1.y += out_pixsize/2;
-				temp2.x += out_pixsize/2;
-				temp2.y -= out_pixsize/2;
-				
-				outproj->inverse(temp1.x, temp1.y, &temp1.x, &temp1.y);
-				inproj-> forward(temp1.x, temp1.y, &temp1.x, &temp1.y);
-				outproj->inverse(temp2.x, temp2.y, &temp2.x, &temp2.y);
-				inproj-> forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
-				// temp1/temp2 now contain coords to input projection
-				temp1.x -= in_ul.x;
-				temp1.y += in_ul.y;
-				temp1.x /= in_pixsize;
-				temp1.y /= in_pixsize;
-				temp2.x -= in_ul.x;
-				temp2.y += in_ul.y;
-				temp2.x /= in_pixsize;
-				temp2.y /= in_pixsize;
-
-				// temp1&2 are now scaled to input raster coords, now resample!
-				// But does the rectangle defined by temp1 and temp2 actually
-				// contain any points? If not use nearest-neighbor...
-				if (temp1.x - temp2.x < 1.0 ||
-				    temp2.y - temp1.y < 1.0) {
-					// Use nearest-neighbor resampling.
-				} else {
-					// Proceed with categorical resampling
-
-				}
-				
-
-			}
-		}
-		
-	}  else { // Resampling is continuous
-		
-		for (int y = 0; y < out_rows; ++y) {
-			for (int x = 0; x < out_cols; ++x) {
-				outraster.at(y*out_cols) = 127; // REMOVE THIS
-				
-				temp1.x = ((double)x * out_pixsize) + out_ul.x;
-				temp1.y = out_ul.y - ((double)y * out_pixsize);
-				
-				outproj->inverse(temp1.x, temp1.y, &temp2.x, &temp2.y);
-				outproj->forward(temp2.x, temp2.y,
-						 &temp2.x, &temp2.y);
-				if (fabs(temp1.x - temp2.x) > 0.0001) {
-					// Overlap detected, abandon ship!
-					continue;
-				}
-				
-				temp1.x = out_ul.x + ((double)x * out_pixsize);
-				temp1.y = ((double)y * out_pixsize) - out_ul.y;
-				
-				
-				outproj->inverse(temp1.x, temp1.y, &temp1.x, &temp1.y);
-				inproj-> forward(temp1.x, temp1.y, &temp1.x, &temp1.y);
-				// temp now contains coords to input projection
-
-				temp1.x -= in_ul.x;
-				temp1.y += in_ul.y;
-				temp1.x /= in_pixsize;
-				temp1.y /= in_pixsize;
-				// temp is now scaled to input raster coords, now resample!
-				if ( in_rows - (int)temp1.y <= 0 ) {
-					printf("Input size %ld cols, %ld rows\n",
-					       in_cols, in_rows);
-					printf("Sanity check: %ud, %ud\n",
-					       ((unsigned int)temp1.x),
-					       ((unsigned int)temp1.y));
+	for (int y = 0; y < out_rows; ++y)  {
+		for (int x = 0; x < out_cols; ++x) {
+			// Determine location of equivalent input pixel
+			outraster.at(y*out_cols) = 127; // REMOVE THIS
 			
-					continue;
-				}
-
-			
-				try {
-					unsigned long ss = (long unsigned int)temp1.y;
-					ss *= in_cols;
-					ss += (long unsigned int)temp1.x;
-					outraster.at(x + (y * out_cols)) =
-						inraster.at(ss);
-
-				} catch(std::exception) {
-					s = out_rows;
-					s *= out_cols;
-					s *= output->bitsPerPixel()/8;
+			temp1.x = ((double)x * out_pixsize) + out_ul.x;
+			temp1.y = out_ul.y - ((double)y * out_pixsize);
 				
-					printf("----------------------------------\n");
-					printf("Error writing (%ud %ud) to (%d %d)\n",
-					       (unsigned int)temp1.x, (unsigned int)temp1.y, x, y);
-					printf("Input Raster: (%ld cols, %ld rows)\n"
-					       "Output Raster: (%ld cols, %ld rows)\n",
-					       in_cols, in_rows, out_cols, out_rows);
-					printf("----------------------------------\n");
-
-				}
+			outproj->inverse(temp1.x, temp1.y, &temp2.x, &temp2.y);
+			outproj->forward(temp2.x, temp2.y,
+					 &temp2.x, &temp2.y);
+			if (fabs(temp1.x - temp2.x) > 0.0001) {
+				// Overlap detected, abandon ship!
+				continue;
 			}
+				
+			temp1.x = out_ul.x + ((double)x * out_pixsize);
+			temp1.y = ((double)y * out_pixsize) - out_ul.y;
+			temp2 = temp1;
+				
+			// Now we are going to assign temp1 as the UL
+			// of our pixel and temp2 as LR
+			temp1.x -= out_pixsize/2;
+			temp1.y += out_pixsize/2;
+			temp2.x += out_pixsize/2;
+			temp2.y -= out_pixsize/2;
+				
+			outproj->inverse(temp1.x, temp1.y, &temp1.x, &temp1.y);
+			inproj-> forward(temp1.x, temp1.y, &temp1.x, &temp1.y);
+			outproj->inverse(temp2.x, temp2.y, &temp2.x, &temp2.y);
+			inproj-> forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
+			// temp1/temp2 now contain coords to input projection
+			temp1.x -= in_ul.x;
+			temp1.y += in_ul.y;
+			temp1.x /= in_pixsize;
+			temp1.y /= in_pixsize;
+			temp2.x -= in_ul.x;
+			temp2.y += in_ul.y;
+			temp2.x /= in_pixsize;
+			temp2.y /= in_pixsize;
 
+			// temp1&2 are now scaled to input raster coords, now resample!
+			// But does the rectangle defined by temp1 and temp2 actually
+			// contain any points? If not use nearest-neighbor...
+			if (temp1.x - temp2.x < 1.0 ||
+			    temp2.y - temp1.y < 1.0) {
+				// Use nearest-neighbor resampling.
+			} else {
+				// Proceed with categorical resampling
+				// Generate arguments for resampler...
+				long center_index = (long)((temp1.x + temp2.x)/2);
+				center_index += (long)((temp1.y + temp2.y)/2) * in_cols;
+				long pixel_width = (long)fabs((temp2.x - temp1.x)/in_pixsize);
+				long pixel_height = (long)(fabs(temp1.y - temp2.y)/in_pixsize);
+				vector<long> index_array(pixel_width*pixel_height, 0L);
+					
+				for (int i=(long)temp1.y, a=0; i>=(long)temp2.y; ++i) {
+					for (int j=(long)temp2.x; j>=(long)temp1.x; ++j) {
+						index_array[++a] = j+(i*in_cols);
+					}
+				}
+				// Finally resample point
+				resampler(&(inraster[0]),
+					  center_index,
+					  pixel_width,
+					  pixel_height,
+					  &(index_array[0]),
+					  &(outraster[x+(y*out_cols)]));
+			}
+			
 		}
-		
 	}
-
+	
 	// Write output raster
 	output->writeRaster(firstRow, numRows, &(outraster[0]));
-
+	
 	delete outproj;
 	delete inproj;
-
+	
 	return;
-
 }
 
 void Reprojector::reproject()
