@@ -77,9 +77,8 @@ void Reprojector::parallelReproject()
         out_ulx = output->ul_x;
         out_uly = output->ul_y - (rank * ((out_rows * out_pixsize)/numprocs));
 
-	long total_rows = numprocs * (long)floor(output->getRowCount()/(double)numprocs);
-	if (total_rows < output->getRowCount()) {
-		long difference = output->getRowCount() - total_rows;
+	if (chunk_count * chunk_sizes.at(0) < output->getRowCount()) {
+		long difference = output->getRowCount() - chunk_count * chunk_sizes.at(0);
 		chunk_sizes.back() += difference;
 	}
 
@@ -130,7 +129,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
         out_ul.y = output->ul_y - firstRow * out_pixsize;
         in_cols = input->getColCount();
         
-        area = FindMinBox2(out_ul.x, out_ul.y, out_pixsize,
+        area = FindMinBox(out_ul.x, out_ul.y, out_pixsize,
                            out_rows, out_cols,
                            outproj, inproj,
                            in_pixsize);
@@ -252,7 +251,7 @@ void Reprojector::reproject()
 }
 
 
-Area FindMinBox2(double in_ul_x, double in_ul_y,
+Area FindMinBox(double in_ul_x, double in_ul_y,
 		 double in_pix_size,
 		 int rows, int cols, 
 		 Projection *inproj,
@@ -381,130 +380,5 @@ Area FindMinBox2(double in_ul_x, double in_ul_y,
   
 
 	return area;
-}
-
-
-// Minbox finds number of rows and columns in output and upper-left
-// corner of output
-void FindMinBox(ProjectedRaster *input, Projection *outproj, double out_pixsize,
-		double &_ul_x, double &_ul_y, double &_lr_x, double &_lr_y)
-{
-	double ul_x, ul_y;
-	double pixsize; // in METER!
-	Coordinate temp;
-	Transformer t;
-	int cols, rows;
-	double maxx, minx, maxy, miny;
-	double ul_lon, ul_lat, lr_lon, lr_lat;
-
-	maxx = maxy = 0;
-	minx = miny = 1e+37;
-
-	ul_x = input->ul_x;
-	ul_y = input->ul_y;
-	cols = input->getColCount();
-	rows = input->getRowCount();
-	pixsize = out_pixsize;
-  
-	t.setInput(*input->getProjection());
-	t.setOutput(*outproj);
-
-	// Find geographic corners of input
-	input->getProjection()->inverse(ul_x, ul_y, &ul_lon, &ul_lat);
-	input->getProjection()->inverse(ul_x+(cols*pixsize), 
-					ul_y-(rows*pixsize), 
-					&lr_lon, 
-					&lr_lat);
-	double delta_east = (lr_lon-ul_lon)/cols, 
-		delta_north = (ul_lat-lr_lat)/rows;
-
-	// Calculate minbox
-	temp.x = ul_x;
-	temp.y = ul_y;
-	temp.units = METER;
-
-	// Check top of map
-	for (int x = 0; x < cols; ++x) {
-		temp.x = (double)x*pixsize + ul_x;
-		temp.y = ul_y;
-		t.transform(&temp);
-		if (temp.x < minx) minx = temp.x;
-		if (temp.x > maxx) maxx = temp.x;
-		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
-		temp.x = ul_lon + (x*delta_east);
-		temp.y = ul_lat;
-		outproj->forward(temp.x, temp.y, &(temp.x), &(temp.y));
-		if (temp.x < minx) minx = temp.x;
-		if (temp.x > maxx) maxx = temp.x;
-		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
-	}
-
-	// Check bottom of map
-	for (int x = 0; x < cols; ++x) {
-		temp.x = (double)x*pixsize + ul_x;
-		temp.y = (double)-rows*pixsize + ul_y;
-		t.transform(&temp);
-		if (temp.x < minx) minx = temp.x;
-		if (temp.x > maxx) maxx = temp.x;
-		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
-		temp.x = ul_lon + (x * delta_east);
-		temp.y = ul_lat - (rows*delta_north);
-		outproj->forward(temp.x, temp.y, &(temp.x), &(temp.y));
-		if (temp.x < minx) minx = temp.x;
-		if (temp.x > maxx) maxx = temp.x;
-		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
-
-	}
- 
-	// Check Left side
-	for (int y = 0; y < rows; ++y) {
-		temp.x = ul_x;
-		temp.y = (double)-y*(pixsize+1) + ul_y;
-		t.transform(&temp);
-		if (temp.x < minx) minx = temp.x;
-		if (temp.x > maxx) maxx = temp.x;
-		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
-		temp.x = ul_lon;
-		temp.y = ul_lat - (y*delta_north);
-		outproj->forward(temp.x, temp.y, &(temp.x), &(temp.y));
-		if (temp.x < minx) minx = temp.x;
-		if (temp.x > maxx) maxx = temp.x;
-		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
-	}
-
-	// Check right side
-	for (int x = (int)(-1 * (cols*.1)); x < cols*.1; ++x) {
-		for (int y = 0; y < rows; ++y) {
-			temp.x = ((double)cols+x)*(1+pixsize) + ul_x;
-			temp.y = (double)-y*pixsize + ul_y;
-			t.transform(&temp);
-			if (temp.x < minx) minx = temp.x;
-			if (temp.x > maxx) maxx = temp.x;
-			if (temp.y < miny) miny = temp.y;
-			if (temp.y > maxy) maxy = temp.y;
-			temp.x = ul_lon + (cols * delta_east);
-			temp.y = ul_lat - (y * delta_north);
-			outproj->forward(temp.x, temp.y, &(temp.x), &(temp.y));
-			if (temp.x < minx) minx = temp.x;
-			if (temp.x > maxx) maxx = temp.x;
-			if (temp.y < miny) miny = temp.y;
-			if (temp.y > maxy) maxy = temp.y;
-		}
-	}
-
-	// Set outputs
-	_ul_x = minx;
-	_ul_y = maxy;
-	_lr_x = maxx;
-	_lr_y = miny;
-  
-
-	return;
 }
 

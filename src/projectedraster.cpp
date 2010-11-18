@@ -113,6 +113,7 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	const char *format = "GTiff";
 	GDALDriver *driver;
 	GDALRasterBand *band;
+	Area area;
 
 	projection = output_proj->copy();
 	filename = _filename;
@@ -125,7 +126,15 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	pixel_size = _pixel_size;
 	type = pixel_type;
 
- 	FindMinBox(input, output_proj, pixel_size, ul_x, ul_y, lr_x, lr_y);
+	area = FindMinBox(input->ul_x, input->ul_y, input->pixel_size,
+			  input->rows, input->cols, input->projection,
+			  output_proj, pixel_size);
+
+	ul_x = area.ul.x;
+	ul_y = area.ul.y;
+	lr_x = area.lr.x;
+	lr_y = area.lr.y;
+
 	rows = (int)ceil((ul_y-lr_y) / input->getPixelSize());
 	cols = (int)ceil((lr_x-ul_x) / input->getPixelSize());
 
