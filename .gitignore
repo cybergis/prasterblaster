@@ -1,0 +1,15 @@
+# compiled objects
+*.o
+
+# compiled dynamic objects
+*.so
+
+# compiled static libraries
+*.a
+
+# emacs temp files
+*~
+.#*
+
+# program binary
+prasterblaster
