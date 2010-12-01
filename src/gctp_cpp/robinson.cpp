@@ -231,17 +231,18 @@ std::string Robinson::wkt()
 {
 	OGRSpatialReference sr;
 	int epsg = DATUM2EPSG[datum()];
-	char **wkt = 0;
+	char *wkt = 0;
 	std::string output = "";
 	OGRErr err;
-
+	
 	sr.SetProjCS("Robinson");
 	if (epsg != -1) {
 		sr. importFromEPSG(epsg);
 		sr.SetRobinson(param(4), param(6), param(7));
-		err = sr.exportToPrettyWkt(wkt);
+		err = sr.exportToWkt(&wkt);
 	} else {
-		return output;
+		std::string ret(output);
+		return  ret;
 	}
 	
 	if (err == OGRERR_NONE) {

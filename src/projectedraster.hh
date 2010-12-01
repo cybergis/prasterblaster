@@ -58,7 +58,7 @@ public:
 	//! Constructor
 	/*! 
 	 * This constructor takes a single arguments, filename, representing
-	 * the path to the rastegr to be opened.
+	 * the path to the raster to be opened.
 	 */
 
 	ProjectedRaster(string _filename);
@@ -86,9 +86,10 @@ public:
 	/*!
 	 * This constructor creates a raster from a filename and an xml description file.
 	 */
-	ProjectedRaster(string filename,
+	ProjectedRaster(ProjectedRaster input,
+			string filename,
 			string xmlDescriptionPath);
-
+	
 	ProjectedRaster(string filename,
 			ProjectedRaster *input,
 			Projection *output_proj,

@@ -83,7 +83,8 @@ ProjectedRaster::ProjectedRaster(string _filename,
 }
 
 
-ProjectedRaster::ProjectedRaster(string _filename,
+ProjectedRaster::ProjectedRaster(ProjectedRaster *input,
+				 string _filename,
 				 string xmlDescription)
 {
 	projection = 0;
@@ -96,7 +97,16 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	GDALAllRegister();
 	bool status = configureFromXml(xmlDescription);
 	band_count = 1;
-	ready = status;
+
+	if (status == true) {
+		Area a = FindMinBox(input->ul_x, input->ul_y,
+				    input->pixel_size,
+				    rows, cols,
+				    input->projection,
+				    projection,
+				    pixel_size);
+	}
+	
 
 	ready = makeRaster();
 

@@ -62,6 +62,10 @@ int main(int argc, char *argv[])
 	if (rank == 0) {
 		out = new ProjectedRaster(argv[2],
 					  argv[3]);
+
+		out = new ProjectedRaster(argv[2], 
+					  &in,
+					  
 		delete out;
 		out = 0;
 		MPI_Barrier(MPI_COMM_WORLD);
