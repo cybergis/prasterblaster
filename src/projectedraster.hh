@@ -86,7 +86,7 @@ public:
 	/*!
 	 * This constructor creates a raster from a filename and an xml description file.
 	 */
-	ProjectedRaster(ProjectedRaster input,
+	ProjectedRaster(ProjectedRaster *input,
 			string filename,
 			string xmlDescriptionPath);
 	

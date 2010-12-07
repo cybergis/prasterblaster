@@ -3,7 +3,7 @@ PRBDIR = src/
 GCTPDIR = src/gctp_cpp/
 OBJDIR = src/objs
 
-LCFLAGS = $(CFLAGS) -Wall -W -O2 -L$(GCTPDIR)
+LCFLAGS = $(CFLAGS) -g -Wall -W -O2 -L$(GCTPDIR)
 LINCLUDES = $(INCLUDES) -Isrc -I$(GCTPDIR)
 LLIBS = $(LIBS) -lmpi -lgdal -lgctp_cpp
 

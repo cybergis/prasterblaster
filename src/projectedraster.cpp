@@ -105,10 +105,19 @@ ProjectedRaster::ProjectedRaster(ProjectedRaster *input,
 				    input->projection,
 				    projection,
 				    pixel_size);
-	}
-	
 
-	ready = makeRaster();
+	
+		ul_x = a.ul.x;
+		ul_y = a.ul.y;
+		
+		rows = (int)((ul_y - a.lr.y) / pixel_size);
+		cols = (int)((a.lr.x - ul_x) / pixel_size);
+		
+		ready = makeRaster();
+	} else {
+		fprintf(stderr, "Error reading xml configuration\n");
+		fflush(stderr);
+	}
 
 	return;
 }
@@ -503,12 +512,12 @@ bool ProjectedRaster::configureFromXml(std::string xmlfilename)
 	  Transformer::convertProjection((ProjCode)in_info.projectionNumber());
 
 	if (projection == 0) {
-
 		return false;
 	}
 	projection->setUnits((ProjUnit)in_info.unitNumber());
 	projection->setDatum((ProjDatum)in_info.datumNumber());
 	projection->setParams(in_info.allGctpParams());
+	printf("WKT: %s\n", projection->wkt().c_str());
 
 	return true;
 }
@@ -624,6 +633,7 @@ bool ProjectedRaster::makeRaster()
 	geotransform[4] = geotransform[2] = 0.0;
 	geotransform[1] = geotransform[5] = pixel_size;
 	dataset->SetGeoTransform(geotransform);
+	printf("wkt: %s\n", projection->wkt().c_str());
 	dataset->SetProjection(projection->wkt().c_str());
 
 
