@@ -34,6 +34,7 @@ namespace resampler
 	{
 		long temp = pixel_width = pixel_height = *index_array; // remove this line
 		temp++;
+
 		*(T*)dest_pixel = ((T*)src_raster)[center_index];
 		return;
 	}

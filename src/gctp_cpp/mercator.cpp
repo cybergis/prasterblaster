@@ -1,4 +1,5 @@
 
+#include <ogr_spatialref.h>
 #include "mercator.h"
 
 Mercator::Mercator(): Projection(), m_e(0.0),
@@ -71,7 +72,33 @@ void Mercator::_forward(double lon, double lat)
 }
 
 
+std::string Mercator::wkt()
+{
+	std::string output = "";
+	OGRSpatialReference sr;
+	int epsg = DATUM2EPSG[datum()];
+	char *wkt = 0;
+	OGRErr err;
+	
+	
+	sr.SetProjCS("Mercator");
+	if (epsg != -1) {
+		sr. importFromEPSG(epsg);
+		sr.SetMercator(0.0, param(4), param(5), param(6), param(7));
+		err = sr.exportToWkt(&wkt);
+	} else {
+		std::string ret(output);
+		return  ret;
+	}
+	
+	if (err == OGRERR_NONE) {
+		output = wkt;
+		OGRFree(wkt);
+	}
 
+
+	return output;
+}
 
 
 

@@ -25,8 +25,7 @@ int DATUM2EPSG[SPHDCT]= {
 	7053, // HOUGH
 	-1,   // MERCURY_1960
 	-1,   // MODIFIED_MERCURY_1968
-	//	4052, // EARTH (Clarke 1866 Authalic Sphere)
-	37008, // EARTH
+	4052, // EARTH (Clarke 1866 Authalic Sphere)
 	4006, // BESSEL_1841_NAMIBIA
 	7016, // EVEREST_SABAH
 	-1,   // EVEREST_INDIA_1956

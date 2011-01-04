@@ -58,35 +58,32 @@ ProjectedRaster::ProjectedRaster(string _filename)
 	return;
 }
 
-ProjectedRaster::ProjectedRaster(string _filename, 
-				 int num_rows, int num_cols, 
-				 GDALDataType pixel_type, double _pixel_size,
-				 int _band_count,
-				 Projection *proj,
-				 double ulx, double uly)
+bool ProjectedRaster::CreateRaster(string _filename, 
+					  int num_rows, int num_cols, 
+					  GDALDataType pixel_type, double _pixel_size,
+					  int _band_count,
+					  Projection *proj,
+					  double ulx, double uly)
 {
-	filename = _filename;
-	projection = proj;
-	band_count = _band_count;
-	rows = num_rows;
-	cols = num_cols;
-	pixel_size = _pixel_size;
-	type = pixel_type;
-	ul_x = ulx;
-	ul_y = uly;
-
-	dataset = 0;
-
-	ready = makeRaster();
-
-	return;
+	bool status = makeRaster(_filename,
+				 num_cols,
+				 num_rows,
+				 _band_count,
+				 ulx,
+				 uly,
+				 pixel_type,
+				 proj,
+				 _pixel_size);
+			   
+	return status;
 }
 
 
-ProjectedRaster::ProjectedRaster(ProjectedRaster *input,
-				 string _filename,
-				 string xmlDescription)
+bool ProjectedRaster::CreateRaster(ProjectedRaster *input,
+				   string _filename,
+				   string xmlDescription)
 {
+/*
 	projection = 0;
 	filename = _filename;
 	projection = 0;
@@ -118,16 +115,17 @@ ProjectedRaster::ProjectedRaster(ProjectedRaster *input,
 		fprintf(stderr, "Error reading xml configuration\n");
 		fflush(stderr);
 	}
-
-	return;
+*/
+	return true;
 }
 
-ProjectedRaster::ProjectedRaster(string _filename,
-				 ProjectedRaster *input,
-				 Projection *output_proj,
-				 GDALDataType pixel_type,
-				 double _pixel_size)
+bool ProjectedRaster::CreateRaster(string _filename,
+					  ProjectedRaster *input,
+					  Projection *output_proj,
+					  GDALDataType pixel_type,
+					  double _pixel_size)
 {
+/*
 	double lr_x, lr_y;
 	const char *format = "GTiff";
 	GDALDriver *driver;
@@ -160,7 +158,7 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	GDALAllRegister();
 
 	driver = GetGDALDriverManager()->GetDriverByName(format);
-/*
+
 	if( driver == NULL ) {
 		ready = false;
 		return;
@@ -224,8 +222,8 @@ ProjectedRaster::ProjectedRaster(string _filename,
 	}
 */
 	
-	ready = false;
-	return;
+	bool status = false;
+	return status;
 }
 
 
@@ -517,7 +515,8 @@ bool ProjectedRaster::configureFromXml(std::string xmlfilename)
 	projection->setUnits((ProjUnit)in_info.unitNumber());
 	projection->setDatum((ProjDatum)in_info.datumNumber());
 	projection->setParams(in_info.allGctpParams());
-	printf("WKT: %s\n", projection->wkt().c_str());
+	printf("xmlfilename: %s, WKT: %s\n", 
+	       xmlfilename.c_str(), projection->wkt().c_str());
 
 	return true;
 }
@@ -594,7 +593,16 @@ bool ProjectedRaster::loadRaster(string filename)
 	return true;
 }
 
-bool ProjectedRaster::makeRaster()
+bool ProjectedRaster::makeRaster(string _filename,
+					int _cols,
+					int _rows,
+					int _band_count,
+					double _ul_x,
+					double _ul_y,
+					GDALDataType _type,
+					Projection *_projection,
+					double _pixel_size)
+				 
 {
 	const char *format = "GTiff";
 	GDALDriver *driver;
@@ -616,26 +624,24 @@ bool ProjectedRaster::makeRaster()
 	options = CSLSetNameValue( options, "COMPRESS", "NONE" );
 	options = CSLSetNameValue( options, "PHOTOMETRIC", "MINISBLACK");
 
-	dataset = driver->Create(filename.c_str(), cols, rows, 
-				 band_count, type,
+	GDALDataset *_dataset = driver->Create(_filename.c_str(), _cols, _rows, 
+				 _band_count, _type,
 				 options);
 
-	
-	if (dataset == 0 || projection == 0) {
+	if (_dataset == 0 || _projection == 0) {
 		return false;
 	}
 
 	// Setup georeferencing
 	OGRSpatialReference srs;
 
-	geotransform[0] = ul_x;
-	geotransform[3] = ul_y;
+	geotransform[0] = _ul_x;
+	geotransform[3] = _ul_y;
 	geotransform[4] = geotransform[2] = 0.0;
-	geotransform[1] = geotransform[5] = pixel_size;
-	dataset->SetGeoTransform(geotransform);
-	printf("wkt: %s\n", projection->wkt().c_str());
-	dataset->SetProjection(projection->wkt().c_str());
+	geotransform[1] = geotransform[5] = _pixel_size;
+	_dataset->SetGeoTransform(geotransform);
 
+	_dataset->SetProjection(_projection->wkt().c_str());
 
 	if (options != 0)
 		CSLDestroy(options);

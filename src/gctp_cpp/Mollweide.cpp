@@ -97,22 +97,53 @@ std::string Mollweide::wkt()
 {
 	OGRSpatialReference sr;
 	int epsg = DATUM2EPSG[datum()];
-	char **wkt = 0;
+	char *wkt = 0;
 	std::string output = "";
 	OGRErr err;
+/*
+       OGRSpatialReference     oSRS;
+
+        oSRS.SetProjCS( "UTM 17 (WGS84) in northern hemisphere." );
+        oSRS.SetWellKnownGeogCS( "WGS84" );
+        oSRS.SetUTM( 17, TRUE );
 
 	sr.SetProjCS("Mollweide");
+	oSRS.exportToPrettyWkt(&wkt);
+	output = wkt;
+		printf("WKT GCTP: %s DATUM: %d\n", wkt, datum());
+	return output;
+*/	
 	if (epsg != -1) {
-		sr.importFromEPSG(epsg);
-		sr.SetMollweide(param(4), param(6), param(7));
-		err = sr.exportToPrettyWkt(wkt);
+		err = sr.importFromEPSG(epsg);
+		if (err != OGRERR_NONE) {
+			fprintf(stderr, "Error setting EPSG\n");
+		}
+		err = sr.SetMollweide(param(4), param(6), param(7));
+		if (err != OGRERR_NONE) {
+			fprintf(stderr, "Error setting projection\n");
+		}
+		sr.Fixup();
+		err = sr.Validate();
+		err = sr.exportToPrettyWkt(&wkt);
 	} else {
 		return output;
 	}
 
+
 	if (err == OGRERR_NONE) {
-		printf("WKT GCTP: %s DATUM: %d\n", *wkt, datum());
-		output = *wkt;
+		printf("WKT GCTP: %s DATUM: %d\n", wkt, datum());
+		output = wkt;
+		OGRFree(wkt);
+	} else {
+		printf("WKT Broken!\n");
+		if (err == OGRERR_UNSUPPORTED_SRS) {
+			printf("Unsupported SRS!\n");
+			
+		} else if (err == OGRERR_CORRUPT_DATA) {
+			printf("SRS not well formed!\n");
+		}
+		printf("WKT GCTP: %s DATUM: %d\n", wkt, datum());
+		output = wkt;
 		OGRFree(wkt);
 	}
 

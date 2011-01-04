@@ -21,6 +21,16 @@
 using resampler::resampler_func;
 
 
+class RasterCoordTransformer
+{
+public:
+	RasterCoordTransformer(ProjectedRaster *source, ProjectedRaster *dest);
+	~RasterCoordTransformer();
+	Area Transform(Coordinate source);
+private:
+	ProjectedRaster *src, *dest;
+	Projection *src_proj, *dest_proj;
+};
 
 class Reprojector
 {
@@ -49,8 +59,9 @@ public:
 	void parallelReproject();
 
 
-private:
 	long startIndex(long process_number, vector<long> process_sizes);
+	vector<long> getChunkSizes(long row_count, long chunk_count);
+	vector<long> getChunkAssignments(long chunk_count, long process_count);
 	void reprojectChunk(int firstRow, int numRows);
 	int numprocs, rank;
 	double maxx, minx, maxy, miny;

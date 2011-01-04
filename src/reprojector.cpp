@@ -14,6 +14,77 @@
 #include "resampler.hh"
 
 
+RasterCoordTransformer::RasterCoordTransformer(ProjectedRaster *source,
+					       ProjectedRaster *_dest)
+{
+	src = source;
+	dest = _dest;
+	src_proj = source->getProjection();
+	dest_proj = dest->getProjection();
+	
+	return;
+}
+
+RasterCoordTransformer::~RasterCoordTransformer()
+{
+	return;
+}
+
+Area RasterCoordTransformer::Transform(Coordinate source)
+{
+
+	Area value;
+	Coordinate temp1, temp2;
+	
+	temp1.x = temp1.y = 0.0;
+
+	value.ul = temp1;
+	value.lr = temp1;
+
+	temp1.x = ((double)source.x * src->pixel_size) + src->ul_x;
+	temp1.y = ((double)source.y * src->pixel_size) - src->ul_y;
+	
+	src_proj->inverse(temp1.x, temp1.y, &temp2.x, &temp2.y);
+	src_proj->forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
+	
+	if (fabs(temp1.x - temp2.x) > 0.0001) {
+		// Overlap detected!
+		return value;
+	}
+	
+	temp1.x = ((double)source.x * src->pixel_size) + src->ul_x;
+	temp1.y = ((double)source.y * src->pixel_size) - src->ul_y;
+	temp2 = temp1;
+
+	// Now we are going to assign temp1 as the UL of our pixel and
+	// temp2 as LR
+	temp1.x -= src->pixel_size/2;
+	temp1.y += src->pixel_size/2;
+	temp2.x += src->pixel_size/2;
+	temp2.y -= src->pixel_size/2;
+
+	src_proj->inverse(temp1.x, temp1.y, &temp1.x, &temp1.y);
+	dest_proj-> forward(temp1.x, temp1.y, &temp1.x, &temp1.y);
+	src_proj->inverse(temp2.x, temp2.y, &temp2.x, &temp2.y);
+	dest_proj-> forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
+	// temp1/temp2 now contain coords to input projection
+
+	// Now convert to points in the raster coordinate space.
+	temp1.x -= dest->ul_x;
+	temp1.y += dest->ul_y;
+	temp1.x /= dest->pixel_size;
+	temp1.y /= dest->pixel_size;
+	temp2.x -= dest->ul_x;
+	temp2.y += dest->ul_y;
+	temp2.x /= dest->pixel_size;
+	temp2.y /= dest->pixel_size;
+
+	value.ul = temp1;
+	value.lr = temp2;
+	
+	return value;
+}
+
 Reprojector::Reprojector(ProjectedRaster *_input, ProjectedRaster *_output) 
         :
         input(_input), output(_output)
@@ -52,43 +123,38 @@ long Reprojector::startIndex(long chunk_number, vector<long> chunk_sizes)
 	return index;
 }
 
+vector<long> Reprojector::getChunkSizes(long row_count, long chunk_count)
+{
+	vector<long> sizes(chunk_count, row_count/chunk_count);
+	long accounted = (row_count/chunk_count)*chunk_count;
+	
+	if (accounted < row_count) {
+		sizes.back() += row_count - accounted;
+	}
+	
+	return sizes;
+}
+
+vector<long> Reprojector::getChunkAssignments(long chunk_count, long process_count)
+{
+	vector<long> assignments(chunk_count, process_count-1);
+	long basic_size = process_count / chunk_count;
+
+	for (unsigned long i=0; i<assignments.size(); i += basic_size) {
+		for (int j=0; j<basic_size; ++j) {
+			assignments.at(i+j) = i;
+		}
+	}
+
+	return assignments;
+}
+
+
 void Reprojector::parallelReproject()
 {
 	int chunk_count = numprocs * 2;
-        Transformer t;
-        Coordinate temp, temp2;
-        double in_ulx, in_uly, out_ulx, out_uly;
-        double in_pixsize, out_pixsize;
-        long in_rows, in_cols, out_rows, out_cols;
-	vector<long> chunk_sizes(chunk_count, (long)floor(output->getRowCount()/(double)chunk_count));
-	vector<long> chunk_assignments(chunk_count, numprocs-1);
-
-        t.setInput(*output->getProjection());
-        t.setOutput(*input->getProjection());
-  
-        in_rows = input->getRowCount();
-        in_cols = input->getColCount();
-        out_rows = output->getRowCount()/numprocs + 1; 
-        out_cols = output->getColCount();
-        in_pixsize = input->getPixelSize();
-        out_pixsize = input->getPixelSize();
-        in_ulx = input->ul_x;
-        in_uly = input->ul_y;
-        out_ulx = output->ul_x;
-        out_uly = output->ul_y - (rank * ((out_rows * out_pixsize)/numprocs));
-
-	if (chunk_count * chunk_sizes.at(0) < output->getRowCount()) {
-		long difference = output->getRowCount() - chunk_count * chunk_sizes.at(0);
-		chunk_sizes.back() += difference;
-	}
-
-	long chunk_dist = chunk_count / numprocs;
-	for (int i=0, proc=0; i < chunk_count - chunk_dist; i += chunk_dist, ++proc)
-	{
-		for (int j=0; j<chunk_dist; ++j) {
-			chunk_assignments.at(i+j) = proc;
-		}
-	}
+	vector<long> chunk_sizes = getChunkSizes(output->getRowCount(), chunk_count);
+	vector<long> chunk_assignments = getChunkAssignments(chunk_count, numprocs);
 
 	for (int i = 0; i < chunk_count; ++i) {
 		if (chunk_assignments[i] == rank) {
@@ -136,9 +202,12 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
         
 
         in_ul.x = input->ul_x;
+	in_ul.y = area.ul.y;
+	in_lr.x = area.lr.x;
+	in_lr.y = area.lr.y;
+
         if (in_ul.y > input->ul_y)
                 in_ul.y = input->ul_y;
-
         in_lr.x = input->ul_x + (in_pixsize * in_cols);
 
         long in_first_row = (long)((input->ul_y - in_ul.y) / in_pixsize);
@@ -152,78 +221,84 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
         outraster.resize(s);
         s = in_rows;
         s *= in_cols;
-        s *= output->bitsPerPixel()/8;
+        s *= input->bitsPerPixel()/8;
+	printf("In rows: %ld, cols %ld\n", in_rows, in_cols);
         inraster.resize(s);
         
         // Read input file
         if (input->readRaster(in_first_row, in_rows, &(inraster[0]))) {
                 //              printf("Read %d rows\n", numRows);
         } else {
-                printf("Error Reading input!\n");
+                fprintf(stderr, "Error Reading input!\n");
+		fflush(stderr);
+		return;
         }
-        
+	
+	Area pixelArea;
+	int count = 0;
+	int total = 0;
+	RasterCoordTransformer rt(output, input);        
 	for (int y = 0; y < out_rows; ++y)  {
 		for (int x = 0; x < out_cols; ++x) {
 			// Determine location of equivalent input pixel
 			outraster.at(y*out_cols) = 127; // REMOVE THIS
+			continue;
+			temp1.x = x;
+			temp1.y = y;
+			pixelArea = rt.Transform(temp1);
+			temp1 = pixelArea.ul;
+			temp2 = pixelArea.lr;
 			
-			temp1.x = ((double)x * out_pixsize) + out_ul.x;
-			temp1.y = out_ul.y - ((double)y * out_pixsize);
-				
-			outproj->inverse(temp1.x, temp1.y, &temp2.x, &temp2.y);
-			outproj->forward(temp2.x, temp2.y,
-					 &temp2.x, &temp2.y);
-			if (fabs(temp1.x - temp2.x) > 0.0001) {
-				// Overlap detected, abandon ship!
-				continue;
-			}
-				
-			temp1.x = out_ul.x + ((double)x * out_pixsize);
-			temp1.y = ((double)y * out_pixsize) - out_ul.y;
-			temp2 = temp1;
-				
-			// Now we are going to assign temp1 as the UL
-			// of our pixel and temp2 as LR
-			temp1.x -= out_pixsize/2;
-			temp1.y += out_pixsize/2;
-			temp2.x += out_pixsize/2;
-			temp2.y -= out_pixsize/2;
-				
-			outproj->inverse(temp1.x, temp1.y, &temp1.x, &temp1.y);
-			inproj-> forward(temp1.x, temp1.y, &temp1.x, &temp1.y);
-			outproj->inverse(temp2.x, temp2.y, &temp2.x, &temp2.y);
-			inproj-> forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
-			// temp1/temp2 now contain coords to input projection
-			temp1.x -= in_ul.x;
-			temp1.y += in_ul.y;
-			temp1.x /= in_pixsize;
-			temp1.y /= in_pixsize;
-			temp2.x -= in_ul.x;
-			temp2.y += in_ul.y;
-			temp2.x /= in_pixsize;
-			temp2.y /= in_pixsize;
-
+			//! TODO: Check for overlap!
 			// temp1&2 are now scaled to input raster coords, now resample!
 			// But does the rectangle defined by temp1 and temp2 actually
 			// contain any points? If not use nearest-neighbor...
+			long center_index = (long)((temp1.x + temp2.x)/2);
+			center_index += (long)((temp1.y + temp2.y)/2) * in_cols;
+			long pixel_width = (long)fabs((temp2.x - temp1.x)/in_pixsize);
+			long pixel_height = (long)(fabs(temp1.y - temp2.y)/in_pixsize);
+			if (pixel_width == 0) {
+				pixel_width = 1;
+			}
+			if (pixel_height == 0) {
+				pixel_height = 1;
+			}
+			vector<long> index_array(pixel_width*pixel_height, 0L);
+
+			for (int i=0, a=0; i < pixel_height; ++i) {
+				for (int j=0; j < pixel_width; ++j) {
+					index_array[++a] = (j+(long)temp1.x) 
+						+ ((i+(long)temp2.y) *in_cols);
+				}
+			}
+
+			try {
+				outraster.at(x+(y*out_cols)) = 
+					inraster.at((long)(temp1.x+(temp1.y*in_cols)));
+				++total;
+			} catch (exception &e) {
+				++count;
+				printf("Attempted to read input at: %ld. Size is %ld. "
+				       "Attempted to write to: %ld, Size is %ld.\n",
+				       (long)(temp1.x+(temp1.y*in_cols)),
+				       inraster.size(),
+				       x+(y*out_cols),
+				       outraster.size());
+
+			}
+		
+/*
 			if (temp1.x - temp2.x < 1.0 ||
 			    temp2.y - temp1.y < 1.0) {
 				// Use nearest-neighbor resampling.
+				resampler::nearest_neighbor<unsigned char>(&(inraster[0]),
+					center_index,
+					pixel_width,
+					pixel_height,
+					&(index_array[0]),
+					&(outraster[x+(y*out_cols)]));
 			} else {
 				// Proceed with categorical resampling
-				// Generate arguments for resampler...
-				long center_index = (long)((temp1.x + temp2.x)/2);
-				center_index += (long)((temp1.y + temp2.y)/2) * in_cols;
-				long pixel_width = (long)fabs((temp2.x - temp1.x)/in_pixsize);
-				long pixel_height = (long)(fabs(temp1.y - temp2.y)/in_pixsize);
-				vector<long> index_array(pixel_width*pixel_height, 0L);
-					
-				for (int i=(long)temp1.y, a=0; i>=(long)temp2.y; ++i) {
-					for (int j=(long)temp2.x; j>=(long)temp1.x; ++j) {
-						index_array[++a] = j+(i*in_cols);
-					}
-				}
-				// Finally resample point
 				resampler(&(inraster[0]),
 					  center_index,
 					  pixel_width,
@@ -231,10 +306,11 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 					  &(index_array[0]),
 					  &(outraster[x+(y*out_cols)]));
 			}
+*/
 			
 		}
 	}
-	
+	printf("%d total, %d pixels off!\n", total, count);
 	// Write output raster
 	output->writeRaster(firstRow, numRows, &(outraster[0]));
 	

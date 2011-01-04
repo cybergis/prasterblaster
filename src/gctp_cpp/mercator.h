@@ -1,5 +1,8 @@
 #ifndef MERCATOR_H
 #define MERCATOR_H
+
+#include <string>
+
 #include "projection.h"
 
 //!This is the object used for the Mercator projection.
@@ -10,6 +13,8 @@ public:
 
 	Mercator(double gctpParams[],  ProjUnit units, ProjDatum dat);
 	
+        std::string wkt();
+
 protected:
 
 	//!Eccentricity

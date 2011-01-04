@@ -2,10 +2,11 @@ SRCDIR = src/
 PRBDIR = src/
 GCTPDIR = src/gctp_cpp/
 OBJDIR = src/objs
+TESTDIR = tests/
 
-LCFLAGS = $(CFLAGS) -g -Wall -W -O2 -L$(GCTPDIR)
+LCFLAGS = -fPIC $(CFLAGS) -g -Wall -W -O2 -L$(GCTPDIR) -L.
 LINCLUDES = $(INCLUDES) -Isrc -I$(GCTPDIR)
-LLIBS = $(LIBS) -lmpi -lgdal -lgctp_cpp
+LLIBS = $(LIBS) -lmpi -lgdal -lgctp_cpp -lprasterblaster
 
 CXX = mpic++
 
@@ -46,7 +47,6 @@ _GCTPSOURCES = alaskaconformal.cpp \
            wagnervii.cpp
 
 _PRBSOURCES =  projectedraster.cpp \
-               driver.cpp \
                rasterinfo.cpp \
                reprojector.cpp \
                tinystr.cpp \
@@ -56,13 +56,16 @@ _PRBSOURCES =  projectedraster.cpp \
                rasterxml.cpp \
                resampler.cpp
 
+_TESTSOURCES = check_projectedraster.cpp
 
 GCTPSOURCES = $(patsubst %,$(GCTPDIR)/%,$(_GCTPSOURCES))
 PRBSOURCES = $(patsubst %,$(PRBDIR)/%,$(_PRBSOURCES))
+TESTSOURCES = $(patsubst %,$(TESTDIR)/%,$(_TESTSOURCES))
 GCTPOBJS = $(patsubst %.cpp,%.o,$(GCTPSOURCES))
 PRBOBJS = $(patsubst %.cpp,%.o,$(PRBSOURCES))
+TESTOBJS = $(patsubst %.cpp,%,$(TESTSOURCES))
 
-all: prasterblaster 
+all: prasterblaster libprasterblaster.so
 
 .cpp.o:
 	$(CXX) $(LCFLAGS) $(LINCLUDES) -c $< -o $@
@@ -70,10 +73,16 @@ all: prasterblaster
 $(GCTPDIR)/libgctp_cpp.a: $(GCTPOBJS)
 	ar rcs $(GCTPDIR)/libgctp_cpp.a $(GCTPOBJS)
 
-prasterblaster: $(PRBOBJS) $(GCTPDIR)/libgctp_cpp.a
-	$(CXX) $(LCFLAGS) $(LINCLUDES)  -o prasterblaster $(PRBOBJS) $(LLIBS)
+libprasterblaster.a: $(PRBOBJS) $(GCTPDIR)/libgctp_cpp.a
+	ar rcs libprasterblaster.a $(PRBOBJS) $(GCTPOBJS)
+
+libprasterblaster.so: $(PRBOBJS) $(GCTPDIR)/libgctp_cpp.a
+	$(CXX) -shared $(LCFLAGS) $(LINCLUDES) $(PRBOBJS) $(GCTPOBJS) -o libprasterblaster.so $(LLIBS)
+
+prasterblaster: libprasterblaster.so $(PRBOBJS) $(GCTPDIR)/libgctp_cpp.a
+	$(CXX) $(LCFLAGS) $(LINCLUDES) src/driver.cpp -o prasterblaster $(LLIBS)
 
 .PHONY:  clean
 
 clean:
-	rm -f prasterblaster src/*.o src/gctp_cpp/*.o src/gctp_cpp/*.a
+	rm -f libprasterblaster.a libprasterblaster.so prasterblaster src/*.o src/gctp_cpp/*.o src/gctp_cpp/*.a

@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <string>
+
+#include <ogr_spatialref.h>
 
 #include "equirectangular.h"
 
@@ -51,7 +54,50 @@ void Equirectangular::_init()
 }
 
 
+std::string Equirectangular::wkt()
+{
+	char* output = "";
+	char* wkt = 0;
+	OGRSpatialReference sr;
+	int epsg = DATUM2EPSG[datum()];
+	OGRErr err;
 
+	if (epsg != -1) {
+		err = sr.importFromEPSG(epsg);
+		if (err != OGRERR_NONE) {
+			fprintf(stderr, "Error setting EPSG\n");
+		}
+		err = sr.SetEquirectangular(0.0, param(4), param(6), param(7));
+		if (err != OGRERR_NONE) {
+			fprintf(stderr, "Error setting projection\n");
+		}
+		sr.Fixup();
+		err = sr.Validate();
+		err = sr.exportToPrettyWkt(&wkt);
+	} else {
+		return output;
+	}
+
+	if (err == OGRERR_NONE) {
+		output = wkt;
+		OGRFree(wkt);
+	} else {
+		printf("WKT Broken!\n");
+		if (err == OGRERR_UNSUPPORTED_SRS) {
+			printf("Unsupported SRS!\n");
+			
+		} else if (err == OGRERR_CORRUPT_DATA) {
+			printf("SRS not well formed!\n");
+		}
+		printf("WKT GCTP: %s DATUM: %d\n", wkt, datum());
+		output = wkt;
+		OGRFree(wkt);
+	}
+	
+	
+	
+	return output;
+}
 
 
 

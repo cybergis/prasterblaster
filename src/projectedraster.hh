@@ -46,12 +46,11 @@ struct Area {
 	
 };
 
+	
 /*! ProjectedRaster class.
  *
  * This class represents a raster with a projection and location.
  */
-
-
 class ProjectedRaster
 {
 public:
@@ -75,7 +74,7 @@ public:
 	 * @param band_count Number of band in the raster
 	 * @param proj Pointer to Projection object that describes the raster's projection
 	 */
-	ProjectedRaster(string filename, 
+	static bool CreateRaster(string filename, 
 			int num_rows, int num_cols,
 			GDALDataType pixel_type, double pixel_size,
 			int band_count,
@@ -86,11 +85,11 @@ public:
 	/*!
 	 * This constructor creates a raster from a filename and an xml description file.
 	 */
-	ProjectedRaster(ProjectedRaster *input,
+	static bool CreateRaster(ProjectedRaster *input,
 			string filename,
 			string xmlDescriptionPath);
 	
-	ProjectedRaster(string filename,
+	static bool CreateRaster(string filename,
 			ProjectedRaster *input,
 			Projection *output_proj,
 			GDALDataType pixel_type,
@@ -219,7 +218,15 @@ private:
 	bool configureFromXml(string filename);
 	bool loadImgRaster(string rasterFilename, string xmlFilename);
 	bool loadRaster(string filename);
-	bool makeRaster();
+	static bool makeRaster(string filename,
+			       int cols,
+			       int rows,
+			       int band_count,
+			       double ul_x,
+			       double ul_y,
+			       GDALDataType type,
+			       Projection *projection,
+			       double pixel_size);
 	Projection *projection;
 	GDALDataset *dataset;
 	Transformer t;

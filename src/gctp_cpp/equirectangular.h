@@ -11,7 +11,8 @@ class Equirectangular : public Projection
    Equirectangular();
    
    Equirectangular(double gctpParameters[15], ProjUnit units, ProjDatum dat);
-      
+
+   std::string wkt();
   protected:
 
 	//! See documentation for Projection

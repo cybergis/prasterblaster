@@ -60,20 +60,20 @@ int main(int argc, char *argv[])
 
 
 	if (rank == 0) {
-		out = new ProjectedRaster(&in,
-					  argv[2],
-					  argv[3]);
+		bool result  = ProjectedRaster::CreateRaster(&in,
+							     argv[2],
+							     argv[3]);
 		
-		
-		delete out;
-		out = 0;
+		if (result == false) {
+			MPI_Abort(MPI_COMM_WORLD, -1);
+		}
 		MPI_Barrier(MPI_COMM_WORLD);
 		printf("Output raster created and nodes synced!\n");
 	} else {
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
-
-
+	
+	
 	// Now we re-open the output raster on each node.
 	out = new ProjectedRaster(argv[2]);
 	if (out == 0) {

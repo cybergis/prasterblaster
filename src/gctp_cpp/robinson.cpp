@@ -246,11 +246,11 @@ std::string Robinson::wkt()
 	}
 	
 	if (err == OGRERR_NONE) {
-		output = *wkt;
+		output = wkt;
 		OGRFree(wkt);
 	}
-	
-	return ""; // Should never happen...
+
+	return output;
   
 }
 
