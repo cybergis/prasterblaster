@@ -1,4 +1,15 @@
-// $Id: gctpnames.h,v 1.6.2.2 2008/01/15 19:58:42 dmattli Exp $
+/*!
+ * @file
+ * @author David Matthew Mattli <dmattli@usgs.gov>
+ *
+ * @section LICENSE
+ * This work was produced as a part of the official duties of a
+ * federal employee and is in the public domain.
+
+ * @section DESCRIPTION
+ *
+ *
+ */
 
 
 #ifndef GCTPNAMES_H

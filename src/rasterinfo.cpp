@@ -1,5 +1,3 @@
-// $Id: rasterinfo.cpp,v 1.9.2.3 2008/02/28 22:22:33 dmattli Exp $
-
 
 #include <fstream>
 #include <cstdio>

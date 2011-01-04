@@ -1,4 +1,15 @@
-// $Id: rasterinfo.h,v 1.5.2.3 2008/02/28 22:06:06 dmattli Exp $
+/*!
+ * @file
+ * @author David Matthew Mattli <dmattli@usgs.gov>
+ *
+ * @section LICENSE
+ * This work was produced as a part of the official duties of a
+ * federal employee and is in the public domain.
+
+ * @section DESCRIPTION
+ *
+ *
+ */
 
 
 #ifndef RASTERINFO_H
