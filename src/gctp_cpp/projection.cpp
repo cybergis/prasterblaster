@@ -6,10 +6,9 @@
 #include "transformer.h"
 
 Projection::Projection(): 
-m_errorCode(0),m_longitude(0.0), m_latitude(0.0), m_x_coord(0.0), m_y_coord(0.0), 
+m_errorCode(0),m_datum(NOT_SET),m_longitude(0.0), m_latitude(0.0), m_x_coord(0.0), m_y_coord(0.0), 
 m_falseEasting(0.0),m_falseNorthing(0.0), m_rMajor(0.0), m_rMinor(0.0), m_radius(0.0),
-m_centerLon(0.0), m_centerLat(0.0), m_stdParallelLat1(0.0), m_stdParallelLat2(0.0),
-m_datum(NOT_SET),
+m_centerLon(0.0), m_centerLat(0.0),  m_stdParallelLat1(0.0), m_stdParallelLat2(0.0),
 m_initNeeded(false), m_paramLoadNeeded(false)
 
 {
