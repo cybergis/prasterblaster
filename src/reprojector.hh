@@ -78,9 +78,6 @@ public:
 	 */
 	void parallelReproject();
 
-
-	long startIndex(long process_number, vector<long> process_sizes);
-	vector<long> getChunkSizes(long row_count, long chunk_count);
 	vector<long> getChunkAssignments(long chunk_count, long process_count);
 	vector<ChunkExtent> getChunkExtents(long chunk_count, long process_count);
 	
