@@ -35,6 +35,23 @@ private:
 	Projection *src_proj, *dest_proj;
 };
 
+class ChunkExtent
+{
+public:
+	ChunkExtent(long firstRowIndex, long lastRowIndex, long process);
+	long firstIndex();
+	long lastIndex();
+	long chunkSize();
+	long processAssignment();
+	
+private:
+	long first;
+	long last;
+	long process;
+
+
+};
+
 class Reprojector
 {
 public:
@@ -65,6 +82,8 @@ public:
 	long startIndex(long process_number, vector<long> process_sizes);
 	vector<long> getChunkSizes(long row_count, long chunk_count);
 	vector<long> getChunkAssignments(long chunk_count, long process_count);
+	vector<ChunkExtent> getChunkExtents(long chunk_count, long process_count);
+	
 	void reprojectChunk(int firstRow, int numRows);
 	int numprocs, rank;
 	double maxx, minx, maxy, miny;
