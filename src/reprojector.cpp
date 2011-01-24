@@ -1,4 +1,4 @@
-p/*!
+/*!
  * @file
  * @author David Matthew Mattli <dmattli@usgs.gov>
  *
@@ -25,7 +25,6 @@ p/*!
 #include "reprojector.hh"
 #include "resampler.hh"
 
-using std::vector;
 
 
 RasterCoordTransformer::RasterCoordTransformer(ProjectedRaster *source,
@@ -148,9 +147,9 @@ Reprojector::~Reprojector()
         return;
 }
 
-vector<long> Reprojector::getChunkAssignments(long chunk_count, long process_count)
+std::vector<long> Reprojector::getChunkAssignments(long chunk_count, long process_count)
 {
-	vector<long> assignments(chunk_count, process_count-1);
+	std::vector<long> assignments(chunk_count, process_count-1);
 	long basic_size = process_count / chunk_count;
 
 	for (unsigned long i=0; i<assignments.size(); i += basic_size) {
@@ -162,11 +161,11 @@ vector<long> Reprojector::getChunkAssignments(long chunk_count, long process_cou
 	return assignments;
 }
 
-vector<ChunkExtent> Reprojector::getChunkExtents(long chunk_count, long process_count)
+std::vector<ChunkExtent> Reprojector::getChunkExtents(long chunk_count, long process_count)
 {
-	vector<ChunkExtent> ce;
+	std::vector<ChunkExtent> ce;
 	long row_count = output->getRowCount() / chunk_count;
-	vector<long> assignments = getChunkAssignments(chunk_count, process_count);
+	std::vector<long> assignments = getChunkAssignments(chunk_count, process_count);
 
 	for (int i=0; i < chunk_count-1; ++i) {
 		ce.push_back(ChunkExtent(i*row_count, ((i+1)*row_count-1), assignments.at(i)));
@@ -187,15 +186,12 @@ void Reprojector::parallelReproject()
 {
 	int chunk_count = numprocs * 2;
 	int process_count = numprocs;
-	vector<ChunkExtent> ce = getChunkExtents(chunk_count, process_count);
-	vector<ChunkExtent>::iterator iter;
+	std::vector<ChunkExtent> ce = getChunkExtents(chunk_count, process_count);
 
-
-	for (iter = ce.begin(); iter != ce.end() ; ++iter) {
-		if (iter->processAssignment() == rank) {
-			reprojectChunk(iter->firstIndex(), iter->lastIndex()-iter->firstIndex());
-			
-		}
+	for (int i=0; i < ce.size(); ++i) {
+		if (ce[i].processAssignment() == rank) {
+			reprojectChunk(ce[i].firstIndex(), (ce[i].lastIndex())-(ce[i].firstIndex()));
+			}
 	}
 	
 
@@ -209,7 +205,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
         Coordinate in_ul, in_lr, out_ul;
         double in_pixsize, out_pixsize;
         long in_rows, in_cols, out_rows, out_cols;
-        vector<char> inraster, outraster;
+	std::vector<char> inraster, outraster;
         Area area;
 
         if (firstRow + numRows > output->getRowCount()) {
@@ -299,7 +295,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 			if (pixel_height == 0) {
 				pixel_height = 1;
 			}
-			vector<long> index_array(pixel_width*pixel_height, 0L);
+std::vector<long> index_array(pixel_width*pixel_height, 0L);
 
 			for (int i=0, a=0; i < pixel_height; ++i) {
 				for (int j=0; j < pixel_width; ++j) {
