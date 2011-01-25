@@ -56,7 +56,7 @@ void Equirectangular::_init()
 
 std::string Equirectangular::wkt()
 {
-	char* output = "";
+	char* output = 0;
 	char* wkt = 0;
 	OGRSpatialReference sr;
 	int epsg = DATUM2EPSG[datum()];

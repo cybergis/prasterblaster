@@ -1,4 +1,6 @@
 
+#include <cstdlib>
+
 #include "utm.h"
 
 UTM::UTM() : Projection(), m_scaleFactor(0.0), 
