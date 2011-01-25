@@ -6,7 +6,7 @@ TESTDIR = tests/
 
 LCFLAGS = -fPIC $(CFLAGS) -g -Wall -W -O2 -L$(GCTPDIR) -L.
 LINCLUDES = $(INCLUDES) -Isrc -I$(GCTPDIR)
-LLIBS = $(LIBS) -lmpi -lgdal -lgctp_cpp -lprasterblaster
+LLIBS = $(LIBS) -lmpi -lgdal1.6.0 -lgctp_cpp
 
 CXX = mpic++
 
@@ -80,7 +80,7 @@ libprasterblaster.so: $(PRBOBJS) $(GCTPDIR)/libgctp_cpp.a
 	$(CXX) -shared $(LCFLAGS) $(LINCLUDES) $(PRBOBJS) $(GCTPOBJS) -o libprasterblaster.so $(LLIBS)
 
 prasterblaster: libprasterblaster.so $(PRBOBJS) $(GCTPDIR)/libgctp_cpp.a
-	$(CXX) $(LCFLAGS) $(LINCLUDES) src/driver.cpp -o prasterblaster $(LLIBS)
+	$(CXX) $(LCFLAGS) $(LINCLUDES) src/driver.cpp -o prasterblaster $(LLIBS) -lprasterblaster
 
 .PHONY:  clean
 
