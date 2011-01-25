@@ -6,6 +6,9 @@ lib_LIBRARY = gctp_cpp
 
 noinst_LIBRARIES = libgctp_cpp.a
 
+AM_CXXFLAGS = -fPIC
+libgctp_cpp_CXXFLAGS = -fPIC
+
 libgctp_cpp_a_SOURCES = alaskaconformal.cpp \
            albersConEqArea.cpp \
            azequidistant.cpp \
