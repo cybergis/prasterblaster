@@ -22,8 +22,8 @@ double params[15] =  { 6370997.000000,
 		       0, 0, 0, 0, 0, 
 		       0, 0, 0, 0, 0};
 
-char *usage = "usage: prasterblaster <input raster path> <output raster path> " 
-  "<out raster description path(xml)>\n";
+const char *usage = "usage: prasterblaster <input raster path> <output raster path> " 
+  "<out raster description path(xml)>\n"; 
 
 
 int main(int argc, char *argv[]) 
