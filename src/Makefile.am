@@ -21,6 +21,6 @@ librasterblaster_la_LIBADD =  -lgctp_cpp -lmpi
 bin_PROGRAMS = prasterblaster
 prasterblaster_LDFLAGS = $(all_libraries)  -Lgctp_cpp
 prasterblaster_LDADD =  -lgctp_cpp -lmpi -lrasterblaster
-prasterblaster_SOURCES =  driver.cpp
+prasterblaster_SOURCES =  driver.cpp 
 
 AM_CPPFLAGS = $(all_includes) -IpRPL -Igctp_cpp
