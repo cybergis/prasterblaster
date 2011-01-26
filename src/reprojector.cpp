@@ -319,27 +319,6 @@ std::vector<long> index_array(pixel_width*pixel_height, 0L);
 
 			}
 		
-/*
-			if (temp1.x - temp2.x < 1.0 ||
-			    temp2.y - temp1.y < 1.0) {
-				// Use nearest-neighbor resampling.
-				resampler::nearest_neighbor<unsigned char>(&(inraster[0]),
-					center_index,
-					pixel_width,
-					pixel_height,
-					&(index_array[0]),
-					&(outraster[x+(y*out_cols)]));
-			} else {
-				// Proceed with categorical resampling
-				resampler(&(inraster[0]),
-					  center_index,
-					  pixel_width,
-					  pixel_height,
-					  &(index_array[0]),
-					  &(outraster[x+(y*out_cols)]));
-			}
-*/
-			
 		}
 	}
 	printf("%d total, %d pixels off!\n", total, count);
