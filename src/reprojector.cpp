@@ -149,30 +149,36 @@ Reprojector::~Reprojector()
 
 std::vector<long> Reprojector::getChunkAssignments(long chunk_count, long process_count)
 {
+
 	std::vector<long> assignments(chunk_count, process_count-1);
-	long basic_size = process_count / chunk_count;
+	long basic_size = chunk_count / process_count;
+
+	// TODO: Sanity check on parameters
 
 	for (unsigned long i=0; i<assignments.size(); i += basic_size) {
 		for (int j=0; j<basic_size; ++j) {
 			assignments.at(i+j) = i;
 		}
 	}
-
+	printf("Done with assignments\n");
 	return assignments;
 }
 
-std::vector<ChunkExtent> Reprojector::getChunkExtents(long chunk_count, long process_count)
+std::vector<ChunkExtent> Reprojector::getChunkExtents(long output_row_count,
+						      long chunk_count, long process_count)
 {
 	std::vector<ChunkExtent> ce;
-	long row_count = output->getRowCount() / chunk_count;
+	long row_count = output_row_count / chunk_count;
 	std::vector<long> assignments = getChunkAssignments(chunk_count, process_count);
+
+	// TODO: Add sanity checking of parameters
 
 	for (int i=0; i < chunk_count-1; ++i) {
 		ce.push_back(ChunkExtent(i*row_count, ((i+1)*row_count-1), assignments.at(i)));
 				   
 	}
-	
-	long last_row = output->getRowCount() - 1;
+
+	long last_row = output_row_count - 1;
 	ce.push_back(ChunkExtent((chunk_count-1)*row_count, last_row, process_count-1));
 	
 	
@@ -186,7 +192,8 @@ void Reprojector::parallelReproject()
 {
 	int chunk_count = numprocs * 2;
 	int process_count = numprocs;
-	std::vector<ChunkExtent> ce = getChunkExtents(chunk_count, process_count);
+	std::vector<ChunkExtent> ce = getChunkExtents(output->getRowCount(), 
+						      chunk_count, process_count);
 
 	for (int i=0; i < ce.size(); ++i) {
 		if (ce[i].processAssignment() == rank) {

@@ -43,6 +43,7 @@ public:
 	long lastIndex();
 	long chunkSize();
 	long processAssignment();
+	bool operator<(ChunkExtent rhs) const { return first < rhs.firstIndex(); }
 	
 private:
 	long first;
@@ -78,8 +79,9 @@ public:
 	 */
 	void parallelReproject();
 
-	vector<long> getChunkAssignments(long chunk_count, long process_count);
-	vector<ChunkExtent> getChunkExtents(long chunk_count, long process_count);
+	static vector<long> getChunkAssignments(long chunk_count, long process_count);
+	static vector<ChunkExtent> getChunkExtents(long output_row_count, 
+						   long chunk_count, long process_count);
 	
 	void reprojectChunk(int firstRow, int numRows);
 	int numprocs, rank;
