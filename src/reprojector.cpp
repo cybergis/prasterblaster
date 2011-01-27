@@ -160,7 +160,7 @@ std::vector<long> Reprojector::getChunkAssignments(long chunk_count, long proces
 			assignments.at(i+j) = i;
 		}
 	}
-	printf("Done with assignments\n");
+
 	return assignments;
 }
 
