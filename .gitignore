@@ -15,6 +15,7 @@
 
 # program binary
 prasterblaster
+tests/tests
 
 # autotools stuff
 configure
