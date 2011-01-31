@@ -167,6 +167,12 @@ std::vector<long> Reprojector::getChunkAssignments(long chunk_count, long proces
 std::vector<ChunkExtent> Reprojector::getChunkExtents(long output_row_count,
 						      long chunk_count, long process_count)
 {
+
+	if (output_row_count <= 0 || chunk_count <= 0 || process_count <= 0) {
+		fprintf(stderr, "Invalid parameters!\n");
+		return std::vector<ChunkExtent>();
+	}
+
 	std::vector<ChunkExtent> ce;
 	long row_count = output_row_count / chunk_count;
 	std::vector<long> assignments = getChunkAssignments(chunk_count, process_count);
