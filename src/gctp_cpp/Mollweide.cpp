@@ -131,7 +131,6 @@ std::string Mollweide::wkt()
 
 
 	if (err == OGRERR_NONE) {
-		printf("WKT GCTP: %s DATUM: %d\n", wkt, datum());
 		output = wkt;
 		OGRFree(wkt);
 	} else {
@@ -142,7 +141,6 @@ std::string Mollweide::wkt()
 		} else if (err == OGRERR_CORRUPT_DATA) {
 			printf("SRS not well formed!\n");
 		}
-		printf("WKT GCTP: %s DATUM: %d\n", wkt, datum());
 		output = wkt;
 		OGRFree(wkt);
 	}
