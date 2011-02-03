@@ -25,8 +25,6 @@
 #include "reprojector.hh"
 #include "resampler.hh"
 
-
-
 RasterCoordTransformer::RasterCoordTransformer(ProjectedRaster *source,
 					       ProjectedRaster *_dest)
 {

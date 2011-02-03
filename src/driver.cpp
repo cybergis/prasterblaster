@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
                 if(rank == 0)
                         printf("Input raster opened.\n");
         } else {
-                
+                fprintf(stderr, "Error opening input raster\n");
 		MPI_Abort(MPI_COMM_WORLD, -1);
                 return 1;
         }
@@ -65,6 +65,7 @@ int main(int argc, char *argv[])
 							     argv[3]);
 		
 		if (result == false) {
+			fprintf(stderr, "Failed to create output raster!\n");
 			MPI_Abort(MPI_COMM_WORLD, -1);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
