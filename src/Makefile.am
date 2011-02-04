@@ -16,7 +16,7 @@ librasterblaster_la_SOURCES = projectedraster.cpp \
                  rasterxml.cpp \
 		 resampler.cpp
 librasterblaster_la_LDFLAGS = $(all_libraries)  -Lgctp_cpp
-librasterblaster_la_LIBADD =  -lgctp_cpp -lmpi
+librasterblaster_la_LIBADD =  gctp_cpp/libgctp_cpp.a
 
 bin_PROGRAMS = prasterblaster
 prasterblaster_LDFLAGS = $(all_libraries)  -Lgctp_cpp
