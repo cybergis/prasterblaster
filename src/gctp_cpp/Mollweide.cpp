@@ -100,19 +100,8 @@ std::string Mollweide::wkt()
 	char *wkt = 0;
 	std::string output = "";
 	OGRErr err;
-/*
-       OGRSpatialReference     oSRS;
 
-        oSRS.SetProjCS( "UTM 17 (WGS84) in northern hemisphere." );
-        oSRS.SetWellKnownGeogCS( "WGS84" );
-        oSRS.SetUTM( 17, TRUE );
 
-	sr.SetProjCS("Mollweide");
-	oSRS.exportToPrettyWkt(&wkt);
-	output = wkt;
-		printf("WKT GCTP: %s DATUM: %d\n", wkt, datum());
-	return output;
-*/	
 	if (epsg != -1) {
 		err = sr.importFromEPSG(epsg);
 		if (err != OGRERR_NONE) {
@@ -125,12 +114,15 @@ std::string Mollweide::wkt()
 		sr.Fixup();
 		err = sr.Validate();
 		err = sr.exportToPrettyWkt(&wkt);
+		printf("OMG MOLL WKT: %s\n", wkt);
+
 	} else {
 		return output;
 	}
 
 
 	if (err == OGRERR_NONE) {
+
 		output = wkt;
 		OGRFree(wkt);
 	} else {

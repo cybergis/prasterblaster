@@ -96,40 +96,95 @@ bool ProjectedRaster::CreateRaster(ProjectedRaster *input,
 				   string _filename,
 				   string xmlDescription)
 {
-/*
-	projection = 0;
-	filename = _filename;
-	projection = 0;
-	dataset = 0;
-	data = 0;
-	rows = cols = -1;
 
-	GDALAllRegister();
-	bool status = configureFromXml(xmlDescription);
-	band_count = 1;
+	RasterInfo in_info(xmlDescription.c_str());
+	double gctpParams[16];
+	GDALDataType type;
+	Projection *projection = 0;
+	int _band_count = 1;
 
-	if (status == true) {
-		Area a = FindMinBox(input->ul_x, input->ul_y,
-				    input->pixel_size,
-				    rows, cols,
-				    input->projection,
-				    projection,
-				    pixel_size);
-
-	
-		ul_x = a.ul.x;
-		ul_y = a.ul.y;
-		
-		rows = (int)((ul_y - a.lr.y) / pixel_size);
-		cols = (int)((a.lr.x - ul_x) / pixel_size);
-		
-		ready = makeRaster();
-	} else {
-		fprintf(stderr, "Error reading xml configuration\n");
-		fflush(stderr);
+	if (!in_info.ready()) {
+		fprintf(stderr, "Could not open xml file: %s\n",
+			xmlDescription.c_str());
+		return false;
 	}
-*/
-	return true;
+
+
+	int num_rows = in_info.rows();
+	int num_cols = in_info.cols();
+	char junk[num_cols *2];
+	double ulx = in_info.ul_X();
+	double uly = in_info.ul_Y();
+
+	double _pixel_size = in_info.pixelSize();
+
+	for(int i=0; i<15; ++i) {
+		gctpParams[i] = in_info.gctpParam(i);
+	}	
+
+	if (in_info.dataType() == "Integer") {
+		if (in_info.isSigned()) {
+			switch (in_info.bitCount()) {
+			case 8:
+				type = GDT_Byte;
+				break;
+			case 16:
+				type = GDT_Int16;
+				break;
+			case 32:
+				type = GDT_Int32;
+				break;
+			default:
+				return false;
+			}
+		} else { // Type is unsigned
+			switch (in_info.bitCount()) {
+			case 8:
+				type = GDT_Byte;
+				break;
+			case 16:
+				type = GDT_UInt16;
+				break;
+			case 32:
+				type = GDT_UInt32;
+				break;
+			default: 
+				return false;
+			}
+		}
+	} else { // Type is float
+		if (in_info.bitCount() == 32)
+			type = GDT_Float32;
+		else
+			type = GDT_Float64;
+	}
+
+	// Setup projection
+	projection = 
+	  Transformer::convertProjection((ProjCode)in_info.projectionNumber());
+
+	if (projection == 0) {
+		fprintf(stderr, "Error creating projection for raster: %s\n",
+			_filename.c_str());
+		return false;
+	}
+	projection->setUnits((ProjUnit)in_info.unitNumber());
+	projection->setDatum((ProjDatum)in_info.datumNumber());
+	projection->setParams(in_info.allGctpParams());
+
+	bool status = makeRaster(_filename,
+				 num_cols,
+				 num_rows,
+				 _band_count,
+				 ulx,
+				 uly,
+				 type,
+				 projection,
+				 _pixel_size);
+
+			  
+
+	return status;
 }
 
 bool ProjectedRaster::CreateRaster(string _filename,
@@ -528,8 +583,6 @@ bool ProjectedRaster::configureFromXml(std::string xmlfilename)
 	projection->setUnits((ProjUnit)in_info.unitNumber());
 	projection->setDatum((ProjDatum)in_info.datumNumber());
 	projection->setParams(in_info.allGctpParams());
-	printf("xmlfilename: %s, WKT: %s\n", 
-	       xmlfilename.c_str(), projection->wkt().c_str());
 
 	return true;
 }
@@ -569,7 +622,7 @@ bool ProjectedRaster::loadRaster(string filename)
 	
 	
 	ref = strdup(dataset->GetProjectionRef());
-	
+	printf("filename: %s, WKT: %s\n", filename.c_str(), ref);
 	if (ref == 0) {
 		fprintf(stderr, "Error reading projection ref\n");
 		return false;
@@ -588,7 +641,7 @@ bool ProjectedRaster::loadRaster(string filename)
 	// Setup projection
 	ugh = &ref;
 	sr.importFromWkt(ugh);
-	
+
 	p = &(params[0]);
 	sr.exportToUSGS(&projsys, &zone, &p, &datum);
 	projection = Transformer::convertProjection((ProjCode)projsys);
@@ -655,6 +708,9 @@ bool ProjectedRaster::makeRaster(string _filename,
 	_dataset->SetGeoTransform(geotransform);
 
 	_dataset->SetProjection(_projection->wkt().c_str());
+	printf("Set WKT: %s\n", _projection->wkt().c_str());
+
+	GDALClose(_dataset);
 
 	if (options != 0)
 		CSLDestroy(options);

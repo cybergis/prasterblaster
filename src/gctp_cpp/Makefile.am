@@ -6,9 +6,12 @@ lib_LIBRARY = gctp_cpp
 
 noinst_LIBRARIES = libgctp_cpp.a
 
-AM_CXXFLAGS = -fPIC
-libgctp_cpp_CXXFLAGS = -fPIC
+AM_CXXFLAGS = -fPIC -W -Wall -Wcast-align -Wstrict-prototypes \
+		-Wpointer-arith -Wsign-compare \
+		-Wformat=2 -Wno-format-y2k -Wimplicit -Wmissing-braces \
+		-Wnested-externs -Wparentheses -Wtrigraphs # -Wshadow
 
+libgctp_cpp_CXXFLAGS = -fPIC
 libgctp_cpp_a_SOURCES = alaskaconformal.cpp \
            albersConEqArea.cpp \
            azequidistant.cpp \

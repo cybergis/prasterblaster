@@ -57,7 +57,7 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 	
 	src_proj->inverse(temp1.x, temp1.y, &temp2.x, &temp2.y);
 	src_proj->forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
-	
+
 	if (fabs(temp1.x - temp2.x) > 0.0001) {
 		// Overlap detected!
 		return value;
@@ -202,7 +202,7 @@ void Reprojector::parallelReproject()
 	for (int i=0; i < ce.size(); ++i) {
 		if (ce[i].processAssignment() == rank) {
 			reprojectChunk(ce[i].firstIndex(), (ce[i].lastIndex())-(ce[i].firstIndex()));
-			}
+		}
 	}
 	
 
@@ -242,7 +242,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
                            out_rows, out_cols,
                            outproj, inproj,
                            in_pixsize);
-        
+
 
         in_ul.x = input->ul_x;
 	in_ul.y = area.ul.y;
@@ -265,7 +265,6 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
         s = in_rows;
         s *= in_cols;
         s *= input->bitsPerPixel()/8;
-	printf("In rows: %ld, cols %ld\n", in_rows, in_cols);
         inraster.resize(s);
         
         // Read input file
@@ -281,6 +280,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 	int count = 0;
 	int total = 0;
 	RasterCoordTransformer rt(output, input);        
+
 	for (int y = 0; y < out_rows; ++y)  {
 		for (int x = 0; x < out_cols; ++x) {
 			// Determine location of equivalent input pixel
@@ -288,10 +288,10 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 
 			temp1.x = x;
 			temp1.y = y;
-			pixelArea = rt.Transform(temp1);
+			pixelArea = rt.Transform(temp1);   /// !!! NO No, this is bad. Makes no sense.
 			temp1 = pixelArea.ul;
 			temp2 = pixelArea.lr;
-			
+
 			//! TODO: Check for overlap!
 			// temp1&2 are now scaled to input raster coords, now resample!
 			// But does the rectangle defined by temp1 and temp2 actually
@@ -306,7 +306,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 			if (pixel_height == 0) {
 				pixel_height = 1;
 			}
-std::vector<long> index_array(pixel_width*pixel_height, 0L);
+			std::vector<long> index_array(pixel_width*pixel_height, 0L);
 
 			for (int i=0, a=0; i < pixel_height; ++i) {
 				for (int j=0; j < pixel_width; ++j) {
