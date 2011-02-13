@@ -49,7 +49,7 @@ TEST(reprojector_test, extents_continuity) {
 
 	vector<ChunkExtent> ce = Reprojector::getChunkExtents(10000, 100, 10);
 
-	for (int i = 1; i < 10000; i++) {
+	for (int i = 1; i <= 10000; i++) {
 		ce = Reprojector::getChunkExtents(i, 100, 10);
 		ASSERT_EQ(i - 1, ce.back().lastIndex());
 		
