@@ -26,28 +26,16 @@ const char *usage = "usage: prasterblaster <input raster path> <output raster pa
   "<out raster description path(xml)>\n"; 
 
 
-int main(int argc, char *argv[]) 
+int driver(string input_raster, string output_filename, string output_description)
 {
- 	long int rows, cols;
-
-	ProjectedRaster *out;
+	int rank = 0;
+	long int rows, cols;
+	ProjectedRaster *out = 0;
 	Reprojector *re = 0;
-	int rank;
-
-        rows = cols = 0;
-
-	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank); 
 
-	if (argc < 4) {
-		if (rank == 0) {
-			printf(usage);
-		}
-		MPI_Abort(MPI_COMM_WORLD, -1);
-		return 0;
-        }
 	
-        ProjectedRaster in(argv[1]);
+        ProjectedRaster in(input_raster);
 
         if (in.isReady() == true) {
                 if(rank == 0)
@@ -61,8 +49,8 @@ int main(int argc, char *argv[])
 
 	if (rank == 0) {
 		bool result  = ProjectedRaster::CreateRaster(&in,
-							     argv[2],
-							     argv[3]);
+							     output_filename,
+							     output_description);
 		
 		if (result == false) {
 			fprintf(stderr, "Failed to create output raster!\n");
@@ -76,7 +64,7 @@ int main(int argc, char *argv[])
 	
 	
 	// Now we re-open the output raster on each node.
-	out = new ProjectedRaster(argv[2]);
+	out = new ProjectedRaster(output_filename);
 	if (out == 0) {
 		fprintf(stderr, "Output allocation failed, something is very wrong!\n");
 		MPI_Finalize();
@@ -105,6 +93,31 @@ int main(int argc, char *argv[])
 	delete re;
 	delete out;
 
+	
+
+	return 0;
+}
+
+int main(int argc, char *argv[]) 
+{
+ 	long int rows, cols;
+
+	ProjectedRaster *out;
+	Reprojector *re = 0;
+	int rank;
+
+        rows = cols = 0;
+
+	MPI_Init(&argc, &argv);
+	if (argc < 4) {
+		if (rank == 0) {
+			printf(usage);
+		}
+		MPI_Abort(MPI_COMM_WORLD, -1);
+		return 0;
+        }
+
+	driver(argv[1], argv[2], argv[3]);
 	MPI_Finalize();
 	
 	return 0;
