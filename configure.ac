@@ -19,7 +19,7 @@ AC_ARG_WITH(gdal-incdir,
 AC_ARG_WITH(gdal-libdir,
   AS_HELP_STRING( [--with-gdal-libdir=path],
   [Specify the path to the GDAL library]),
-  [GDAL_CFLAGS="-L$withval -Wl,-R$withval"], [])
+  [GDAL_CXXFLAGS="-L$withval -Wl,-R$withval"], [])
 
 AC_ARG_WITH(mpi-c-wrapper,  
   AS_HELP_STRING( [--with-mpi-c-wrapper=path],
@@ -33,7 +33,7 @@ AC_ARG_WITH(mpi-cxx-wrapper,
 AC_SUBST(GDAL_CPPFLAGS)
 AC_SUBST(GDAL_CFLAGS)
 CPPFLAGS="${CPPFLAGS} ${GDAL_CPPFLAGS}"
-CXXFLAGS="$CFLAGS $GDAL_CFLAGS"
+CXXFLAGS="$CXXFLAGS $GDAL_CXXFLAGS"
 
 AC_PROG_CC([mpicc])
 AC_PROG_CXX([mpiCC mpiCXX mpic++])
