@@ -62,7 +62,7 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 		// Overlap detected!
 		return value;
 	}
-	
+
 	temp1.x = ((double)source.x * src->pixel_size) + src->ul_x;
 	temp1.y = ((double)source.y * src->pixel_size) - src->ul_y;
 	temp2 = temp1;
@@ -237,22 +237,22 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
         out_ul.x = output->ul_x;
         out_ul.y = output->ul_y - firstRow * out_pixsize;
         in_cols = input->getColCount();
-        
+	
         area = FindMinBox(out_ul.x, out_ul.y, out_pixsize,
-                           out_rows, out_cols,
-                           outproj, inproj,
-                           in_pixsize);
-
-
+			  out_rows, out_cols,
+			  outproj, inproj,
+			  in_pixsize);
+	
+	
         in_ul.x = input->ul_x;
 	in_ul.y = area.ul.y;
 	in_lr.x = area.lr.x;
 	in_lr.y = area.lr.y;
-
+	
         if (in_ul.y > input->ul_y)
                 in_ul.y = input->ul_y;
         in_lr.x = input->ul_x + (in_pixsize * in_cols);
-
+	
         long in_first_row = (long)((input->ul_y - in_ul.y) / in_pixsize);
         in_rows = (long)((in_ul.y - in_lr.y) / in_pixsize);
         in_rows += 1;
@@ -281,13 +281,13 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 	int total = 0;
 	RasterCoordTransformer rt(output, input);        
 
-	for (int y = 0; y < out_rows; ++y)  {
-		for (int x = 0; x < out_cols; ++x) {
+	for (int chunk_y = 0; chunk_y < out_rows; ++chunk_y)  {
+		for (int chunk_x = 0; chunk_x < out_cols; ++chunk_x) {
 			// Determine location of equivalent input pixel
-			outraster.at(y*out_cols) = 127; // REMOVE THIS
+			outraster.at(chunk_y*out_cols) = 127; // REMOVE THIS
 
-			temp1.x = x;
-			temp1.y = y;
+			temp1.x = chunk_x; 
+			temp1.y = chunk_y + firstRow;
 			pixelArea = rt.Transform(temp1);   /// !!! NO No, this is bad. Makes no sense.
 			temp1 = pixelArea.ul;
 			temp2 = pixelArea.lr;
@@ -300,6 +300,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 			center_index += (long)((temp1.y + temp2.y)/2) * in_cols;
 			long pixel_width = (long)fabs((temp2.x - temp1.x)/in_pixsize);
 			long pixel_height = (long)(fabs(temp1.y - temp2.y)/in_pixsize);
+
 			if (pixel_width == 0) {
 				pixel_width = 1;
 			}
@@ -307,6 +308,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 				pixel_height = 1;
 			}
 			std::vector<long> index_array(pixel_width*pixel_height, 0L);
+
 
 			for (int i=0, a=0; i < pixel_height; ++i) {
 				for (int j=0; j < pixel_width; ++j) {
@@ -316,7 +318,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 			}
 
 			try {
-				outraster.at(x+(y*out_cols)) = 
+				outraster.at(chunk_x+(chunk_y*out_cols)) = 
 					inraster.at((long)(temp1.x+(temp1.y*in_cols)));
 				++total;
 			} catch (exception &e) {
@@ -325,7 +327,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 				       "Attempted to write to: %ld, Size is %ld.\n",
 				       (long)(temp1.x+(temp1.y*in_cols)),
 				       inraster.size(),
-				       x+(y*out_cols),
+				       chunk_x+(chunk_y*out_cols),
 				       outraster.size());
 
 			}
