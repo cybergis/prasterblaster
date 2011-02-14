@@ -4,12 +4,20 @@
  * License: PUBLIC DOMAIN
  */
 
-#include <vector>
+
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
+#include <mpi.h>
 
+#include "driver.hh"
 #include "reprojector.hh"
+
+using std::string;
+
+string test_dir;
 
 bool extents_are_continuous(vector<ChunkExtent> extents, long row_count) 
 {
@@ -55,7 +63,43 @@ TEST(reprojector_test, extents_continuity) {
 		
 
 	}
+
 	ASSERT_EQ(10000 - 1, ce.back().lastIndex());
 	ASSERT_TRUE(extents_are_continuous(ce, 10000));
 
 }
+
+
+TEST(reprojector_test, basic_reprojection) {
+	
+	string input_raster = test_dir + "/testdata/veg_geographic_1deg.img";
+	string output_raster = test_dir + "/testdata/veg_mollweide_1deg.tif"; 
+	string output_raster_desc = test_dir + "/testdata/veg_mollweide_1deg.xml";
+
+	printf("Reprojecting: %s\n", input_raster.c_str());
+	int ret = driver(input_raster, output_raster, output_raster_desc);
+
+	ASSERT_EQ(ret, 0);
+
+}
+
+
+int main(int argc, char *argv[])
+{
+	MPI_Init(&argc, &argv);
+	
+	test_dir = "tests";
+
+	::testing::InitGoogleTest(&argc, argv);
+
+	if (argc > 1) {
+		test_dir = argv[1];
+	}
+
+
+
+	return RUN_ALL_TESTS();
+	MPI_Finalize();
+	return 0;
+}
+
