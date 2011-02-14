@@ -7,6 +7,6 @@ AM_CLFLAGS =  -W -Wall -Wcast-align -Wstrict-prototypes -Wmissing \
 bin_PROGRAMS = tests
 tests_CXXFLAGS  = -I../src/
 tests_LDFLAGS = $(all_libraries) -L../src/
-tests_LDADD = -lmpi -lrasterblaster -lgtest_main -lgtest
+tests_LDADD = -lmpi -lrasterblaster -lgtest
 tests_SOURCES = check_reprojector.cpp
 
