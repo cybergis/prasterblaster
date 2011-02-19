@@ -193,104 +193,37 @@ bool ProjectedRaster::CreateRaster(string _filename,
 					  GDALDataType pixel_type,
 					  double _pixel_size)
 {
-/*
-	double lr_x, lr_y;
-	const char *format = "GTiff";
-	GDALDriver *driver;
-	GDALRasterBand *band;
-	Area area;
-
-	projection = output_proj->copy();
-	filename = _filename;
-	dataset = 0;
-	data = 0;
-	band = 0;
-	band_count = input->bandCount();
-	rows = -1;
-	cols = -1;
-	pixel_size = _pixel_size;
-	type = pixel_type;
-
-	area = FindMinBox(input->ul_x, input->ul_y, input->pixel_size,
-			  input->rows, input->cols, input->projection,
-			  output_proj, pixel_size);
-
-	ul_x = area.ul.x;
-	ul_y = area.ul.y;
-	lr_x = area.lr.x;
-	lr_y = area.lr.y;
-
-	rows = (int)ceil((ul_y-lr_y) / input->getPixelSize());
-	cols = (int)ceil((lr_x-ul_x) / input->getPixelSize());
-
-	GDALAllRegister();
-
-	driver = GetGDALDriverManager()->GetDriverByName(format);
-
-	if( driver == NULL ) {
-		ready = false;
-		return;
-	}
-	
-	if(filename != "") {
-		// Set options
-		options = CSLSetNameValue( options, "INTERLEAVE", "PIXEL" );
-		options = CSLSetNameValue( options, "BIGTIFF", "NO" );
-		options = CSLSetNameValue( options, "TILED", "NO" );
-		options = CSLSetNameValue( options, "COMPRESS", "NONE" );
-		options = CSLSetNameValue( options, "PHOTOMETRIC", "MINISWHITE");
-		options = CSLSetNameValue( options, "PROFILE", "GDALGeoTiff");
-
-		dataset = driver->Create(filename.c_str(), cols, rows,
-					 band_count, pixel_type,
-					 options);
-
-	
-		if (dataset == 0 || projection == 0) {
-			ready = false;
-			return;
-		}
-		
-		geotransform[0] = ul_x;
-		geotransform[3] = ul_y;
-		geotransform[4] = geotransform[2] = 0.0;
-		geotransform[1] = geotransform[5] = pixel_size;
-
-		dataset->SetGeoTransform(geotransform);
-	
-		band = dataset->GetRasterBand(1);
-
-
-		// Setup georeferencing
-		OGRSpatialReference srs;
-		long zone = -1;
-		long projsys, datum;
-		double *params;
-
-
-		CPLErr err = dataset->SetProjection(projection->wkt().c_str());
-		if (err = CE_None) {
-			
-		} else if (err = CE_Failure)  {
-			fprintf(stderr, "Error setting projection."
-			       "Was GDAL compiled with GTiff support?\n");
-			ready = false;
-		}
-		dataset->FlushCache();
-		GDALClose(dataset);
-		CPLFree(wkt);
-
-		dataset = (GDALDataset*)GDALOpen(filename.c_str(), GA_Update);
-
-
-		ready = true;
-
-		if (options != 0)
-			CSLDestroy(options);
-	}
-*/
-	
 	bool status = false;
+	double ulx, uly;
+	int num_cols, num_rows;
+
+	Area out_area = FindMinBox(input->ul_x,
+				   input->ul_y,
+				   input->pixel_size,
+				   input->getRowCount(),
+				   input->getColCount(),
+				   input->getProjection(),
+				   output_proj,
+				   _pixel_size);
+
+	ulx = out_area.ul.x;
+	uly = out_area.ul.y;
+
+	num_rows = (out_area.ul.y - out_area.lr.y) / _pixel_size;
+	num_cols = (out_area.lr.x - out_area.ul.x) / _pixel_size;
+
+	status = makeRaster(_filename,
+			    num_cols, 
+			    num_rows,
+			    input->band_count,
+			    ulx,
+			    uly,
+			    input->type,
+			    output_proj,
+			    input->pixel_size);
+
+
+
 	return status;
 }
 

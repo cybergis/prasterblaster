@@ -7,4 +7,4 @@
 
 using std::string;
 
-int driver(string input_raster, string output_filename, string output_description);
+int driver(string input_raster, string output_filename, string output_projection);
