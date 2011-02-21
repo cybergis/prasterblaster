@@ -271,7 +271,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
         if (input->readRaster(in_first_row, in_rows, &(inraster[0]))) {
                 //              printf("Read %d rows\n", numRows);
         } else {
-                fprintf(stderr, "Error Reading input!\n");
+		fprintf(stderr, "Error Reading input!\n");
 		fflush(stderr);
 		return;
         }
@@ -329,6 +329,7 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
 				       inraster.size(),
 				       chunk_x+(chunk_y*out_cols),
 				       outraster.size());
+				return;
 
 			}
 		
@@ -394,15 +395,15 @@ Area FindMinBox(double in_ul_x, double in_ul_y,
 
 	// Check top of map
 	for (int x = 0; x < cols; ++x) {
-		temp.x = (double)x*pixsize + ul_x;
+	  /*		temp.x = (double)x*pixsize + ul_x;
 		temp.y = ul_y;
 		t.transform(&temp);
 		if (temp.x < minx) minx = temp.x;
 		if (temp.x > maxx) maxx = temp.x;
 		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
+		if (temp.y > maxy) maxy = temp.y; */
 		temp.x = ul_lon + (x*delta_east);
-		temp.y = ul_lat;
+		temp.y = ul_lat; 
 		outproj->forward(temp.x, temp.y, &(temp.x), &(temp.y));
 		if (temp.x < minx) minx = temp.x;
 		if (temp.x > maxx) maxx = temp.x;
@@ -412,15 +413,15 @@ Area FindMinBox(double in_ul_x, double in_ul_y,
 
 	// Check bottom of map
 	for (int x = 0; x < cols; ++x) {
-		temp.x = (double)x*pixsize + ul_x;
+	  /*		temp.x = (double)x*pixsize + ul_x;
 		temp.y = (double)-rows*pixsize + ul_y;
 		t.transform(&temp);
 		if (temp.x < minx) minx = temp.x;
 		if (temp.x > maxx) maxx = temp.x;
 		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
+		if (temp.y > maxy) maxy = temp.y;*/
 		temp.x = ul_lon + (x * delta_east);
-		temp.y = ul_lat - (rows*delta_north);
+		temp.y = ul_lat - (rows*delta_north); 
 		outproj->forward(temp.x, temp.y, &(temp.x), &(temp.y));
 		if (temp.x < minx) minx = temp.x;
 		if (temp.x > maxx) maxx = temp.x;
@@ -431,13 +432,13 @@ Area FindMinBox(double in_ul_x, double in_ul_y,
  
 	// Check Left side
 	for (int y = 0; y < rows; ++y) {
-		temp.x = ul_x;
+	  /*		temp.x = ul_x;
 		temp.y = (double)-y*(pixsize+1) + ul_y;
 		t.transform(&temp);
 		if (temp.x < minx) minx = temp.x;
 		if (temp.x > maxx) maxx = temp.x;
 		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
+		if (temp.y > maxy) maxy = temp.y; */
 		temp.x = ul_lon;
 		temp.y = ul_lat - (y*delta_north);
 		outproj->forward(temp.x, temp.y, &(temp.x), &(temp.y));
@@ -449,14 +450,14 @@ Area FindMinBox(double in_ul_x, double in_ul_y,
 
 	// Check right side
 	for (int y = 0; y < rows; ++y) {
-		temp.x = (double)cols*(1+pixsize) + ul_x;
+	  /*		temp.x = (double)cols*(1+pixsize) + ul_x;
 		temp.y = (double)-y*pixsize + ul_y;
 		t.transform(&temp);
 		if (temp.x < minx) minx = temp.x;
 		if (temp.x > maxx) maxx = temp.x;
 		if (temp.y < miny) miny = temp.y;
-		if (temp.y > maxy) maxy = temp.y;
-		temp.x = ul_lon + (cols * delta_east);
+		if (temp.y > maxy) maxy = temp.y; */
+		temp.x = ul_lon + (cols * delta_east); 
 		temp.y = ul_lat - (y * delta_north);
 		outproj->forward(temp.x, temp.y, &(temp.x), &(temp.y));
 		if (temp.x < minx) minx = temp.x;
