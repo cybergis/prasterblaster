@@ -62,17 +62,18 @@ int driver(string input_raster, string output_filename, string output_projection
 
 		if (output_projection == "hammer") {
 			out_proj = Transformer::convertProjection(HAMMER);
-			out_proj->setUnits(in_proj->units());
-			out_proj->setDatum(in_proj->datum());
-			out_proj->setParams(in_proj->params());
 		} else if (output_projection == "mollweide") {
-			return 1;
+			out_proj = Transformer::convertProjection(MOLL);
 		} else if (output_projection == "sinosoidal") {
 			return 1;
 		} else {
 			// fail...
 			return 1;
 		}
+		out_proj->setUnits(in_proj->units());
+		out_proj->setDatum(in_proj->datum());
+		out_proj->setParams(in_proj->params());
+
 
 		bool result  = ProjectedRaster::CreateRaster(output_filename,
 							     &in,
@@ -139,7 +140,7 @@ int main(int argc, char *argv[])
 	MPI_Init(&argc, &argv);
 	if (argc < 4) {
 		if (rank == 0) {
-			printf(usage);
+			printf("%s\n", usage);
 		}
 		MPI_Abort(MPI_COMM_WORLD, -1);
 		return 0;
