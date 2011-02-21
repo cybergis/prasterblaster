@@ -70,16 +70,16 @@ TEST(reprojector_test, extents_continuity) {
 }
 
 
-TEST(reprojector_test, basic_reprojection) {
+TEST(reprojector_test, mollweide_projection_test) {
 	
 	string input_raster = test_dir + "/testdata/veg_geographic_1deg.img";
 	string output_raster = test_dir + "/testdata/veg_mollweide_1deg.tif"; 
-	string output_raster_desc = test_dir + "/testdata/veg_mollweide_1deg.xml";
+
 
 	printf("Reprojecting: %s\n", input_raster.c_str());
-	int ret = driver(input_raster, output_raster, output_raster_desc);
+	int ret = driver(input_raster, output_raster, "mollweide");
 
-	ASSERT_EQ(ret, 0);
+	ASSERT_EQ(0, ret);
 
 }
 
