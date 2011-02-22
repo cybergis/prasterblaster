@@ -34,4 +34,5 @@ stamp-h1
 .deps
 .libs
 
-
+# test data
+tests/testdata/*
