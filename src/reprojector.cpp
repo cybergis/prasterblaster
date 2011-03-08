@@ -11,8 +11,12 @@
  *
  */
 
+#include <cfloat>
+#include <cmath>
 #include <cstdio>
 #include <vector>
+
+#include <boost/shared_ptr.hpp>
 
 #include <mpi.h>
 #include <gdal.h>
@@ -25,13 +29,18 @@
 #include "reprojector.hh"
 #include "resampler.hh"
 
-RasterCoordTransformer::RasterCoordTransformer(ProjectedRaster *source,
-					       ProjectedRaster *_dest)
+
+using boost::shared_ptr;
+
+
+RasterCoordTransformer::RasterCoordTransformer(shared_ptr<ProjectedRaster> source,
+					       shared_ptr<ProjectedRaster> _dest)
+					       
 {
 	src = source;
 	dest = _dest;
-	src_proj = source->getProjection();
-	dest_proj = dest->getProjection();
+	src_proj = shared_ptr<Projection>(source->getProjection());
+	dest_proj = shared_ptr<Projection>(dest->getProjection());
 	
 	return;
 }
@@ -97,7 +106,7 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 }
 
 ChunkExtent::ChunkExtent(long firstRowIndex, long lastRowIndex, long _process)
-{
+{	
 	first = firstRowIndex;
 	last = lastRowIndex;
 	process = _process;
@@ -125,12 +134,12 @@ long ChunkExtent::processAssignment()
 }
 
 
-Reprojector::Reprojector(ProjectedRaster *_input, ProjectedRaster *_output) 
+Reprojector::Reprojector(shared_ptr<ProjectedRaster> _input, shared_ptr<ProjectedRaster> _output,
+			 int processCount, int rank) 
         :
-        input(_input), output(_output)
+        input(_input), output(_output), numprocs(processCount), rank(rank)
 {
-        MPI_Comm_size(MPI_COMM_WORLD,&numprocs); 
-        MPI_Comm_rank(MPI_COMM_WORLD,&rank); 
+	numchunks = numprocs * 2;
         maxx = maxy = 0;
         minx = miny = 1e+37;
         resampler = &resampler::nearest_neighbor<unsigned char>;
@@ -143,6 +152,11 @@ Reprojector::~Reprojector()
 {
 
         return;
+}
+
+std::vector<ChunkExtent> Reprojector::getChunks()
+{
+	return getChunkExtents(output->getRowCount(), numchunks, numprocs);
 }
 
 std::vector<long> Reprojector::getChunkAssignments(long chunk_count, long process_count)
@@ -214,8 +228,8 @@ void Reprojector::reprojectChunk(int firstRow, int numRows)
         Projection *outproj, *inproj;
         Coordinate temp1, temp2;
         Coordinate in_ul, in_lr, out_ul;
-        double in_pixsize, out_pixsize;
-        long in_rows, in_cols, out_rows, out_cols;
+        double in_pixsize, out_pixsize; 
+       long in_rows, in_cols, out_rows, out_cols;
 	std::vector<char> inraster, outraster;
         Area area;
 
@@ -351,6 +365,87 @@ void Reprojector::reproject()
 
 }
 
+
+void updateMinbox(double x, double y, Area *minbox) 
+{
+	if (x > -DBL_MAX && x < minbox->ul.x) 
+		minbox->ul.x = x;
+	if (x < DBL_MAX && x > minbox->lr.x) 
+		minbox->lr.x = x;
+	if (y > -DBL_MAX && y < minbox->lr.y) 
+		minbox->lr.y = y;
+	if (y < DBL_MAX && y > minbox->ul.y) 
+		minbox->ul.y = y;
+	
+	return;
+}
+
+Area FindGeographicalExtent(shared_ptr<Projection> projection, 
+			    Coordinate ul_point,
+			    int row_count,
+			    int col_count,
+			    double pixel_size)
+{
+	Area geoarea;
+	double lon, lat;
+	double x, y;
+	
+	geoarea.ul.x = DBL_MAX;
+	geoarea.ul.y = -DBL_MAX;
+	geoarea.lr.x = -DBL_MAX;
+	geoarea.lr.y = DBL_MAX;
+	lon = lat = x = y = 0.0;
+
+	for (int row = 0; row < row_count; ++row) {
+		for (int col = 0; col < col_count; ++col) {
+			x = ul_point.x + (pixel_size * col);
+			y = ul_point.y - (pixel_size * row);
+			projection->inverse(x, y, &lon, &lat);
+			
+			updateMinbox(lon, lat, &geoarea);
+		}
+	}
+
+	return geoarea;
+
+}
+
+Area FindProjectedExtent(shared_ptr<Projection> projection,
+			 Area geographical_area,
+			 double pixel_size)
+{
+	Area projarea;
+	Coordinate projected;
+
+	// Check top of map
+	for (double lon = geographical_area.ul.x; lon <= 180.0; lon+=.05) {
+		projection->forward(lon, geographical_area.ul.y, &(projected.x), &(projected.y));
+		updateMinbox(projected.x, projected.y, &projarea);
+	}
+
+	// Check bottom of map
+	for (double lon = geographical_area.lr.x; lon <= 180.0; lon += .05) {
+		projection->forward(lon, geographical_area.lr.y, &(projected.x), &(projected.y));
+		updateMinbox(projected.x, projected.y, &projarea);
+	}
+
+	// Check left of map
+	for (double lat = geographical_area.ul.y; lat >= -90.0; lat -= .05) {
+		projection->forward(geographical_area.ul.x, lat, &(projected.x), &(projected.y));
+		updateMinbox(projected.x, projected.y, &projarea);
+	}
+
+	// Check right of map
+	for (double lat = geographical_area.lr.y; lat >= -90; lat -= .05) {
+		projection->forward(geographical_area.lr.x, lat, &(projected.x), &(projected.y));
+		updateMinbox(projected.x, projected.y, &projarea);
+	}
+
+
+	return projarea;
+}
+      
+			    
 
 Area FindMinBox(double in_ul_x, double in_ul_y,
 		 double in_pix_size,

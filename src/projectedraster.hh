@@ -17,6 +17,8 @@
 
 #include <string>
 
+#include <boost/shared_ptr.hpp>
+
 #include <gdal.h>
 #include <gdal_priv.h>
 
@@ -28,7 +30,7 @@
 #include "rasterinfo.h"
 
 using namespace std; // Don't do this :(
-
+using boost::shared_ptr;
 
 struct Area {
 	Coordinate ul;
@@ -47,7 +49,7 @@ class ProjectedRaster
 public:
 	//! Constructor
 	/*! 
-	 * This constructor takes a single arguments, filename, representing
+	 * This constructor takes a single argument, filename, representing
 	 * the path to the raster to be opened.
 	 */
 
@@ -66,25 +68,25 @@ public:
 	 * @param proj Pointer to Projection object that describes the raster's projection
 	 */
 	static bool CreateRaster(string filename, 
-			int num_rows, int num_cols,
-			GDALDataType pixel_type, double pixel_size,
-			int band_count,
-			Projection *proj,
-			double ulx, double uly);
+				 int num_rows, int num_cols,
+				 GDALDataType pixel_type, double pixel_size,
+				 int band_count,
+				 shared_ptr<Projection> proj,
+				 double ulx, double uly);
 	
 	//! Constructor
 	/*!
 	 * This constructor creates a raster from a filename and an xml description file.
 	 */
-	static bool CreateRaster(ProjectedRaster *input,
-			string filename,
-			string xmlDescriptionPath);
+	static bool CreateRaster(shared_ptr<ProjectedRaster> input,
+				 string filename,
+				 string xmlDescriptionPath);
 	
 	static bool CreateRaster(string filename,
-			ProjectedRaster *input,
-			Projection *output_proj,
-			GDALDataType pixel_type,
-			double pixel_size);
+				 shared_ptr<ProjectedRaster> input,
+				 shared_ptr<Projection> output_proj,
+				 GDALDataType pixel_type,
+				 double pixel_size);
 	
  /*!
  * Destructor
@@ -121,6 +123,18 @@ public:
  *
  */
 	int getRowCount();
+
+  //! A normal member function taking no arguments.
+  /*!
+    \return Returns the geographical minbox of the raster.
+  */
+  Area getGeographicalMinbox();
+
+  //! A normal member function taking no arguments.
+  /*!
+    \return Returns the projected minbox of the raster.
+  */
+  Area getProjectedMinbox();
 
 	//! A normal member function taking no arguments.
 /*!
@@ -216,10 +230,11 @@ private:
 			       double ul_x,
 			       double ul_y,
 			       GDALDataType type,
-			       Projection *projection,
+			       shared_ptr<Projection> projection,
 			       double pixel_size);
 	Projection *projection;
 	GDALDataset *dataset;
+	Area geographicalMinbox, projectedMinbox;
 	Transformer t;
         ProjectedRaster& operator=(ProjectedRaster& a);
 	bool ready;

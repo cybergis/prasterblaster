@@ -9,15 +9,22 @@
 #include <string>
 #include <vector>
 
+#include <boost/shared_ptr.hpp>
+
 #include <gtest/gtest.h>
 #include <mpi.h>
+
+#include "gctp_cpp/projection.h"
+#include "gctp_cpp/transformer.h"
+#include "gctp_cpp/mollweide.h"
 
 #include "driver.hh"
 #include "reprojector.hh"
 
 using std::string;
+using boost::shared_ptr;
 
-string test_dir;
+static string test_dir;
 
 bool extents_are_continuous(vector<ChunkExtent> extents, long row_count) 
 {
@@ -69,6 +76,41 @@ TEST(reprojector_test, extents_continuity) {
 
 }
 
+
+TEST(reprojector_test, minbox_test) {
+	
+	string input_raster = test_dir + "/testdata/veg_geographic_1deg.img";
+	string output_raster = test_dir + "/testdata/minbox_veg_geographic_1deg.tif";
+	shared_ptr<ProjectedRaster> in(new ProjectedRaster(input_raster));
+	shared_ptr<Projection> in_proj, out_proj(Transformer::convertProjection(MOLL));
+
+	ASSERT_TRUE(in->isReady());
+	in_proj = shared_ptr<Projection>(in->getProjection());
+	
+	out_proj->setUnits(in_proj->units());
+	out_proj->setDatum(in_proj->datum());
+	out_proj->setParams(in_proj->params());
+
+	bool result = ProjectedRaster::CreateRaster(output_raster,
+						    in,
+						    out_proj,
+						    in->type,
+						    in->pixel_size);
+
+	ASSERT_TRUE(result);
+
+	shared_ptr<ProjectedRaster> out(new ProjectedRaster(output_raster));
+	
+	ASSERT_TRUE(out->isReady());
+
+	
+
+	
+
+	
+	
+
+}
 
 TEST(reprojector_test, mollweide_projection_test) {
 	

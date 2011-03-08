@@ -16,23 +16,26 @@
 
 #include <vector>
 
+#include <boost/shared_ptr.hpp>
+
 #include "gctp_cpp/projection.h"
 
 #include "projectedraster.hh"
 #include "resampler.hh"
 
+using boost::shared_ptr;
 using resampler::resampler_func;
 
 
 class RasterCoordTransformer
 {
 public:
-	RasterCoordTransformer(ProjectedRaster *source, ProjectedRaster *dest);
+	RasterCoordTransformer(shared_ptr<ProjectedRaster> source, shared_ptr<ProjectedRaster> dest);
 	~RasterCoordTransformer();
 	Area Transform(Coordinate source);
 private:
-	ProjectedRaster *src, *dest;
-	Projection *src_proj, *dest_proj;
+	shared_ptr<ProjectedRaster> src, dest;
+	shared_ptr<Projection> src_proj, dest_proj;
 };
 
 class ChunkExtent
@@ -46,6 +49,9 @@ public:
 	bool operator<(ChunkExtent rhs) const { return first < rhs.firstIndex(); }
 	
 private:
+	bool findMinbox();
+
+	Area minbox;
 	long first;
 	long last;
 	long process;
@@ -60,10 +66,19 @@ public:
 	 *
 	 * @param input Source raster
 	 * @param output Target raster
-	 */
-	Reprojector(ProjectedRaster *_input, 
-		    ProjectedRaster *_output);
+	 * @param number of process to launch
+	 */ 
+	Reprojector(shared_ptr<ProjectedRaster> _input, 
+		    shared_ptr<ProjectedRaster> _output,
+		    int  processCount,
+		    int rank);
 	~Reprojector();
+
+	/*!
+	 * Returns the output raster chunks.
+	 *
+	 */
+	vector<ChunkExtent> getChunks();
 
 	/* 
 	 * Initiates serial reprojection.
@@ -79,18 +94,31 @@ public:
 	 */
 	void parallelReproject();
 
-	static vector<long> getChunkAssignments(long chunk_count, long process_count);
-	static vector<ChunkExtent> getChunkExtents(long output_row_count, 
-						   long chunk_count, long process_count);
-	
+	static std::vector<long> getChunkAssignments(long chunk_count, long process_count);
+	static std::vector<ChunkExtent> getChunkExtents(long output_row_count,
+							long chunk_count, long process_count);
+
 	void reprojectChunk(int firstRow, int numRows);
-	int numprocs, rank;
+	int numprocs, rank, numchunks;
 	double maxx, minx, maxy, miny;
-	ProjectedRaster *input;
-	ProjectedRaster *output;
+	shared_ptr<ProjectedRaster> input;
+	shared_ptr<ProjectedRaster> output;
 
 	resampler_func resampler;
 };
+
+
+Area FindGeographicalExtent(shared_ptr<Projection> projection, 
+			    Coordinate ul_point,
+			    int row_count,
+			    int col_count,
+			    double pixel_size);
+
+Area FindProjectedExtent(shared_ptr<Projection> projection,
+			 Area geographical_area,
+			 double pixel_size);
+
+
 /*!
  *
  */

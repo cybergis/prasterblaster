@@ -31,16 +31,15 @@ const char *usage = "usage: prasterblaster <input raster path> <output raster pa
 int driver(string input_raster, string output_filename, string output_projection)
 {
 	int rank = 0;
-	ProjectedRaster *out = 0;
-	Projection *out_proj = 0;
-	Projection *in_proj = 0;
-	Reprojector *re = 0;
+	shared_ptr<ProjectedRaster> in, out;
+	shared_ptr<Projection> in_proj, out_proj;
+	shared_ptr<Reprojector> re;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
 
 	// Open input raster and check for errors
-        ProjectedRaster in(input_raster);
+        in = shared_ptr<ProjectedRaster>(new ProjectedRaster(input_raster));
 
-        if (in.isReady() == true) {
+        if (in->isReady() == true) {
                 if (rank == 0)
                         printf("Input raster opened.\n");
         } else {
@@ -58,12 +57,12 @@ int driver(string input_raster, string output_filename, string output_projection
 			       output_projection.begin(),
 			       (int(*) (int))std::tolower);
 
-		in_proj = in.getProjection();
+		in_proj = shared_ptr<Projection>(in->getProjection());
 
 		if (output_projection == "hammer") {
-			out_proj = Transformer::convertProjection(HAMMER);
+			out_proj = shared_ptr<Projection>(Transformer::convertProjection(HAMMER));
 		} else if (output_projection == "mollweide") {
-			out_proj = Transformer::convertProjection(MOLL);
+			out_proj = shared_ptr<Projection>(Transformer::convertProjection(MOLL));
 		} else if (output_projection == "sinosoidal") {
 			return 1;
 		} else {
@@ -76,10 +75,10 @@ int driver(string input_raster, string output_filename, string output_projection
 
 
 		bool result  = ProjectedRaster::CreateRaster(output_filename,
-							     &in,
-							     out_proj,
-							     in.type ,
-							     in.pixel_size);
+							     in,
+							     shared_ptr<Projection>(out_proj->copy()),
+							     in->type ,
+							     in->pixel_size);
 		
 		if (result == false) {
 			fprintf(stderr, "Failed to create output raster!\n");
@@ -93,7 +92,7 @@ int driver(string input_raster, string output_filename, string output_projection
 	
 	
 	// Now we re-open the output raster on each node.
-	out = new ProjectedRaster(output_filename);
+	out = shared_ptr<ProjectedRaster>(new ProjectedRaster(output_filename));
 	if (out == 0) {
 		fprintf(stderr, "Output allocation failed, something is very wrong!\n");
 		MPI_Finalize();
@@ -101,7 +100,7 @@ int driver(string input_raster, string output_filename, string output_projection
 
 	}
 	
-	if (!in.isReady()) {
+	if (!in->isReady()) {
 		fprintf(stderr, "Error opening input raster, not ready!\n");
 		MPI_Finalize();
 		return 1;
@@ -115,13 +114,10 @@ int driver(string input_raster, string output_filename, string output_projection
 
 	}
 
-	re = new Reprojector(&in, out);
+	re = shared_ptr<Reprojector>(new Reprojector(in, out, 1, 0));
 	re->parallelReproject();
 
 	// Cleanup
-	delete re;
-	delete out;
-
 	
 
 	return 0;

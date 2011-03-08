@@ -25,6 +25,8 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include <boost/shared_ptr.hpp>
+
 #include <gdal.h>
 #include <gdal_priv.h>
 #include <ogr_spatialref.h>
@@ -39,6 +41,7 @@
 #include "projectedraster.hh"
 
 using namespace std;
+using boost::shared_ptr;
 
 ProjectedRaster::ProjectedRaster(string _filename)
 {
@@ -66,17 +69,34 @@ ProjectedRaster::ProjectedRaster(string _filename)
 		ready = status;
 		
 	}
+
+	// Calculate Minbox
+	if (!ready) {
+		return;
+	}
+	Coordinate ul;
+	ul.x = ul_x;
+	ul.y = ul_y;
+	geographicalMinbox = FindGeographicalExtent(shared_ptr<Projection>(projection->copy()), 
+					     ul, rows, cols, pixel_size);
+	
+	
+	projectedMinbox.ul.x = ul_x;
+	projectedMinbox.ul.y = ul_y;
+	projectedMinbox.lr.x = ul_x + (pixel_size * cols);
+	projectedMinbox.lr.y = ul_y - (pixel_size * rows);
+	
 	
 
 	return;
 }
 
 bool ProjectedRaster::CreateRaster(string _filename, 
-					  int num_rows, int num_cols, 
-					  GDALDataType pixel_type, double _pixel_size,
-					  int _band_count,
-					  Projection *proj,
-					  double ulx, double uly)
+				   int num_rows, int num_cols, 
+				   GDALDataType pixel_type, double _pixel_size,
+				   int _band_count,
+				   shared_ptr<Projection> proj,
+				   double ulx, double uly)
 {
 	bool status = makeRaster(_filename,
 				 num_cols,
@@ -92,7 +112,7 @@ bool ProjectedRaster::CreateRaster(string _filename,
 }
 
 
-bool ProjectedRaster::CreateRaster(ProjectedRaster *input,
+bool ProjectedRaster::CreateRaster(shared_ptr<ProjectedRaster> input,
 				   string _filename,
 				   string xmlDescription)
 {
@@ -179,7 +199,7 @@ bool ProjectedRaster::CreateRaster(ProjectedRaster *input,
 				 ulx,
 				 uly,
 				 type,
-				 projection,
+				 shared_ptr<Projection>(projection->copy()),
 				 _pixel_size);
 
 			  
@@ -188,23 +208,19 @@ bool ProjectedRaster::CreateRaster(ProjectedRaster *input,
 }
 
 bool ProjectedRaster::CreateRaster(string _filename,
-					  ProjectedRaster *input,
-					  Projection *output_proj,
-					  GDALDataType pixel_type,
-					  double _pixel_size)
+				   shared_ptr<ProjectedRaster> input,
+				   shared_ptr<Projection> output_proj,
+				   GDALDataType pixel_type,
+				   double _pixel_size)
 {
 	bool status = false;
 	double ulx, uly;
 	int num_cols, num_rows;
 
-	Area out_area = FindMinBox(input->ul_x,
-				   input->ul_y,
-				   input->pixel_size,
-				   input->getRowCount(),
-				   input->getColCount(),
-				   input->getProjection(),
-				   output_proj,
-				   _pixel_size);
+	Area out_area =  FindProjectedExtent(output_proj,
+					     input->getGeographicalMinbox(),
+					     _pixel_size);
+	
 
 	ulx = out_area.ul.x;
 	uly = out_area.ul.y;
@@ -277,6 +293,15 @@ int ProjectedRaster::getColCount()
 	return cols; 
 }
 
+Area ProjectedRaster::getGeographicalMinbox()
+{
+	return geographicalMinbox;
+}
+
+Area ProjectedRaster::getProjectedMinbox()
+{
+	return projectedMinbox;
+}
 
 GDALDataType ProjectedRaster::getPixelType()
 {
@@ -593,14 +618,14 @@ bool ProjectedRaster::loadRaster(string filename)
 }
 
 bool ProjectedRaster::makeRaster(string _filename,
-					int _cols,
-					int _rows,
-					int _band_count,
-					double _ul_x,
-					double _ul_y,
-					GDALDataType _type,
-					Projection *_projection,
-					double _pixel_size)
+				 int _cols,
+				 int _rows,
+				 int _band_count,
+				 double _ul_x,
+				 double _ul_y,
+				 GDALDataType _type,
+				 shared_ptr<Projection> _projection,
+				 double _pixel_size)
 				 
 {
 	const char *format = "GTiff";
