@@ -38,26 +38,6 @@ private:
 	shared_ptr<Projection> src_proj, dest_proj;
 };
 
-class ChunkExtent
-{
-public:
-	ChunkExtent(long firstRowIndex, long lastRowIndex, long process);
-	long firstIndex();
-	long lastIndex();
-	long chunkSize();
-	long processAssignment();
-	bool operator<(ChunkExtent rhs) const { return first < rhs.firstIndex(); }
-	
-private:
-	bool findMinbox();
-
-	Area minbox;
-	long first;
-	long last;
-	long process;
-
-
-};
 
 class Reprojector
 {
@@ -74,12 +54,6 @@ public:
 		    int rank);
 	~Reprojector();
 
-	/*!
-	 * Returns the output raster chunks.
-	 *
-	 */
-	vector<ChunkExtent> getChunks();
-
 	/* 
 	 * Initiates serial reprojection.
 	 * 
@@ -94,11 +68,8 @@ public:
 	 */
 	void parallelReproject();
 
-	static std::vector<long> getChunkAssignments(long chunk_count, long process_count);
-	static std::vector<ChunkExtent> getChunkExtents(long output_row_count,
-							long chunk_count, long process_count);
-
-	void reprojectChunk(int firstRow, int numRows);
+	vector<int> getAssignments(int chunkCount);
+	void reprojectChunk(ChunkExtent chunk);
 	int numprocs, rank, numchunks;
 	double maxx, minx, maxy, miny;
 	shared_ptr<ProjectedRaster> input;
