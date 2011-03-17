@@ -39,6 +39,27 @@ struct Area {
 	
 };
 
+class ChunkExtent
+{
+public:
+	ChunkExtent(long firstRowIndex, 
+		    long lastRowIndex,
+		    Area geographicalMinbox,
+		    Area projectedMinbox);
+	long firstIndex();
+	long lastIndex();
+	long rowCount();
+	Area getProjectedMinbox();
+	Area getGeographicalMinbox();
+	bool operator<(ChunkExtent rhs) const { return first < rhs.firstIndex(); }
+	
+private:
+	Area geographicalMinbox;
+	Area projectedMinbox;
+	long first;
+	long last;
+};
+
 	
 /*! ProjectedRaster class.
  *
@@ -128,21 +149,31 @@ public:
   /*!
     \return Returns the geographical minbox of the raster.
   */
-  Area getGeographicalMinbox();
-
-  //! A normal member function taking no arguments.
+	Area getGeographicalMinbox();
+	
+	//! A normal member function taking no arguments.
   /*!
     \return Returns the projected minbox of the raster.
   */
-  Area getProjectedMinbox();
+	Area getProjectedMinbox();
+	
 
+	//! A normal member function taking two Arguments
+	Coordinate getProjectedCoordinate(int rasterX, int RasterY);
+	Coordinate getGeographicalCoordinate(int rasterX, int rasterY);
+	//! A normal member function taking one argument
+/*!
+ *
+ *
+ */
+	vector<ChunkExtent> getChunks(int count);
 	//! A normal member function taking no arguments.
 /*!
  * \return Returns the number of columns in the raster.
  */
 	int getColCount();
 	
-	// Pixel description
+  // Pixel description
 //! A normal member function taking no arguments.
 /*!
  * \return Returns the datatype of the pixels
@@ -183,7 +214,7 @@ public:
  */
 	double* getGctpParams();
 
-	// IO
+  // IO
 //! A normal member function taking three arguments
 /*!
  * @param firstRow The index of the first row to be read
@@ -220,6 +251,7 @@ public:
 	
 	void* data;
 private: 
+	void clampGeoCoordinate(Coordinate *c);
 	bool configureFromXml(string filename);
 	bool loadImgRaster(string rasterFilename, string xmlFilename);
 	bool loadRaster(string filename);
@@ -232,7 +264,7 @@ private:
 			       GDALDataType type,
 			       shared_ptr<Projection> projection,
 			       double pixel_size);
-	Projection *projection;
+	shared_ptr<Projection> projection;
 	GDALDataset *dataset;
 	Area geographicalMinbox, projectedMinbox;
 	Transformer t;

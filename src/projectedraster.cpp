@@ -43,14 +43,50 @@
 using namespace std;
 using boost::shared_ptr;
 
+
+ChunkExtent::ChunkExtent(long firstRowIndex,
+			 long lastRowIndex,
+			 Area _geographicalMinbox,
+			 Area _projectedMinbox)
+{	
+	geographicalMinbox = _geographicalMinbox;
+	projectedMinbox = _projectedMinbox;
+	first = firstRowIndex;
+	last = lastRowIndex;
+	return;
+}
+
+long ChunkExtent::firstIndex()
+{
+	return first;
+}
+
+long ChunkExtent::lastIndex()
+{
+	return last;
+}
+
+long ChunkExtent::rowCount()
+{
+	return last - first + 1;
+}
+
+Area ChunkExtent::getGeographicalMinbox()
+{
+	return geographicalMinbox;
+}
+
+Area ChunkExtent::getProjectedMinbox()
+{
+	return projectedMinbox;
+}
+
 ProjectedRaster::ProjectedRaster(string _filename)
 {
 	OGRSpatialReference sr;
 	size_t found;
 
-	projection = 0;
 	filename = _filename;
-	projection = 0;
 	dataset = 0;
 	data = 0;
 	rows = cols = -1;
@@ -253,11 +289,6 @@ ProjectedRaster::~ProjectedRaster()
 		data = 0;
 	}
 
-	if (projection != 0) {
-		free(projection);
-		projection = 0;
-	}
-
 	if (dataset != 0) {
 		GDALClose( (GDALDatasetH) dataset);
 		dataset = 0;
@@ -269,8 +300,7 @@ ProjectedRaster::~ProjectedRaster()
 
 bool ProjectedRaster::isReady()
 {
-	if ((projection != 0) && (projection->error() == 0)
-	    && ready) {
+	if ((projection->error() == 0) && ready) {
 		return true;
 	}  else {
 		return false;
@@ -293,6 +323,88 @@ int ProjectedRaster::getColCount()
 	return cols; 
 }
 
+void ProjectedRaster::clampGeoCoordinate(Coordinate *c)
+{
+	if (c == 0) {
+		return; 
+	}
+
+	if (c->x < -180.0) {
+		c->x = -179.5;
+	}
+	
+	if (c->x > 180.0) {
+		c->x = 179.5;
+	}
+
+	if (c->y < -80.0) {
+		c->y = -79.5;
+	}
+
+
+	if (c->y > 80.0) {
+		c->y = 79.5;
+	}
+
+	return;
+}
+
+vector<ChunkExtent> ProjectedRaster::getChunks(int count)  
+{
+	std::vector<ChunkExtent> chunks;
+	long chunk_size = getRowCount() / count;
+	Coordinate chunk_ul;
+	Area geominbox, projminbox;
+
+	if (getRowCount() <= 0 || count <= 0) {
+		return chunks;
+	}
+
+	for (int i=0; i < count-1; ++i) {
+		chunk_ul.x = ul_x;
+		chunk_ul.y = ul_y - i * chunk_size * pixel_size;
+		geominbox = FindGeographicalExtent(projection,
+						   chunk_ul,
+						   chunk_size,
+						   getColCount(),
+						   pixel_size);
+		clampGeoCoordinate(&geominbox.ul);
+		clampGeoCoordinate(&geominbox.lr);
+		projminbox = FindProjectedExtent(projection,
+						 geominbox,
+						 pixel_size);
+
+		chunks.push_back(ChunkExtent(i*chunk_size,
+					     ((i+1)*chunk_size-1),
+					     geominbox,
+					     projminbox));
+
+		
+	}
+
+	// Last chunk includes any leftover
+	long last_row = getRowCount() - 1;
+	chunk_ul.x = ul_x;
+	chunk_ul.y = ul_y - ((count - 1) * chunk_size * pixel_size);
+	long last_chunk_size = last_row - (count - 1) + 1;
+	geominbox = FindGeographicalExtent(projection,
+					   chunk_ul,
+					   last_chunk_size,
+					   getColCount(),
+					   pixel_size);
+	clampGeoCoordinate(&geominbox.ul);
+	clampGeoCoordinate(&geominbox.lr);
+	projminbox = FindProjectedExtent(projection,
+					 geominbox,
+					 pixel_size);
+	
+
+	chunks.push_back(ChunkExtent((count-1)*chunk_size, last_row, geominbox,
+				 projminbox));
+
+	return chunks;
+}
+
 Area ProjectedRaster::getGeographicalMinbox()
 {
 	return geographicalMinbox;
@@ -301,6 +413,27 @@ Area ProjectedRaster::getGeographicalMinbox()
 Area ProjectedRaster::getProjectedMinbox()
 {
 	return projectedMinbox;
+}
+
+Coordinate ProjectedRaster::getGeographicalCoordinate(int rasterX, int rasterY)
+{
+	Coordinate c = getProjectedCoordinate(rasterX, rasterY);
+
+	projection->inverse(c.x, c.y, &c.x, &c.y);
+
+	return c;
+	
+}
+
+Coordinate ProjectedRaster::getProjectedCoordinate(int rasterX, int rasterY)
+{
+	Coordinate c;
+
+	c.x = ul_x + rasterX * pixel_size;
+	c.y = ul_y - rasterY * pixel_size;
+
+	return c;
+
 }
 
 GDALDataType ProjectedRaster::getPixelType()
@@ -351,12 +484,16 @@ double ProjectedRaster::getPixelSize()
 
 int ProjectedRaster::getZoneNumber()
 {
+/*
+	shared_ptr<UTM> utm_projection(projection);
+	
 	if (projection != 0) {
 		if (projection->number() == _UTM) {
-			return ((UTM*)projection)->zone();
+			return (utm_projection->zone());
 		}
 		
 	}
+*/
 	return -1;
 }
 
@@ -372,7 +509,6 @@ double* ProjectedRaster::getGctpParams()
 {
 	return gctpParams;
 }
-
 
 bool ProjectedRaster::readRaster(int firstRow, int numRows, void *data)
 {
@@ -533,7 +669,7 @@ bool ProjectedRaster::configureFromXml(std::string xmlfilename)
 
 	// Setup projection
 	projection = 
-	  Transformer::convertProjection((ProjCode)in_info.projectionNumber());
+		shared_ptr<Projection>(Transformer::convertProjection((ProjCode)in_info.projectionNumber()));
 
 	if (projection == 0) {
 		return false;
@@ -555,8 +691,6 @@ bool ProjectedRaster::loadImgRaster(string rasterFilename, string xmlFilename)
 
 bool ProjectedRaster::loadRaster(string filename)
 {
-	projection = 0;
-	projection = 0;
 	dataset = 0;
 	data = 0;
 	rows = cols = -1;
@@ -580,7 +714,6 @@ bool ProjectedRaster::loadRaster(string filename)
 	
 	
 	ref = strdup(dataset->GetProjectionRef());
-	printf("filename: %s, WKT: %s\n", filename.c_str(), ref);
 	if (ref == 0) {
 		fprintf(stderr, "Error reading projection ref\n");
 		return false;
@@ -602,13 +735,14 @@ bool ProjectedRaster::loadRaster(string filename)
 
 	p = &(params[0]);
 	sr.exportToUSGS(&projsys, &zone, &p, &datum);
-	projection = Transformer::convertProjection((ProjCode)projsys);
+	projection = shared_ptr<Projection>(Transformer::convertProjection((ProjCode)projsys));
 	if (projection == 0) {
 		fprintf(stderr, "Error building projection, num %ld...\n", projsys);
 		return false;
 	}
+/*	shared_ptr<UTM> utm_projection(projection);
 	if ((ProjCode)projsys == _UTM)
-		((UTM*)projection)->setZone(zone);
+	(utm_projection->setZone(zone); */
 	projection->setParams(params);
 	projection->setDatum((ProjDatum)datum);
 
@@ -666,7 +800,6 @@ bool ProjectedRaster::makeRaster(string _filename,
 	_dataset->SetGeoTransform(geotransform);
 
 	_dataset->SetProjection(_projection->wkt().c_str());
-	printf("Set WKT: %s\n", _projection->wkt().c_str());
 
 	GDALClose(_dataset);
 
