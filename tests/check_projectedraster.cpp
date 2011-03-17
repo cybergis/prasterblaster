@@ -10,6 +10,17 @@ using boost::shared_ptr;
 
 static string test_dir = "tests/testdata/";
 
+class ChunkTest : public ::testing::Test {
+protected:
+	virtual void SetUp() {
+		in = shared_ptr<ProjectedRaster>(new ProjectedRaster(test_dir + "veg_geographic_1deg.img"));
+	}
+	shared_ptr<ProjectedRaster> in;
+
+
+};
+
+
 TEST(PR_TEST, OpenFile) {
 	ProjectedRaster pr(test_dir + "veg_geographic_1deg.img");
 	EXPECT_TRUE(pr.isReady());
@@ -52,5 +63,40 @@ TEST(PR_TEST, NEW_RASTER) {
 	Area box = newpr->getGeographicalMinbox();
 
 	printf("New Geo Minbox: %f %f %f %f\n", box.ul.x, box.ul.y, box.lr.x, box.lr.y);
+
+}
+
+TEST_F(ChunkTest, raster_row_continuity) {
+
+	long count = 0;
+	
+	vector<ChunkExtent> chunks = in->getChunks(10);
+
+	for (int i = 0; i < chunks.size() ; ++i) {
+		count += chunks[i].rowCount();
+	}
+
+	if (in->getRowCount() != count) {
+		printf("Last Chunk: %d first %d last %d size\n", chunks.back().firstIndex(),
+		       chunks.back().lastIndex(), chunks.back().rowCount());
+	}
+	ASSERT_EQ(in->getRowCount(), count);
+
+	
+}
+
+TEST_F(ChunkTest, minbox_continuity) {
+
+
+	vector<ChunkExtent> chunks = in->getChunks(10);
+	Area minbox; 
+
+	for (int i = 0; i < chunks.size(); ++i) {
+		minbox = chunks[i].getGeographicalMinbox();
+		printf("Chunk %d (%f,%f) to (%f,%f)\n", i, 
+		       minbox.ul.x, minbox.ul.y,
+		       minbox.lr.x, minbox.lr.y);
+
+	}
 
 }
