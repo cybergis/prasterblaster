@@ -114,7 +114,6 @@ std::string Mollweide::wkt()
 		sr.Fixup();
 		err = sr.Validate();
 		err = sr.exportToPrettyWkt(&wkt);
-		printf("OMG MOLL WKT: %s\n", wkt);
 
 	} else {
 		return output;
