@@ -17,14 +17,14 @@ librasterblaster_la_LDFLAGS = $(all_libraries)  -Lgctp_cpp
 librasterblaster_la_LIBADD =  gctp_cpp/libgctp_cpp.a
 
 bin_PROGRAMS = prasterblaster
-prasterblaster_CXXFLAGS = -lgdal
+prasterblaster_CXXFLAGS = -lgdal -g
 prasterblaster_LDFLAGS = $(all_libraries)  -Lgctp_cpp
 prasterblaster_LDADD = librasterblaster.la 
 prasterblaster_SOURCES =  driver.cpp 
 
 AM_CPPFLAGS = $(all_includes) -IpRPL -Igctp_cpp
 
-AM_CXXFLAGS = -W -Wall -Wcast-align -Wstrict-prototypes  \
+AM_CXXFLAGS = -W -Wall -Wcast-align -Wstrict-prototypes  -g\
 		-Wpointer-arith -Wsign-compare \
 		-Wformat=2 -Wno-format-y2k -Wimplicit -Wmissing-braces \
 		-Wnested-externs -Wparentheses -Wtrigraphs # -Wshadow

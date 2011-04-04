@@ -24,7 +24,16 @@
 using std::string;
 using boost::shared_ptr;
 
-static string test_dir;
+static string test_dir = "tests/testdata/";
+
+class ReprojTest : public ::testing::Test {
+protected:
+	virtual void SetUp() {
+		in = shared_ptr<ProjectedRaster>(new ProjectedRaster(test_dir + "glc_geographic_30sec.img"));
+	}
+	shared_ptr<ProjectedRaster> in;
+};
+
 
 TEST(reprojector_test, minbox_test) {
 	
@@ -52,13 +61,6 @@ TEST(reprojector_test, minbox_test) {
 	
 	ASSERT_TRUE(out->isReady());
 
-	
-
-	
-
-	
-	
-
 }
 
 TEST(reprojector_test, mollweide_projection_test) {
@@ -74,6 +76,13 @@ TEST(reprojector_test, mollweide_projection_test) {
 
 }
 
+TEST(reprojector_test, chunk_mollweide) {
+	
+	string input_raster = test_dir + "/testdata/glc_geographic_30sec.img";
+	string output_raster = test_dir + "/testdata/glc_mollweide_30sec.tif"; 
+	
+	
+}
 
 int main(int argc, char *argv[])
 {
