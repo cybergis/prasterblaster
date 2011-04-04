@@ -120,7 +120,7 @@ public:
  * \return A copy of the ProjectedRaster's projection object. It's the
  * callers responsibility to delete.
  */
-	Projection* getProjection();
+  shared_ptr<Projection> getProjection();
 
 //! A normal member taking no arguments.
 /*!
@@ -161,13 +161,8 @@ public:
 	//! A normal member function taking two Arguments
 	Coordinate getProjectedCoordinate(int rasterX, int RasterY);
 	Coordinate getGeographicalCoordinate(int rasterX, int rasterY);
-	//! A normal member function taking one argument
-/*!
- *
- *
- */
-	vector<ChunkExtent> getChunks(int count);
-	//! A normal member function taking no arguments.
+  
+  //! A normal member function taking no arguments.
 /*!
  * \return Returns the number of columns in the raster.
  */

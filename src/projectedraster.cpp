@@ -300,16 +300,17 @@ ProjectedRaster::~ProjectedRaster()
 
 bool ProjectedRaster::isReady()
 {
-	if ((projection->error() == 0) && ready) {
+  if (projection.get() != 0 && 
+      (projection->error() == 0) && ready) {
 		return true;
 	}  else {
 		return false;
 	}
 }
 
-Projection* ProjectedRaster::getProjection()
+shared_ptr<Projection> ProjectedRaster::getProjection()
 {
-	return projection->copy();
+	return projection;
 }
 
 
@@ -330,79 +331,23 @@ void ProjectedRaster::clampGeoCoordinate(Coordinate *c)
 	}
 
 	if (c->x < -180.0) {
-		c->x = -179.5;
+		c->x = -179.999999;
 	}
 	
 	if (c->x > 180.0) {
-		c->x = 179.5;
+		c->x = 179.9999999;
 	}
 
-	if (c->y < -80.0) {
-		c->y = -79.5;
+	if (c->y < -90.0) {
+		c->y = -89.9999999;
 	}
 
 
-	if (c->y > 80.0) {
-		c->y = 79.5;
+	if (c->y > 90.0) {
+		c->y = 89.99999999;
 	}
 
 	return;
-}
-
-vector<ChunkExtent> ProjectedRaster::getChunks(int count)  
-{
-	std::vector<ChunkExtent> chunks;
-	long chunk_size = getRowCount() / count;
-	Coordinate chunk_ul;
-	Area geominbox, projminbox;
-
-	if (getRowCount() <= 0 || count <= 0) {
-		return chunks;
-	}
-
-	for (int i=0; i < count-1; ++i) {
-		chunk_ul.x = ul_x;
-		chunk_ul.y = ul_y - i * chunk_size * pixel_size;
-		geominbox = FindGeographicalExtent(projection,
-						   chunk_ul,
-						   chunk_size,
-						   getColCount(),
-						   pixel_size);
-		clampGeoCoordinate(&geominbox.ul);
-		clampGeoCoordinate(&geominbox.lr);
-		projminbox = FindProjectedExtent(projection,
-						 geominbox,
-						 pixel_size);
-
-		chunks.push_back(ChunkExtent(i*chunk_size,
-					     ((i+1)*chunk_size-1),
-					     geominbox,
-					     projminbox));
-
-		
-	}
-
-	// Last chunk includes any leftover
-	long last_row = getRowCount() - 1;
-	chunk_ul.x = ul_x;
-	chunk_ul.y = ul_y - ((count - 1) * chunk_size * pixel_size);
-	long last_chunk_size = last_row - (count - 1) + 1;
-	geominbox = FindGeographicalExtent(projection,
-					   chunk_ul,
-					   last_chunk_size,
-					   getColCount(),
-					   pixel_size);
-	clampGeoCoordinate(&geominbox.ul);
-	clampGeoCoordinate(&geominbox.lr);
-	projminbox = FindProjectedExtent(projection,
-					 geominbox,
-					 pixel_size);
-	
-
-	chunks.push_back(ChunkExtent((count-1)*chunk_size, last_row, geominbox,
-				 projminbox));
-
-	return chunks;
 }
 
 Area ProjectedRaster::getGeographicalMinbox()
@@ -696,7 +641,7 @@ bool ProjectedRaster::loadRaster(string filename)
 	rows = cols = -1;
 	char *ref, **ugh;
 	long projsys, zone, datum;
-	double params[18];
+	double params[18] = {0.0};
 	double *p;
 	OGRSpatialReference sr;
 	

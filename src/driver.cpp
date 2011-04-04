@@ -37,11 +37,16 @@ int driver(string input_raster, string output_filename, string output_projection
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
 
 	// Open input raster and check for errors
+	if (rank == 0) {
+	  printf("Opening input raster...");
+	  fflush(stdout);
+	}
         in = shared_ptr<ProjectedRaster>(new ProjectedRaster(input_raster));
+	if (rank == 0) 
+	  printf("done\n");
 
         if (in->isReady() == true) {
-                if (rank == 0)
-                        printf("Input raster opened.\n");
+
         } else {
                 fprintf(stderr, "Error opening input raster\n");
 		MPI_Abort(MPI_COMM_WORLD, -1);
@@ -50,7 +55,6 @@ int driver(string input_raster, string output_filename, string output_projection
 
 	// If we are rank 0, create the output projection and raster
 	if (rank == 0) {
-
 		// Downcase output projection name
 		std::transform(output_projection.begin(),
 			       output_projection.end(),
@@ -73,25 +77,34 @@ int driver(string input_raster, string output_filename, string output_projection
 		out_proj->setDatum(in_proj->datum());
 		out_proj->setParams(in_proj->params());
 
-
+		printf("Creating output raster...");
+		fflush(stdout);
 		bool result  = ProjectedRaster::CreateRaster(output_filename,
 							     in,
 							     shared_ptr<Projection>(out_proj->copy()),
 							     in->type ,
 							     in->pixel_size);
+
 		
 		if (result == false) {
 			fprintf(stderr, "Failed to create output raster!\n");
 			MPI_Abort(MPI_COMM_WORLD, -1);
+		} else {
+			printf("done\n");
 		}
+		printf("Syncing nodes...");
 		MPI_Barrier(MPI_COMM_WORLD);
-		printf("Output raster created and nodes synced!\n");
+		printf("done\n");
 	} else {
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 	
 	
 	// Now we re-open the output raster on each node.
+	if (rank == 0) {
+		printf("Opening new output raster...");
+		fflush(stdout);
+	}
 	out = shared_ptr<ProjectedRaster>(new ProjectedRaster(output_filename));
 	if (out == 0) {
 		fprintf(stderr, "Output allocation failed, something is very wrong!\n");
@@ -113,9 +126,17 @@ int driver(string input_raster, string output_filename, string output_projection
 		return 1;
 
 	}
+	if (rank == 0) 
+		printf("done\n");
 
 	re = shared_ptr<Reprojector>(new Reprojector(in, out, 1, 0));
+	if (rank == 0) {
+		printf("Reprojecting...");
+		fflush(stdout);
+	}
 	re->parallelReproject();
+	if (rank == 0)
+		printf("done!\n");
 
 	// Cleanup
 	

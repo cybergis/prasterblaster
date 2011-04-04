@@ -38,11 +38,28 @@ private:
 	shared_ptr<Projection> src_proj, dest_proj;
 };
 
+class Chunker
+{
+public:
+	Chunker(shared_ptr<ProjectedRaster> source, 
+		shared_ptr<ProjectedRaster> destination);
+	
+	void clampGeoCoordinate(Coordinate *c);
+	vector<ChunkExtent> getChunksByCount(int process_count, int process_index);
+	vector<ChunkExtent> getChunksBySize(int max_size, int process_index);
+
+	
+private:
+	shared_ptr<ProjectedRaster> source_raster;
+	shared_ptr<ProjectedRaster> dest_raster;
+		
+
+};
 
 class Reprojector
 {
 public:
-	/* Constructor that creates a Reprojector object give an input and output raster.
+	/* Constructor that creates a Reprojector object, give an input and output raster.
 	 *
 	 * @param input Source raster
 	 * @param output Target raster
@@ -68,7 +85,6 @@ public:
 	 */
 	void parallelReproject();
 
-	vector<int> getAssignments(int chunkCount);
 	void reprojectChunk(ChunkExtent chunk);
 	int numprocs, rank, numchunks;
 	double maxx, minx, maxy, miny;
@@ -77,6 +93,11 @@ public:
 
 	resampler_func resampler;
 };
+
+Area FindRasterArea(shared_ptr<ProjectedRaster> source_raster,
+		    shared_ptr<ProjectedRaster> dest_raster,
+		    int first_row,
+		    int last_row);
 
 
 Area FindGeographicalExtent(shared_ptr<Projection> projection, 

@@ -6,7 +6,7 @@ lib_LIBRARY = gctp_cpp
 
 noinst_LIBRARIES = libgctp_cpp.a
 
-AM_CXXFLAGS = -fPIC -W -Wall -Wcast-align -Wstrict-prototypes \
+AM_CXXFLAGS = -fPIC -W -Wall -Wcast-align -Wstrict-prototypes -g\
 		-Wpointer-arith -Wsign-compare \
 		-Wformat=2 -Wno-format-y2k -Wimplicit -Wmissing-braces \
 		-Wnested-externs -Wparentheses -Wtrigraphs # -Wshadow

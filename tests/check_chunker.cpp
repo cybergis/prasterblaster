@@ -33,10 +33,25 @@ protected:
 };
 
 
-TEST_F(ChunkerTest, chunk_reasonableness) {
+TEST_F(ChunkerTest, chunk_output_comprehensive) {
 	
 	Chunker c(in, out);
-	
+	RasterCoordTransformer transformer(in, out);
 	vector<ChunkExtent> chunks = c.getChunksByCount(10, 20);
-	
+	Coordinate temp;
+
+
+	for (vector<ChunkExtent>::iterator c = chunks.begin();
+	     c != chunks.end(); c++) {
+		for (int x = 0; x < out->getColCount(); ++x) {
+			for (int y = c->firstIndex(); y <= c->lastIndex(); ++y) {
+				temp.x = x;
+				temp.y = y;
+				transformer.Transform(temp);
+			}
+		}
+	}
+		
+		
+		
 }	
