@@ -44,41 +44,24 @@ using namespace std;
 using boost::shared_ptr;
 
 
-ChunkExtent::ChunkExtent(long firstRowIndex,
-			 long lastRowIndex,
-			 Area _geographicalMinbox,
-			 Area _projectedMinbox)
+ChunkExtent::ChunkExtent(long _sourceFirstIndex, 
+			 long _sourceLastIndex,
+			 long _destinationFirstIndex,
+			 long _destinationLastIndex,
+			 Area _sourceMinbox,
+			 Area _destinationMinbox,
+			 Area _geographicalMinbox);
+
 {	
-	geographicalMinbox = _geographicalMinbox;
-	projectedMinbox = _projectedMinbox;
-	first = firstRowIndex;
-	last = lastRowIndex;
+	sourceFirstIndex = _sourceFirstIndex;
+	sourceLastindex = _sourceLastIndex;
+	destinationLastIndex = _destinationLastIndex;
+	sourceMinbox = _sourceMinbox;
+	destinationMinbox = _destinationMinbox;
+	geographicaMinbox = _geographicalMinbox;
+
+
 	return;
-}
-
-long ChunkExtent::firstIndex()
-{
-	return first;
-}
-
-long ChunkExtent::lastIndex()
-{
-	return last;
-}
-
-long ChunkExtent::rowCount()
-{
-	return last - first + 1;
-}
-
-Area ChunkExtent::getGeographicalMinbox()
-{
-	return geographicalMinbox;
-}
-
-Area ChunkExtent::getProjectedMinbox()
-{
-	return projectedMinbox;
 }
 
 ProjectedRaster::ProjectedRaster(string _filename)

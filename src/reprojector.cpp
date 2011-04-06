@@ -144,22 +144,22 @@ void Chunker::clampGeoCoordinate(Coordinate *c)
 vector<ChunkExtent> Chunker::getChunksByCount(int process_count, int process_index) 
 {
 	std::vector<ChunkExtent> chunks;
-	long chunk_size = source_raster->getRowCount() / process_count;
+	long chunk_size = dest_raster->getRowCount() / process_count;
 	Coordinate chunk_ul;
 	Area geominbox, projminbox;
 
-	if (source_raster->getRowCount() <= 0 || process_count <= 0) {
+	if (dest_raster->getRowCount() <= 0 || process_count <= 0) {
 		return chunks;
 	}
 
 	for (int i=0; i < process_count-1; ++i) {
 		chunk_ul.x = source_raster->ul_x;
-		chunk_ul.y = source_raster->ul_y - i * chunk_size * source_raster->pixel_size;
-		geominbox = FindGeographicalExtent(source_raster->getProjection(),
+		chunk_ul.y = source_raster->ul_y - i * chunk_size * dest_raster->pixel_size;
+		geominbox = FindGeographicalExtent(dest_raster->getProjection(),
 						   chunk_ul,
 						   chunk_size,
-						   source_raster->getColCount(),
-						   source_raster->pixel_size);
+						   dest_raster->getColCount(),
+						   dest_raster->pixel_size);
 		clampGeoCoordinate(&geominbox.ul);
 		clampGeoCoordinate(&geominbox.lr);
 		projminbox = FindProjectedExtent(source_raster->getProjection(),

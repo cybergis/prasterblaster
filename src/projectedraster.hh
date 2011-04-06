@@ -42,22 +42,23 @@ struct Area {
 class ChunkExtent
 {
 public:
-	ChunkExtent(long firstRowIndex, 
-		    long lastRowIndex,
-		    Area geographicalMinbox,
-		    Area projectedMinbox);
-	long firstIndex();
-	long lastIndex();
-	long rowCount();
-	Area getProjectedMinbox();
-	Area getGeographicalMinbox();
+	ChunkExtent(long sourceFirstIndex, 
+		    long sourceLastIndex,
+		    long destinationFirstIndex,
+		    long destinationLastIndex,
+		    Area sourceMinbox,
+		    Area destinationMinbox,
+		    Area geographicalMinbox);
+
 	bool operator<(ChunkExtent rhs) const { return first < rhs.firstIndex(); }
 	
-private:
 	Area geographicalMinbox;
-	Area projectedMinbox;
-	long first;
-	long last;
+	Area sourceMinbox;
+	Area destinationMinbox;
+	long sourceFirstIndex;
+	long sourceLastIndex;
+	long destinationFirstIndex;
+	long destinationLastIndex;
 };
 
 	
