@@ -24,7 +24,7 @@ prasterblaster_SOURCES =  driver.cpp
 
 AM_CPPFLAGS = $(all_includes) -IpRPL -Igctp_cpp
 
-AM_CXXFLAGS = -W -Wall -Wcast-align -Wstrict-prototypes  -g\
-		-Wpointer-arith -Wsign-compare \
+AM_CXXFLAGS = -W -Wall -Wcast-align \
+		-Wpointer-arith -Wsign-compare -g\
 		-Wformat=2 -Wno-format-y2k -Wimplicit -Wmissing-braces \
-		-Wnested-externs -Wparentheses -Wtrigraphs # -Wshadow
+		 -Wparentheses -Wtrigraphs # -Wshadow -Wstrict-prototypes -Wnested-externs
