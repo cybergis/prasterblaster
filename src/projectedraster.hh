@@ -50,8 +50,6 @@ public:
 		    Area destinationMinbox,
 		    Area geographicalMinbox);
 
-	bool operator<(ChunkExtent rhs) const { return first < rhs.firstIndex(); }
-	
 	Area geographicalMinbox;
 	Area sourceMinbox;
 	Area destinationMinbox;

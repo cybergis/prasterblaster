@@ -50,15 +50,15 @@ ChunkExtent::ChunkExtent(long _sourceFirstIndex,
 			 long _destinationLastIndex,
 			 Area _sourceMinbox,
 			 Area _destinationMinbox,
-			 Area _geographicalMinbox);
+			 Area _geographicalMinbox)
 
 {	
 	sourceFirstIndex = _sourceFirstIndex;
-	sourceLastindex = _sourceLastIndex;
+	sourceLastIndex = _sourceLastIndex;
 	destinationLastIndex = _destinationLastIndex;
 	sourceMinbox = _sourceMinbox;
 	destinationMinbox = _destinationMinbox;
-	geographicaMinbox = _geographicalMinbox;
+	geographicalMinbox = _geographicalMinbox;
 
 
 	return;
