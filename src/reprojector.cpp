@@ -234,61 +234,21 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 {
         shared_ptr<Projection> outproj, inproj;
         Coordinate temp1, temp2;
-        Coordinate in_ul, in_lr, out_ul;
-        double in_pixsize, out_pixsize; 
-	long in_rows, in_cols, out_rows, out_cols;
 	std::vector<char> inraster, outraster;
 	set<long> overflow_rows;
-	Area input_proj_area;
-	int firstRow = chunk.firstIndex();
-	int numRows = chunk.lastIndex() - chunk.firstIndex() + 1;
 
-        if (firstRow + numRows > output->getRowCount()) {
-                fprintf(stderr, "Invalid chunk range... %d is > %d\n",
-                        firstRow + numRows,
-                        output->getRowCount());
-                fflush(stderr);
-                return;
-        }
-
-        out_pixsize = output->getPixelSize();
-        in_pixsize = input->getPixelSize();
-        outproj = shared_ptr<Projection>(output->getProjection());
-        inproj = shared_ptr<Projection>(input->getProjection());
-
-        out_rows = numRows;
-        out_cols = output->getColCount();
-        out_ul.x = output->ul_x;
-        out_ul.y = output->ul_y - firstRow * out_pixsize;
-        in_cols = input->getColCount();
+        outproj = output->getProjection();
+        inproj = input->getProjection();
 	
-	Area in_raster_area = FindRasterArea(input, output, chunk.firstIndex(),
-					     chunk.lastIndex());
-	in_ul = input->getProjectedCoordinate(0, in_raster_area.ul.y);
-	in_lr = input->getProjectedCoordinate(in_raster_area.lr.x, in_raster_area.lr.y);
-	long in_first_row = in_raster_area.ul.y;
-	in_rows = in_raster_area.ul.y - in_lr.y + 1;
-	
-
-	printf("First row: %d, count %d\n", in_first_row, in_rows);
-
         // Setup raster vectors
-        size_t s = out_rows;
-        s *= out_cols;
-        s *= output->bitsPerPixel()/8;
-	printf("Allocating %u MB of output memory, %d rows\n", s/1024/1024, out_rows);
-        outraster.resize(s);
-        s = in_rows + 1;
-        s *= in_cols;
-        s *= input->bitsPerPixel()/8;
-	printf("Allocating %u MB of input memory, %d rows\n", s/1024/1024, in_rows);
-        inraster.resize(s);
+        outraster.resize(chunk.destinationRowCount * output->getColCount() * output->bitsPerPixel()/8);
+        inraster.resize(chunk.sourceRowCount * input->getColCount() * input->bitsPerPixel()/8);
 
 	printf("Reading input...");
 	fflush(stdout);
         // Read input file
 	try {
-		input->readRaster(in_first_row, in_rows, &(inraster[0]));
+		input->readRaster(chunk.sourceFirstIndex, chunk.sourceRowCount, &(inraster[0]));
 	} catch (std::exception) {
 		fprintf(stderr, "Error Reading input!\n");
 		fflush(stderr);
@@ -300,14 +260,12 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 	int total = 0;
 	RasterCoordTransformer rt(output, input);        
 
-	for (int chunk_y = 0; chunk_y < out_rows; ++chunk_y)  {
-		for (int chunk_x = 0; chunk_x < out_cols; ++chunk_x) {
+	for (int chunk_y = 0; chunk_y < chunk.destinationRowCount; ++chunk_y)  {
+		for (int chunk_x = 0; chunk_x < output->getColCount(); ++chunk_x) {
 
 			// Determine location of equivalent input pixel
-			outraster.at(chunk_y*out_cols) = 127; // REMOVE THIS
-
 			temp1.x = chunk_x; 
-			temp1.y = chunk_y + firstRow;
+			temp1.y = chunk_y + chunk.destinationFirstIndex;
 			pixelArea = rt.Transform(temp1);   /// Now makes sense.
 			temp1 = pixelArea.ul;
 			temp2 = pixelArea.lr;
@@ -317,9 +275,9 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 			// But does the rectangle defined by temp1 and temp2 actually
 			// contain any points? If not use nearest-neighbor...
 			long center_index = (long)((temp1.x + temp2.x)/2);
-			center_index += (long)((temp1.y + temp2.y)/2) * in_cols;
-			long pixel_width = (long)fabs((temp2.x - temp1.x)/in_pixsize);
-			long pixel_height = (long)(fabs(temp1.y - temp2.y)/in_pixsize);
+			center_index += (long)((temp1.y + temp2.y)/2) * input->getColCount();
+			long pixel_width = (long)fabs((temp2.x - temp1.x)/input->getPixelSize());
+			long pixel_height = (long)(fabs(temp1.y - temp2.y)/input->getPixelSize());
 
 			if (pixel_width == 0) {
 				pixel_width = 1;
@@ -329,26 +287,18 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 			}
 			std::vector<long> index_array(pixel_width*pixel_height, 0L);
 
-/*
-			for (int i=0, a=0; i < pixel_height; ++i) {
-				for (int j=0; j < pixel_width; ++j, ++a) {
-				  index_array.at(a) = (j+(long)temp1.x) 
-						+ ((i+(long)temp2.y) *in_cols);
-				}
-			}
-*/
 			temp1.x = floor(temp1.x);
 			temp1.y = floor(temp1.y);
 			unsigned int index = 0;
 			try {
 				index = (unsigned int)temp1.x;
-				index += ((unsigned int)temp1.y) * in_cols;
+				index += ((unsigned int)temp1.y) * input->getColCount();
 
-				outraster.at(chunk_x+(chunk_y*out_cols)) = inraster.at(index);
+				outraster.at(chunk_x+(chunk_y*output->getColCount())) = inraster.at(index);
 				++total;
 			} catch (out_of_range &e) {
 				overflow_rows.insert(temp1.y);
-				outraster.at(chunk_x+(chunk_y*out_cols)) = 255;
+				outraster.at(chunk_x+(chunk_y*output->getColCount())) = 255;
 				++count;
 
 			}
@@ -362,7 +312,7 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 //		printf("Tried to access %d\n", *i);
 	}
 	// Write output raster
-	output->writeRaster(firstRow, numRows, &(outraster[0]));
+	output->writeRaster(chunk.destinationFirstIndex, chunk.destinationRowCount, &(outraster[0]));
 	
 	return;
 }
