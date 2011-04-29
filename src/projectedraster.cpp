@@ -60,6 +60,9 @@ ChunkExtent::ChunkExtent(long _sourceFirstIndex,
 	destinationMinbox = _destinationMinbox;
 	geographicalMinbox = _geographicalMinbox;
 
+	sourceRowCount = sourceLastIndex - sourceFirstIndex + 1;
+	destinationRowCount = destinationLastIndex - destinationFirstIndex + 1;
+
 
 	return;
 }

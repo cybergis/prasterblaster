@@ -55,8 +55,10 @@ public:
 	Area destinationMinbox;
 	long sourceFirstIndex;
 	long sourceLastIndex;
+	long sourceRowCount;
 	long destinationFirstIndex;
 	long destinationLastIndex;
+	long destinationRowCount;
 };
 
 	
