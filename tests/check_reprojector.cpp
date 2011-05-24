@@ -24,7 +24,7 @@
 using std::string;
 using boost::shared_ptr;
 
-static string test_dir = "tests/testdata/";
+static string test_dir = "tests/";
 
 class ReprojTest : public ::testing::Test {
 protected:

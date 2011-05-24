@@ -44,7 +44,7 @@ TEST_F(ChunkerTest, chunk_output_comprehensive) {
 	for (vector<ChunkExtent>::iterator c = chunks.begin();
 	     c != chunks.end(); c++) {
 		for (int x = 0; x < out->getColCount(); ++x) {
-			for (int y = c->firstIndex(); y <= c->lastIndex(); ++y) {
+			for (int y = c->firstIndex; y <= c->lastIndex; ++y) {
 				temp.x = x;
 				temp.y = y;
 				transformer.Transform(temp);

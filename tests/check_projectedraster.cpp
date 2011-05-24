@@ -28,10 +28,9 @@ TEST(PR_TEST, OpenFile) {
 
 TEST(PR_TEST, GeoMinbox) {
 	ProjectedRaster pr(test_dir + "veg_geographic_1deg.img");
-	Area box = pr.getGeographicalMinbox();
-	Area box2 = pr.getProjectedMinbox();
+
 	
-	printf("Geo Minbox: %f %f %f %f\n", box.ul.x, box.ul.y, box.lr.x, box.lr.y);
+//	printf("Geo Minbox: %f %f %f %f\n", box.ul.x, box.ul.y, box.lr.x, box.lr.y);
 
 }
 
@@ -92,7 +91,7 @@ TEST_F(ChunkTest, minbox_continuity) {
 	Area minbox; 
 
 	for (int i = 0; i < chunks.size(); ++i) {
-		minbox = chunks[i].getGeographicalMinbox();
+
 		printf("Chunk %d (%f,%f) to (%f,%f)\n", i, 
 		       minbox.ul.x, minbox.ul.y,
 		       minbox.lr.x, minbox.lr.y);

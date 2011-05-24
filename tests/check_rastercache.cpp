@@ -75,3 +75,8 @@ TEST_F(CacheTest, pixel_values) {
 
 }
 
+TEST_F(CacheTest, random_values) {
+
+
+
+}

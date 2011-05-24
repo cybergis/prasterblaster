@@ -8,5 +8,6 @@ bin_PROGRAMS = tests
 tests_CXXFLAGS  = -I../src/
 tests_LDFLAGS = $(all_libraries) -L../src/
 tests_LDADD = -lmpi -lrasterblaster -lgtest
-tests_SOURCES = check_reprojector.cpp check_projectedraster.cpp check_chunker.cpp
+tests_SOURCES = check_reprojector.cpp check_projectedraster.cpp check_chunker.cpp \
+		check_rastercache.cpp
 
