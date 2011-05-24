@@ -44,26 +44,11 @@ using namespace std;
 using boost::shared_ptr;
 
 
-ChunkExtent::ChunkExtent(long _sourceFirstIndex, 
-			 long _sourceLastIndex,
-			 long _destinationFirstIndex,
-			 long _destinationLastIndex,
-			 Area _sourceMinbox,
-			 Area _destinationMinbox,
-			 Area _geographicalMinbox)
+ChunkExtent::ChunkExtent(long firstIndex, 
+			 long lastIndex)
 
 {	
-	sourceFirstIndex = _sourceFirstIndex;
-	sourceLastIndex = _sourceLastIndex;
-	destinationLastIndex = _destinationLastIndex;
-	sourceMinbox = _sourceMinbox;
-	destinationMinbox = _destinationMinbox;
-	geographicalMinbox = _geographicalMinbox;
-
-	sourceRowCount = sourceLastIndex - sourceFirstIndex + 1;
-	destinationRowCount = destinationLastIndex - destinationFirstIndex + 1;
-
-
+	
 	return;
 }
 

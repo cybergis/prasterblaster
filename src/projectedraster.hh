@@ -42,14 +42,11 @@ struct Area {
 class ChunkExtent
 {
 public:
-	ChunkExtent(long sourceFirstIndex, 
-		    long sourceLastIndex,
-		    long destinationFirstIndex,
-		    long destinationLastIndex,
-		    Area sourceMinbox,
-		    Area destinationMinbox,
-		    Area geographicalMinbox);
+	ChunkExtent(long firstIndex,
+		    long lastIndex);
 
+	long firstIndex;
+	long lastIndex;
 	Area geographicalMinbox;
 	Area sourceMinbox;
 	Area destinationMinbox;

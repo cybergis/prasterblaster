@@ -166,11 +166,11 @@ vector<ChunkExtent> Chunker::getChunksByCount(int process_count, int process_ind
 						 geominbox,
 						 source_raster->pixel_size);
 
-		chunks.push_back(ChunkExtent(i*chunk_size,
+/*		chunks.push_back(ChunkExtent(i*chunk_size,
 					     ((i+1)*chunk_size-1),
 					     geominbox,
 					     projminbox));
-
+*/
 		
 	}
 
@@ -191,9 +191,10 @@ vector<ChunkExtent> Chunker::getChunksByCount(int process_count, int process_ind
 					 geominbox,
 					 dest_raster->pixel_size);
 	
-
+/*
 	chunks.push_back(ChunkExtent((process_count-1)*chunk_size, last_row, geominbox,
 				 projminbox));
+*/
 
 	return chunks;
 
