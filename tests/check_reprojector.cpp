@@ -49,11 +49,15 @@ TEST(reprojector_test, minbox_test) {
 	out_proj->setDatum(in_proj->datum());
 	out_proj->setParams(in_proj->params());
 
+	ASSERT_FALSE(out_proj->errorOccured());
+
 	bool result = ProjectedRaster::CreateRaster(output_raster,
 						    in,
 						    out_proj,
 						    in->type,
 						    in->pixel_size);
+
+	ASSERT_FALSE(out_proj->errorOccured());
 
 	ASSERT_TRUE(result);
 

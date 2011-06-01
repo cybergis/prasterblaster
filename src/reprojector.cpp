@@ -27,6 +27,7 @@
 #include "gctp_cpp/transformer.h"
 #include "gctp_cpp/coordinate.h"
 
+#include "rastercache.hh"
 #include "reprojector.hh"
 #include "resampler.hh"
 
@@ -155,22 +156,10 @@ vector<ChunkExtent> Chunker::getChunksByCount(int process_count, int process_ind
 	for (int i=0; i < process_count-1; ++i) {
 		chunk_ul.x = source_raster->ul_x;
 		chunk_ul.y = source_raster->ul_y - i * chunk_size * dest_raster->pixel_size;
-		geominbox = FindGeographicalExtent(dest_raster->getProjection(),
-						   chunk_ul,
-						   chunk_size,
-						   dest_raster->getColCount(),
-						   dest_raster->pixel_size);
-		clampGeoCoordinate(&geominbox.ul);
-		clampGeoCoordinate(&geominbox.lr);
-		projminbox = FindProjectedExtent(source_raster->getProjection(),
-						 geominbox,
-						 source_raster->pixel_size);
+		chunks.push_back(ChunkExtent(i*chunk_size,
+					     ((i+1)*chunk_size-1)));
 
-/*		chunks.push_back(ChunkExtent(i*chunk_size,
-					     ((i+1)*chunk_size-1),
-					     geominbox,
-					     projminbox));
-*/
+
 		
 	}
 
@@ -180,21 +169,9 @@ vector<ChunkExtent> Chunker::getChunksByCount(int process_count, int process_ind
 	chunk_ul.y = source_raster->ul_y - ((process_count - 1) 
 					    * chunk_size * source_raster->pixel_size);
 	long last_chunk_size = last_row - (process_count - 1) + 1;
-	geominbox = FindGeographicalExtent(source_raster->getProjection(),
-					   chunk_ul,
-					   last_chunk_size,
-					   source_raster->getColCount(),
-					   source_raster->pixel_size);
-	clampGeoCoordinate(&geominbox.ul);
-	clampGeoCoordinate(&geominbox.lr);
-	projminbox = FindProjectedExtent(source_raster->getProjection(),
-					 geominbox,
-					 dest_raster->pixel_size);
-	
-/*
-	chunks.push_back(ChunkExtent((process_count-1)*chunk_size, last_row, geominbox,
-				 projminbox));
-*/
+
+	chunks.push_back(ChunkExtent((process_count-1)*chunk_size, last_row));
+
 
 	return chunks;
 
@@ -237,36 +214,26 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
         Coordinate temp1, temp2;
 	std::vector<char> inraster, outraster;
 	set<long> overflow_rows;
+	RasterCache<unsigned char> sourceCache(input);
+	
 
         outproj = output->getProjection();
         inproj = input->getProjection();
 	
         // Setup raster vectors
-        outraster.resize(chunk.destinationRowCount * output->getColCount() * output->bitsPerPixel()/8);
-        inraster.resize(chunk.sourceRowCount * input->getColCount() * input->bitsPerPixel()/8);
-
-	printf("Reading input...");
-	fflush(stdout);
-        // Read input file
-	try {
-		input->readRaster(chunk.sourceFirstIndex, chunk.sourceRowCount, &(inraster[0]));
-	} catch (std::exception) {
-		fprintf(stderr, "Error Reading input!\n");
-		fflush(stderr);
-		return;
-        }
-	printf("done\n");
+	outraster.resize(chunk.rowCount * output->getColCount() * output->bitsPerPixel()/8);
+ 
 	Area pixelArea;
 	int count = 0;
 	int total = 0;
 	RasterCoordTransformer rt(output, input);        
 
-	for (int chunk_y = 0; chunk_y < chunk.destinationRowCount; ++chunk_y)  {
+	for (int chunk_y = 0; chunk_y < chunk.rowCount; ++chunk_y)  {
 		for (int chunk_x = 0; chunk_x < output->getColCount(); ++chunk_x) {
 
 			// Determine location of equivalent input pixel
 			temp1.x = chunk_x; 
-			temp1.y = chunk_y + chunk.destinationFirstIndex;
+			temp1.y = chunk_y + chunk.firstIndex;
 			pixelArea = rt.Transform(temp1);   /// Now makes sense.
 			temp1 = pixelArea.ul;
 			temp2 = pixelArea.lr;
@@ -290,12 +257,12 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 
 			temp1.x = floor(temp1.x);
 			temp1.y = floor(temp1.y);
-			unsigned int index = 0;
+			long index = 0;
 			try {
 				index = (unsigned int)temp1.x;
 				index += ((unsigned int)temp1.y) * input->getColCount();
 
-				outraster.at(chunk_x+(chunk_y*output->getColCount())) = inraster.at(index);
+				outraster.at(chunk_x+(chunk_y*output->getColCount())) = sourceCache.at(index);
 				++total;
 			} catch (out_of_range &e) {
 				overflow_rows.insert(temp1.y);
@@ -313,7 +280,7 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 //		printf("Tried to access %d\n", *i);
 	}
 	// Write output raster
-	output->writeRaster(chunk.destinationFirstIndex, chunk.destinationRowCount, &(outraster[0]));
+	output->writeRaster(chunk.firstIndex, chunk.rowCount, &(outraster[0]));
 	
 	return;
 }
@@ -370,6 +337,32 @@ Area FindRasterArea(shared_ptr<ProjectedRaster> source_raster,
 
 	return dest_area;
 }
+
+void clampGeoCoordinate(Coordinate *c)
+{
+	if (c == 0) {
+		return; 
+	}
+
+	if (c->x < -180.0) {
+		c->x = -179.999999;
+	}
+	
+	if (c->x > 180.0) {
+		c->x = 179.9999999;
+	}
+
+	if (c->y < -90.0) {
+		c->y = -89.9999999;
+	}
+
+
+	if (c->y > 90.0) {
+		c->y = 89.99999999;
+	}
+
+	return;
+}
 		    
 
 Area FindGeographicalExtent(shared_ptr<Projection> projection, 
@@ -403,7 +396,7 @@ Area FindGeographicalExtent(shared_ptr<Projection> projection,
 			temp.x = lon;
 			temp.y = lat;
 			projection->forward(temp.x, temp.y, &temp.x, &temp.y);
-			if (fabs(temp.x - lon) > 0.0001) {
+			if (fabs(temp.x - x) > 0.001) {
 				continue;
 			} else {
 				updateMinbox(lon, lat, &geoarea);
@@ -419,13 +412,16 @@ Area FindGeographicalExtent(shared_ptr<Projection> projection,
 			temp.x = lon;
 			temp.y = lat;
 			projection->forward(temp.x, temp.y, &temp.x, &temp.y);
-			if (fabs(temp.x - lon) > 0.0001) {
+			if (fabs(temp.x - x) > 0.0001) {
 				continue;
 			} else {
 				updateMinbox(lon, lat, &geoarea);
 			}
 		}
 	}
+
+	clampGeoCoordinate(&geoarea.ul);
+	clampGeoCoordinate(&geoarea.lr);
 
 	return geoarea;
 
@@ -475,7 +471,6 @@ Area FindProjectedExtent(shared_ptr<Projection> projection,
 			updateMinbox(projected.x, projected.y, &projarea);
 		}
 	}
-
 
 	return projarea;
 }
