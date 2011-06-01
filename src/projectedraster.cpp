@@ -44,11 +44,13 @@ using namespace std;
 using boost::shared_ptr;
 
 
-ChunkExtent::ChunkExtent(long firstIndex, 
-			 long lastIndex)
+ChunkExtent::ChunkExtent(long _firstIndex, 
+			 long _lastIndex)
 
 {	
-	
+  firstIndex = _firstIndex;
+  lastIndex = _lastIndex;
+  rowCount = lastIndex - firstIndex + 1;
 	return;
 }
 
@@ -214,6 +216,7 @@ bool ProjectedRaster::CreateRaster(shared_ptr<ProjectedRaster> input,
 	return status;
 }
 
+
 bool ProjectedRaster::CreateRaster(string _filename,
 				   shared_ptr<ProjectedRaster> input,
 				   shared_ptr<Projection> output_proj,
@@ -243,7 +246,7 @@ bool ProjectedRaster::CreateRaster(string _filename,
 			    uly,
 			    input->type,
 			    output_proj,
-			    input->pixel_size);
+			    _pixel_size);
 
 
 

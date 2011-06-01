@@ -47,15 +47,7 @@ public:
 
 	long firstIndex;
 	long lastIndex;
-	Area geographicalMinbox;
-	Area sourceMinbox;
-	Area destinationMinbox;
-	long sourceFirstIndex;
-	long sourceLastIndex;
-	long sourceRowCount;
-	long destinationFirstIndex;
-	long destinationLastIndex;
-	long destinationRowCount;
+	long rowCount;
 };
 
 	
