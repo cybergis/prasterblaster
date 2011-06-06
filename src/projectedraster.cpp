@@ -452,6 +452,7 @@ bool ProjectedRaster::readRaster(int firstRow, int numRows, void *data)
 			success = true;
 		} else if (ifs.fail()) {
 			printf("File read failed!\n");
+			return false;
 		} else if( ifs.bad()) {
 			printf("Bad file read\n");
 		} else if ( ifs.eof() ) {
