@@ -32,6 +32,19 @@ protected:
 
 };
 
+
+TEST_F(CacheTest, fixture) {
+	// Check that fixture is in good state
+	if (!small_raster->isReady()) {
+		fprintf(stderr, "Error opening file \"%s\"in fixture\n", small_raster->filename.c_str());
+	}
+
+	ASSERT_TRUE(small_raster->isReady());
+
+
+
+}
+
 TEST_F(CacheTest, allocation) {
 	RasterCache<unsigned char> cache(small_raster);
 
@@ -59,19 +72,19 @@ TEST_F(CacheTest, pixel_values) {
 	vector<unsigned char> temp_row(small_raster->getColCount());
 	unsigned int a(0), b(0);
 
-	for (int i = 0; 
-	     i < small_raster->getColCount() * small_raster->getRowCount();
-	     ++i) {
-		a = cache.at(i);
-		long row = i / small_raster->getColCount();
-		long col = i % small_raster->getColCount();
-		small_raster->readRaster(row, 1, &(temp_row[0]));
-
-		b = temp_row[col];
-
-		ASSERT_EQ(a, b);
-	}
-	
+	ASSERT_NO_THROW ({
+			for (int i = 0; 
+			     i < small_raster->getColCount() * small_raster->getRowCount();
+			     ++i) {
+				a = cache.at(i);
+				long row = i / small_raster->getColCount();
+				long col = i % small_raster->getColCount();
+				small_raster->readRaster(row, 1, &(temp_row[0]));
+				b = temp_row[col];
+				
+				ASSERT_EQ(a, b);
+			}
+		});
 
 }
 
