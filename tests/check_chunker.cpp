@@ -26,9 +26,9 @@ protected:
 		proj->setUnits(in->getProjection()->units());
 		proj->setDatum(in->getProjection()->datum());
 		proj->setParams(in->getProjection()->params());
-		ProjectedRaster::CreateRaster(test_dir + "glc_mollweide_30sec-chunk.img",
+		ProjectedRaster::CreateRaster(test_dir + "glc_mollweide_30sec-chunk.tif",
 					      in, proj, in->getPixelType(), in->getPixelSize());
-		out = shared_ptr<ProjectedRaster>(new ProjectedRaster(test_dir + "glc_mollweide_30sec-chunk.img"));
+		out = shared_ptr<ProjectedRaster>(new ProjectedRaster(test_dir + "glc_mollweide_30sec-chunk.tif"));
 
 	}
 	
@@ -39,8 +39,6 @@ protected:
 
 TEST_F(ChunkerTest, check_fixture) {
 	ASSERT_TRUE(out->isReady());
-
-
 }
 
 TEST_F(ChunkerTest, check_chunk_sizes) {
@@ -62,18 +60,18 @@ TEST_F(ChunkerTest, chunk_output_comprehensive) {
 	vector<ChunkExtent> chunks = c.getChunksByCount(10, 20);
 	Coordinate temp;
 
-
-	for (vector<ChunkExtent>::iterator c = chunks.begin();
-	     c != chunks.end(); c++) {
-		for (int x = 0; x < out->getColCount(); ++x) {
-			for (int y = c->firstIndex; y <= c->lastIndex; ++y) {
-				temp.x = x;
-				temp.y = y;
-				transformer.Transform(temp);
+	ASSERT_NO_THROW ({
+			for (vector<ChunkExtent>::iterator c = chunks.begin();
+			     c != chunks.end(); c++) {
+				for (int x = 0; x < out->getColCount(); ++x) {
+					for (int y = c->firstIndex; y <= c->lastIndex; ++y) {
+						temp.x = x;
+						temp.y = y;
+						transformer.Transform(temp);
+					}
+				}
 			}
-		}
-	}
-		
+		});
 		
 		
 }	
