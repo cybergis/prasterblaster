@@ -15,6 +15,7 @@
 #include <cmath>
 #include <cstdio>
 #include <set>
+#include <sstream>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -69,9 +70,11 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 	src_proj->inverse(temp1.x, temp1.y, &temp2.x, &temp2.y);
 	src_proj->forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
 
-	if (fabs(temp1.x - temp2.x) > 0.0001) {
+	if (fabs(temp1.x - temp2.x) > 0.01) {
+		std::ostringstream s;
+		s << "Point Overlaps! " << temp1.x << ", " << temp2.x;
 		// Overlap detected!
-		throw std::string("Point Overlaps!");
+		throw std::runtime_error(s.str());
 	}
 
 	temp1.x = ((double)source.x * src->pixel_size) + src->ul_x;
