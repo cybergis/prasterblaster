@@ -230,7 +230,8 @@ bool ProjectedRaster::CreateRaster(string _filename,
 	Area out_area =  FindProjectedExtent(output_proj,
 					     input->getGeographicalMinbox(),
 					     _pixel_size);
-	
+	Area minbox = input->getGeographicalMinbox();
+	minbox = out_area;
 
 	ulx = out_area.ul.x;
 	uly = out_area.ul.y;
@@ -667,6 +668,7 @@ bool ProjectedRaster::loadRaster(string filename)
 	projection->setDatum((ProjDatum)datum);
 
 	projection->setUnits(METER);
+	ready = true;
 	
 	return true;
 }
