@@ -146,45 +146,38 @@ vector<ChunkExtent> Chunker::getChunksByCount(int process_count, int process_ind
 {
 	std::vector<ChunkExtent> chunks;
 	long chunk_size = dest_raster->getRowCount() / process_count;
-	Coordinate chunk_ul;
 	Area geominbox, projminbox;
 
-	if (dest_raster->getRowCount() <= 0 || process_count <= 0) {
-		return chunks;
+	if (process_count <= 0) {
+		throw std::invalid_argument("Invalid process count");
+	}
+
+	if (dest_raster->getRowCount() <= 0) {
+		throw std::runtime_error("Destination raster has no rows");
 	}
 
 	for (int i=0; i < process_count-1; ++i) {
-		chunk_ul.x = source_raster->ul_x;
-		chunk_ul.y = source_raster->ul_y - i * chunk_size * dest_raster->pixel_size;
 		chunks.push_back(ChunkExtent(i*chunk_size,
 					     ((i+1)*chunk_size-1)));
-
-
-		
 	}
 
 	// Last chunk includes any leftover
-	long last_row = source_raster->getRowCount() - 1;
-	chunk_ul.x = source_raster->ul_x;
-	chunk_ul.y = source_raster->ul_y - ((process_count - 1) 
-					    * chunk_size * source_raster->pixel_size);
+	long last_row = dest_raster->getRowCount() - 1;
 	long last_chunk_size = last_row - (process_count - 1) + 1;
 
 	chunks.push_back(ChunkExtent((process_count-1)*chunk_size, last_row));
 
 
 	return chunks;
-
-	
 }
 	
 
 Reprojector::Reprojector(shared_ptr<ProjectedRaster> _input, shared_ptr<ProjectedRaster> _output,
 			 int processCount, int rank) 
         :
-        input(_input), output(_output), numprocs(processCount), rank(rank)
+        numprocs(processCount), rank(rank), input(_input), output(_output)
 {
-	numchunks = numprocs * 100;
+	numchunks = numprocs * 10;
         maxx = maxy = 0;
         minx = miny = 1e+37;
         resampler = &resampler::nearest_neighbor<unsigned char>;
@@ -201,9 +194,14 @@ Reprojector::~Reprojector()
 
 void Reprojector::parallelReproject()
 {
+	Chunker chunker(input, output);
 	printf("Finding chunks\n");
-
-	printf("Getting assignments\n");
+	vector<ChunkExtent> chunks = chunker.getChunksByCount(numprocs, rank);
+	
+	printf("Reprojecting chunks...\n");
+	for (int i = 0; i < chunks.size(); ++i) {
+		reprojectChunk(chunks[i]);
+	}
 
 
 }
@@ -234,7 +232,11 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 			// Determine location of equivalent input pixel
 			temp1.x = chunk_x; 
 			temp1.y = chunk_y + chunk.firstIndex;
-			pixelArea = rt.Transform(temp1);   /// Now makes sense.
+			try {
+				pixelArea = rt.Transform(temp1);   /// Now makes sense.
+			} catch (std::string) {
+				continue;
+			}
 			temp1 = pixelArea.ul;
 			temp2 = pixelArea.lr;
 
@@ -441,8 +443,12 @@ Area FindProjectedExtent(shared_ptr<Projection> projection,
 
 	// Check top of map
 	for (double lon = geographical_area.ul.x; lon <= geographical_area.lr.x; lon += .05) {
-		projection->forward(lon, geographical_area.ul.y, &(projected.x), &(projected.y));
-		updateMinbox(projected.x, projected.y, &projarea);
+		for (double fudge = 0; fudge <= 5; fudge += 0.5) {
+			projection->forward(lon, geographical_area.ul.y-fudge, 
+					    &(projected.x), &(projected.y));
+			updateMinbox(projected.x, projected.y, &projarea);
+		}
+
 	}
 
 	// Check bottom of map
