@@ -71,11 +71,19 @@ TEST(reprojector_test, mollweide_projection_test) {
 	
 	string input_raster = test_dir + "/testdata/veg_geographic_1deg.img";
 	string output_raster = test_dir + "/testdata/veg_mollweide_1deg.tif"; 
+	int ret = 0;
 
+	  printf("Reprojecting: %s\n", input_raster.c_str());
 
-	printf("Reprojecting: %s\n", input_raster.c_str());
-	int ret = driver(input_raster, output_raster, "mollweide");
-
+	ASSERT_NO_THROW ({
+	    try {
+	    ret = driver(input_raster, output_raster, "mollweide");
+	    } catch(std::exception &e) {
+	      printf("Error! ");
+	      std::cout << e.what();
+	      throw e;
+	    }
+	  });
 	ASSERT_EQ(0, ret);
 
 }

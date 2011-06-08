@@ -72,7 +72,7 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 
 	if (fabs(temp1.x - temp2.x) > 0.01) {
 		std::ostringstream s;
-		s << "Point Overlaps! " << temp1.x << ", " << temp2.x;
+		s << "Point Overlaps! " << source.x << ", " << source.x;
 		// Overlap detected!
 		throw std::runtime_error(s.str());
 	}
@@ -237,7 +237,7 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 			temp1.y = chunk_y + chunk.firstIndex;
 			try {
 				pixelArea = rt.Transform(temp1);   /// Now makes sense.
-			} catch (std::string) {
+			} catch (std::runtime_error) {
 				continue;
 			}
 			temp1 = pixelArea.ul;
