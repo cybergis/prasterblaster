@@ -1,7 +1,7 @@
-SUBDIRS = gctp_cpp 
+SUBDIRS = gctp_cpp gtest
 
 
-lib_LTLIBRARIES = librasterblaster.la
+lib_LTLIBRARIES = librasterblaster.la 
 librasterblaster_la_SOURCES = projectedraster.cpp \
                  rasterinfo.cpp \
 	         reprojector.cpp \
@@ -12,9 +12,11 @@ librasterblaster_la_SOURCES = projectedraster.cpp \
                  rasterxml.cpp \
 		 resampler.cpp \
 		 driver.cpp
-
 librasterblaster_la_LDFLAGS = $(all_libraries)  -Lgctp_cpp
 librasterblaster_la_LIBADD =  gctp_cpp/libgctp_cpp.a
+
+#libgtest_la_SOURCES = gtest/src/gtest-all.cc
+#libgtest_la_CPPFLAGS = -Lgtest/ -Lgtest/include/ -Lgtest/src/
 
 bin_PROGRAMS = prasterblaster
 prasterblaster_CXXFLAGS = -lgdal -g

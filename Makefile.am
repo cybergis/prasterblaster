@@ -9,4 +9,4 @@ SUBDIRS = src . tests
 dist_doc_DATA=README
 docdir = ${datadir}/doc/${PACKAGE} 
 
-ACLOCAL_AMFLAGS=-I m4 --install
+ACLOCAL_AMFLAGS=-I m4

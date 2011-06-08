@@ -4,8 +4,6 @@
 
 
 AC_INIT([prasterblaster], [0.01], [dmattli@usgs.gov])  
-#m4_include([m4/ax_boost_python.m4])
-#m4_include([m4/ax_python.m4])
 	 	
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])  
 AC_PROG_LIBTOOL
@@ -49,6 +47,7 @@ AC_CONFIG_FILES([
   Makefile  
   src/Makefile
   src/gctp_cpp/Makefile
+  src/gtest/Makefile
   tests/Makefile
 ])  
 	 	
