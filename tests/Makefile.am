@@ -5,10 +5,10 @@ AM_CLFLAGS =  -W -Wall -Wcast-align -Wstrict-prototypes -Wmissing \
 		-Wnested-externs -Wparentheses -Wtrigraphs -g
 
 bin_PROGRAMS = tests
-tests_CXXFLAGS  = -I../src/
-tests_LDFLAGS = $(all_libraries) -L../src/ -L../src/gtest/
+tests_CXXFLAGS  = -I../src/ -lrasterblaster -lgctp_cpp -lgtest
+tests_LDFLAGS = $(all_libraries) -lrasterblaster -lgctp_cpp -lgtest -L../src/ -L../src/gctp_cpp/ -L../src/gtest/
 tests_CPPFLAGS = -I ../src/gtest/include
-tests_LDADD = -lmpi -lrasterblaster -lgtest
+tests_LDADD = -lmpi 
 tests_SOURCES = check_reprojector.cpp check_projectedraster.cpp check_chunker.cpp \
 		check_rastercache.cpp
 

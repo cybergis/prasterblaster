@@ -24,17 +24,16 @@ double params[15] =  { 6370997.000000,
 		       0, 0, 0, 0, 0, 
 		       0, 0, 0, 0, 0};
 
-const char *usage = "usage: prasterblaster <input raster path> <output raster path> " 
-  "<output raster projection> \n"; 
-
 
 int driver(string input_raster, string output_filename, string output_projection)
 {
 	int rank = 0;
+	int process_count = 1;
 	shared_ptr<ProjectedRaster> in, out;
 	shared_ptr<Projection> in_proj, out_proj;
 	shared_ptr<Reprojector> re;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
+	MPI_Comm_size(MPI_COMM_WORLD, &process_count);
 
 	// Open input raster and check for errors
 	if (rank == 0) {
@@ -129,7 +128,7 @@ int driver(string input_raster, string output_filename, string output_projection
 	if (rank == 0) 
 		printf("done\n");
 
-	re = shared_ptr<Reprojector>(new Reprojector(in, out, 1, 0));
+	re = shared_ptr<Reprojector>(new Reprojector(in, out, process_count, rank));
 	if (rank == 0) {
 		printf("Reprojecting...");
 		fflush(stdout);
@@ -144,27 +143,3 @@ int driver(string input_raster, string output_filename, string output_projection
 	return 0;
 }
 
-int main(int argc, char *argv[]) 
-{
- 	long int rows, cols;
-
-	ProjectedRaster *out;
-	Reprojector *re = 0;
-	int rank;
-
-        rows = cols = 0;
-
-	MPI_Init(&argc, &argv);
-	if (argc < 4) {
-		if (rank == 0) {
-			printf("%s\n", usage);
-		}
-		MPI_Abort(MPI_COMM_WORLD, -1);
-		return 0;
-        }
-
-	driver(argv[1], argv[2], argv[3]);
-	MPI_Finalize();
-	
-	return 0;
-}

@@ -45,7 +45,7 @@ TEST_F(ChunkerTest, check_chunk_sizes) {
 	Chunker c(in, out);
 	vector<ChunkExtent> chunks;
 	ASSERT_NO_THROW ({
-			chunks = c.getChunksByCount(1, 0);
+	    chunks = c.getChunksByCount(10, 1, 0);
 		});
 
 	ASSERT_NE(chunks.size(), 0);
@@ -57,7 +57,7 @@ TEST_F(ChunkerTest, chunk_output_comprehensive) {
 	
 	Chunker c(in, out);
 	RasterCoordTransformer transformer(in, out);
-	vector<ChunkExtent> chunks = c.getChunksByCount(10, 20);
+	vector<ChunkExtent> chunks = c.getChunksByCount(5, 10, 20);
 	Coordinate temp;
 
 

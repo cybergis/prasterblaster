@@ -6,6 +6,7 @@
 #include <map>
 #include <stdexcept>
 #include <string>
+#include <sstream>
 #include <vector>
 
 #include "projectedraster.hh"
@@ -79,14 +80,20 @@ PixelType RasterCache<PixelType>::at(int x, int y)
 template <class PixelType>
 PixelType RasterCache<PixelType>::at(long i)
 {
-	PixelType t;
-
 	if (i >= firstIndex && i <= lastIndex) {
-		return pixels.at(i-firstIndex);
+		try {
+			return pixels.at(i-firstIndex);
+		} catch (std::out_of_range &e) {
+			printf("Tried to Access: %ld, index: %ld vector size: %zd, firstindex: %ld, lastindex %ld\n",
+			       i, i-firstIndex, pixels.size(), firstIndex, lastIndex);  
+		}
 	} else {
-		fetchValue(i);
+		if (!fetchValue(i)) {
+			throw std::runtime_error("Error reading input"); 
+		}
 		return pixels.at(i-firstIndex);
 	}
+	
 	
 	return -1;
 }
@@ -103,14 +110,17 @@ bool RasterCache<PixelType>::fetchValue(long i)
 {
 
 	long row = i / raster->getColCount();
-	long col = i % raster->getColCount();
 	long max_index = raster->getRowCount() * raster->getColCount() - 1;
 	long rows_to_fetch = cacheSize;
 	
 
 	// Determine how many rows to fetch
 	if ( i > max_index) {
-		throw std::out_of_range("");
+		stringstream s;
+		s << "The index " << i << " is greater than " << max_index;
+		firstIndex = -1;
+		lastIndex = -1;
+		throw std::out_of_range(s.str());
 	}
 
 	if ((i + cacheSize * raster->getColCount()) > max_index) {
@@ -131,12 +141,13 @@ bool RasterCache<PixelType>::fetchValue(long i)
 	// Update ranges
 	firstIndex = i;
 	lastIndex = i + rows_to_fetch * raster->getColCount() - 1;
+	if (pixels.size() != 0) {
+		printf("NOOOOOOOOOOOOOOOOOOOOOOOOO %zd\n\n\n\n\n", pixels.size());
+	}
 
 	return true;
 }
 
 	
-
-
 
 #endif // RASTERCACHE_HH

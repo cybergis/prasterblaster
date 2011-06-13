@@ -6,10 +6,10 @@ lib_LIBRARY = gctp_cpp
 
 noinst_LIBRARIES = libgctp_cpp.a
 
-AM_CXXFLAGS = -fPIC -W -Wall -Wcast-align -Wstrict-prototypes -g\
+AM_CXXFLAGS = -fPIC -W -Wall -Wcast-align -g\
 		-Wpointer-arith -Wsign-compare \
 		-Wformat=2 -Wno-format-y2k -Wimplicit -Wmissing-braces \
-		-Wnested-externs -Wparentheses -Wtrigraphs # -Wshadow
+		-Wparentheses -Wtrigraphs # -Wshadow
 
 libgctp_cpp_CXXFLAGS = -fPIC
 libgctp_cpp_a_SOURCES = alaskaconformal.cpp \
@@ -28,7 +28,6 @@ libgctp_cpp_a_SOURCES = alaskaconformal.cpp \
            intmollweide.cpp \
            lambertazimuth.cpp \
            lambertcc.cpp \
-           main.cpp \
            mercator.cpp \
            miller.cpp \
            Mollweide.cpp \

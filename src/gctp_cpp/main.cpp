@@ -4,7 +4,7 @@
 #include "equirectangular.h"
 #include "albersConEqArea.h"
 #include "mercator.h"
-int main( int argc, char **argv )
+int main(void)
 {
  double params[15] = { 0, 0.000000, 0.000000, 0.000000, 0.000000, 
 				   			          0.000000,	0.000000, 0.000000, 0.000000, 0.000000, 

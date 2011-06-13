@@ -132,6 +132,7 @@ bool ProjectedRaster::CreateRaster(shared_ptr<ProjectedRaster> input,
 	Projection *projection = 0;
 	int _band_count = 1;
 
+	input->getColCount();
 	if (!in_info.ready()) {
 		fprintf(stderr, "Could not open xml file: %s\n",
 			xmlDescription.c_str());
@@ -141,7 +142,6 @@ bool ProjectedRaster::CreateRaster(shared_ptr<ProjectedRaster> input,
 
 	int num_rows = in_info.rows();
 	int num_cols = in_info.cols();
-	char junk[num_cols *2];
 	double ulx = in_info.ul_X();
 	double uly = in_info.ul_Y();
 
@@ -230,14 +230,12 @@ bool ProjectedRaster::CreateRaster(string _filename,
 	Area out_area =  FindProjectedExtent(output_proj,
 					     input->getGeographicalMinbox(),
 					     _pixel_size);
-	Area minbox = input->getGeographicalMinbox();
-	minbox = out_area;
-
 	ulx = out_area.ul.x;
 	uly = out_area.ul.y;
 
-	num_rows = (out_area.ul.y - out_area.lr.y) / _pixel_size;
-	num_cols = (out_area.lr.x - out_area.ul.x) / _pixel_size;
+	num_rows = (int)((out_area.ul.y - out_area.lr.y) / _pixel_size);
+	num_cols = (int)((out_area.lr.x - out_area.ul.x) / _pixel_size);
+	printf("size is %d cols %d rows\n", num_cols, num_rows);
 
 	status = makeRaster(_filename,
 			    num_cols, 
@@ -245,7 +243,7 @@ bool ProjectedRaster::CreateRaster(string _filename,
 			    input->band_count,
 			    ulx,
 			    uly,
-			    input->type,
+			    pixel_type,
 			    output_proj,
 			    _pixel_size);
 
@@ -479,7 +477,7 @@ bool ProjectedRaster::writeRaster(int firstRow, int numRows, void *data)
 	bool success = false;
 
 	if (firstRow < 0 || numRows +firstRow > rows || data == 0) {
-		fprintf(stderr,"Write Boink #1\n");
+	  fprintf(stderr,"Write Boink #1 %d %d\n", numRows +firstRow, rows);
 		fflush(stderr);
 			
 		return false;

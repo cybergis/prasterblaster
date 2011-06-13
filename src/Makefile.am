@@ -1,8 +1,8 @@
 SUBDIRS = gctp_cpp gtest
 
 
-lib_LTLIBRARIES = librasterblaster.la 
-librasterblaster_la_SOURCES = projectedraster.cpp \
+noinst_LIBRARIES = librasterblaster.a
+librasterblaster_a_SOURCES = projectedraster.cpp \
                  rasterinfo.cpp \
 	         reprojector.cpp \
                  tinystr.cpp \
@@ -12,17 +12,14 @@ librasterblaster_la_SOURCES = projectedraster.cpp \
                  rasterxml.cpp \
 		 resampler.cpp \
 		 driver.cpp
-librasterblaster_la_LDFLAGS = $(all_libraries)  -Lgctp_cpp
-librasterblaster_la_LIBADD =  gctp_cpp/libgctp_cpp.a
-
-#libgtest_la_SOURCES = gtest/src/gtest-all.cc
-#libgtest_la_CPPFLAGS = -Lgtest/ -Lgtest/include/ -Lgtest/src/
+#librasterblaster_a_LDFLAGS = $(all_libraries)  -Lgctp_cpp
+librasterblaster_a_LIBADD =  gctp_cpp/libgctp_cpp.a
 
 bin_PROGRAMS = prasterblaster
-prasterblaster_CXXFLAGS = -lgdal -g
+prasterblaster_CXXFLAGS = -lgdal -lrasterblaster -g
 prasterblaster_LDFLAGS = $(all_libraries)  -Lgctp_cpp
-prasterblaster_LDADD = librasterblaster.la 
-prasterblaster_SOURCES =  driver.cpp 
+prasterblaster_LDADD = librasterblaster.a gctp_cpp/libgctp_cpp.a 
+prasterblaster_SOURCES =  main.cpp 
 
 AM_CPPFLAGS = $(all_includes) -IpRPL -Igctp_cpp
 

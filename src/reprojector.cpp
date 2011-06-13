@@ -145,11 +145,12 @@ void Chunker::clampGeoCoordinate(Coordinate *c)
 }
 
 
-vector<ChunkExtent> Chunker::getChunksByCount(int process_count, int process_index) 
+vector<ChunkExtent> Chunker::getChunksByCount(int chunk_size, int process_count, int process_index) 
 {
-	std::vector<ChunkExtent> chunks;
-	long chunk_size = dest_raster->getRowCount() / process_count;
-	Area geominbox, projminbox;
+	std::vector<ChunkExtent> chunks, ret;
+	long chunk_count = dest_raster->getRowCount() / chunk_size;
+	long leftover_rows = dest_raster->getRowCount() % chunk_size;
+	long chunks_per_process = chunk_count / process_count;
 
 	if (process_count <= 0) {
 		throw std::invalid_argument("Invalid process count");
@@ -159,19 +160,34 @@ vector<ChunkExtent> Chunker::getChunksByCount(int process_count, int process_ind
 		throw std::runtime_error("Destination raster has no rows");
 	}
 
-	for (int i=0; i < process_count-1; ++i) {
+	for (int i=0; i < chunk_count; ++i) {
 		chunks.push_back(ChunkExtent(i*chunk_size,
-					     ((i+1)*chunk_size-1)));
+					     + (i+1)*chunk_size-1));
 	}
 
-	// Last chunk includes any leftover
-	long last_row = dest_raster->getRowCount() - 1;
-	long last_chunk_size = last_row - (process_count - 1) + 1;
+	if (leftover_rows != 0) {
+		chunks.push_back(ChunkExtent(chunk_count*chunk_size,
+					     chunk_count*chunk_size + leftover_rows-1));
+					     
+	}
+	
+	if (process_index != process_count-1) {
+		for (int i=process_index*chunks_per_process; 
+		     i < (process_index+1)*chunks_per_process ;
+		     ++i) {
+			ret.push_back(chunks.at(i));
+		}
+	} else {
+		for (unsigned int i=process_index*chunks_per_process; 
+		     i < chunks.size() ;
+		     ++i) {
+			ret.push_back(chunks.at(i));
+		}
+		
+	}
 
-	chunks.push_back(ChunkExtent((process_count-1)*chunk_size, last_row));
 
-
-	return chunks;
+	return ret;
 }
 	
 
@@ -199,10 +215,10 @@ void Reprojector::parallelReproject()
 {
 	Chunker chunker(input, output);
 	printf("Finding chunks\n");
-	vector<ChunkExtent> chunks = chunker.getChunksByCount(numprocs, rank);
+	vector<ChunkExtent> chunks = chunker.getChunksByCount(50, numprocs, rank);
 	
-	printf("Reprojecting chunks...\n");
-	for (int i = 0; i < chunks.size(); ++i) {
+	printf("Reprojecting %zd chunks...\n", chunks.size());
+	for (int i = 0; i < (int)chunks.size(); ++i) {
 		reprojectChunk(chunks[i]);
 	}
 
@@ -223,7 +239,8 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 	
         // Setup raster vectors
 	outraster.resize(chunk.rowCount * output->getColCount() * output->bitsPerPixel()/8);
- 
+	printf("Process: %u of %d Output raster chunk %ld %ld\n",  
+	       rank, numprocs, chunk.firstIndex, chunk.firstIndex+chunk.rowCount); 
 	Area pixelArea;
 	int count = 0;
 	int total = 0;
@@ -243,8 +260,8 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 			temp1 = pixelArea.ul;
 			temp2 = pixelArea.lr;
 
-			//! TODO: Check for overlap!
-			// temp1&2 are now scaled to input raster coords, now resample!
+			//! TODO: Check for overlap!	
+		// temp1&2 are now scaled to input raster coords, now resample!
 			// But does the rectangle defined by temp1 and temp2 actually
 			// contain any points? If not use nearest-neighbor...
 			long center_index = (long)((temp1.x + temp2.x)/2);
@@ -262,15 +279,26 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 
 			temp1.x = floor(temp1.x);
 			temp1.y = floor(temp1.y);
-			long index = 0;
-			try {
-				index = (unsigned int)temp1.x;
-				index += ((unsigned int)temp1.y) * input->getColCount();
+			if (temp1.x < 0)
+				temp1.x = 0;
 
-				outraster.at(chunk_x+(chunk_y*output->getColCount())) = sourceCache.at(index);
+			long index = 0;
+			unsigned char val1 = 0;
+
+			index = (unsigned int)temp1.x;
+			index += ((unsigned int)temp1.y) * input->getColCount();
+			try{
+				val1 = sourceCache.at(index);
+			} catch (out_of_range &e) {
+				printf("%s\n", e.what());
+
+			}
+			try {
+				outraster.at(chunk_x+(chunk_y*output->getColCount())) = val1;
 				++total;
 			} catch (out_of_range &e) {
-				overflow_rows.insert(temp1.y);
+				printf("Chunk_x %d, Chunk_y %d, up to %d %ld\n", chunk_x, chunk_y,
+				       output->getColCount(), chunk.rowCount);
 				outraster.at(chunk_x+(chunk_y*output->getColCount())) = 255;
 				++count;
 
@@ -280,10 +308,8 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 		}
 	}
 	printf("done!\n");
-	printf("%d total, %d pixels off! %f percent\n", total, count, (double)count/(double)total*100);
-	for (set<long>::iterator i=overflow_rows.begin(); i != overflow_rows.end(); ++i) {
-//		printf("Tried to access %d\n", *i);
-	}
+
+	printf("Writing from %ld, this many: %ld\n", chunk.firstIndex, chunk.rowCount);
 	// Write output raster
 	output->writeRaster(chunk.firstIndex, chunk.rowCount, &(outraster[0]));
 	
@@ -380,7 +406,7 @@ Area FindGeographicalExtent(shared_ptr<Projection> projection,
 	double lon, lat;
 	double x, y;
 	int check_count = 5;
-	Coordinate temp;
+	Coordinate temp, temp1;
 	
 	geoarea.ul.x = DBL_MAX;
 	geoarea.ul.y = -DBL_MAX;
@@ -392,32 +418,17 @@ Area FindGeographicalExtent(shared_ptr<Projection> projection,
 		check_count = row_count;
 	}
 
-	// Check top
-	for (int row = 0; row < check_count; row += 5) {
-		for (int col = 0; col < col_count; ++col) {
+	// Check every point
+	for (int row = 0; row < row_count; row += 5) {
+		for (int col = 0; col < col_count; col += 5) {
 			x = ul_point.x + (pixel_size * col);
 			y = ul_point.y - (pixel_size * row);
 			projection->inverse(x, y, &lon, &lat);
 			temp.x = lon;
 			temp.y = lat;
 			projection->forward(temp.x, temp.y, &temp.x, &temp.y);
-			if (fabs(temp.x - x) > 0.001) {
-				continue;
-			} else {
-				updateMinbox(lon, lat, &geoarea);
-			}
-		}
-	}
-	// Check bottom
-	for (int row = row_count-1; row > row_count-1-check_count; row -= 5) {
-		for (int col = 0; col < col_count; ++col) {
-			x = ul_point.x + (pixel_size * col);
-			y = ul_point.y - (pixel_size * row);
-			projection->inverse(x, y, &lon, &lat);
-			temp.x = lon;
-			temp.y = lat;
-			projection->forward(temp.x, temp.y, &temp.x, &temp.y);
-			if (fabs(temp.x - x) > 0.0001) {
+			if (fabs(temp.x - x) > 0.001 && 0) {
+//				printf("ASDFASDFASDF %f %f\n", temp.x, x);
 				continue;
 			} else {
 				updateMinbox(lon, lat, &geoarea);
@@ -427,6 +438,15 @@ Area FindGeographicalExtent(shared_ptr<Projection> projection,
 
 	clampGeoCoordinate(&geoarea.ul);
 	clampGeoCoordinate(&geoarea.lr);
+
+	if (geoarea.ul.x < -180.0)
+		geoarea.ul.x = -180.0;
+	if (geoarea.ul.y > 90.0) 
+		geoarea.ul.y = 90.0;
+	if (geoarea.lr.x > 180.0) 
+		geoarea.lr.x = 180.0;
+	if (geoarea.lr.y < -90.0)
+		geoarea.lr.y = -90.0;
 
 	return geoarea;
 
@@ -443,44 +463,21 @@ Area FindProjectedExtent(shared_ptr<Projection> projection,
 	projarea.ul.y = -DBL_MAX;
 	projarea.lr.x = -DBL_MAX;
 	projarea.lr.y = DBL_MAX;
-
-	// Check top of map
+	pixel_size = 0;
+	// Check whole raster
 	for (double lon = geographical_area.ul.x; lon <= geographical_area.lr.x; lon += .05) {
-		for (double fudge = 0; fudge <= 5; fudge += 0.5) {
-			projection->forward(lon, geographical_area.ul.y-fudge, 
-					    &(projected.x), &(projected.y));
-			updateMinbox(projected.x, projected.y, &projarea);
-		}
-
-	}
-
-	// Check bottom of map
-	for (double lon = geographical_area.ul.x; lon <= geographical_area.lr.x; lon += .05) {
-		projection->forward(lon, geographical_area.lr.y, &(projected.x), &(projected.y));
-		updateMinbox(projected.x, projected.y, &projarea);
-	}
-
-	// Check left of map
-	for (double lat = geographical_area.ul.y; lat >= geographical_area.lr.y; lat -= .05) {
-		projection->forward(geographical_area.ul.x, lat, &(projected.x), &(projected.y));
-		updateMinbox(projected.x, projected.y, &projarea);
-	}
-
-	// Check right of map
-	for (double lat = geographical_area.ul.y; lat >= geographical_area.lr.y; lat -= .05) {
-		projection->forward(geographical_area.lr.x, lat, &(projected.x), &(projected.y));
-		updateMinbox(projected.x, projected.y, &projarea);
-	}
-
-
-	// Check a bunch of points
-	for (double lon = geographical_area.ul.x; lon < geographical_area.lr.x; lon += .5) {
-		for (double lat = geographical_area.lr.y; lat < geographical_area.ul.y; lat += .5) {
+		for (double lat = geographical_area.lr.y; lat <= geographical_area.ul.y; lat += .05) {
 			projection->forward(lon, lat, &(projected.x), &(projected.y));
 			updateMinbox(projected.x, projected.y, &projarea);
-		}
-	}
 
+		}
+
+	}
+	printf("Geo Area: %f|||%f|||%f|||%f\n", 
+	       geographical_area.ul.x, geographical_area.ul.y,
+	       geographical_area.lr.x, geographical_area.lr.y);
+	printf("Calculated minbox: %f %f %f %f\n",
+	       projarea.ul.x, projarea.ul.y, projarea.lr.x, projarea.lr.y);
 	return projarea;
 }
 
@@ -491,9 +488,9 @@ Area FindRasterExtent(shared_ptr<ProjectedRaster> raster,
 	double pixel_size = raster->pixel_size;
 	shared_ptr<Projection> projection(raster->getProjection());
 	Area projArea = FindProjectedExtent(projection, geographical_area, raster->pixel_size);
-	int rows = (projArea.lr.x - projArea.ul.x) / pixel_size;
-	int cols = (projArea.ul.y - projArea.lr.y) / pixel_size;
-	int first_row = (raster->ul_x - projArea.ul.x) / pixel_size;
+	int rows = (int)((projArea.lr.x - projArea.ul.x) / pixel_size);
+	int cols = (int)((projArea.ul.y - projArea.lr.y) / pixel_size);
+	int first_row = (int)((raster->ul_x - projArea.ul.x) / pixel_size);
 	int first_col = 0;
 
 	rasterArea.ul.y = first_row;

@@ -45,7 +45,8 @@ public:
 		shared_ptr<ProjectedRaster> destination);
 	
 	void clampGeoCoordinate(Coordinate *c);
-	vector<ChunkExtent> getChunksByCount(int process_count, int process_index = -1);
+	vector<ChunkExtent> getChunksByCount(int chunk_count, 
+					     int process_count, int process_index = -1);
 	vector<ChunkExtent> getChunksBySize(int max_size, int process_index = -1);
 
 	
