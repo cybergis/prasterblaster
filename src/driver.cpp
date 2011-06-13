@@ -14,7 +14,6 @@
 #include "gctp_cpp/mollweide.h"
 #include "projectedraster.hh"
 #include "reprojector.hh"
-#include "rasterreader.hh"
 
 #include <gdal_priv.h>
 
