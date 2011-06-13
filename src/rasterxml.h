@@ -12,7 +12,7 @@
  */
 
 
-/*! \mainpage RasterXML class for pRasterBlaster
+/*
 *
 *	\section desc_sec Description
 *	The RasterXML class is used to store the raster file information 
