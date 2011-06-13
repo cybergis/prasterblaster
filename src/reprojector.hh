@@ -11,6 +11,15 @@
  *
  */
 
+/*! \mainpage Reprojector class for pRasterBlaster
+ *
+ * \section desc_sec Description 
+ * The Reprojector class takes two
+ * rasters and reprojects and resamples the source to fill the destination.
+ *
+ *
+ */
+
 #ifndef REPROJECTOR_HH
 #define REPROJECTOR_HH
 

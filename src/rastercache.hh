@@ -1,4 +1,18 @@
 
+/**
+ * @file
+ * @author  David Mattli <dmattli@usgs.gov>
+ * @version 1.0
+ *
+ * @section LICENSE
+ *
+ * This software was written as part of the official duties of a
+ * federal employee and so is in the public domain.
+ *
+ * @section DESCRIPTION
+ *
+ * This class provides a memory cached interface to a ProjectedRaster class.
+ */
 
 #ifndef RASTERCACHE_HH
 #define RASTERCACHE_HH
@@ -20,15 +34,44 @@ template <class PixelType>
 class RasterCache
 {
 public:
+	
+	/** 
+	 * Constructor that creates a RasterCache by reading the file at the specified path.
+	 *
+	 * @param filename Filename of raster to open
+	 *
+	 */
 	RasterCache(string filename);
+	
+	
+	/**
+	 *
+	 * Constructor that creates a RasterCache object from the specified ProjectedRaster object.
+	 *
+	 * @param raster a shared_ptr to a ProjectedRaster to represent.
+	 *
+	 */
 	RasterCache(shared_ptr<ProjectedRaster> raster);
 	~RasterCache();
 
+
+	/** 
+	 * Get the pixel value at the given cartesian point of the raster.
+	 *
+	 * @param x x coordinate
+	 * @param y y coordinate
+	 */
 	PixelType at(long x, long y);
 	PixelType at(int x, int y);
+
+        /** 
+	 * Get the pixel value at the given index
+	 *
+	 * @param i Index of the desired value
+	 */
 	PixelType at(long i);
 	PixelType at(int i);
-
+private:
 	bool fetchValue(long i);
 
 	long firstIndex;
