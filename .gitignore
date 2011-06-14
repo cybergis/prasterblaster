@@ -1,6 +1,7 @@
 # compiled objects
 *.o
 *.lo
+*.loT
 *.la
 
 # compiled dynamic objects
