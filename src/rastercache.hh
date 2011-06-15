@@ -98,6 +98,8 @@ RasterCache<PixelType>::RasterCache(shared_ptr<ProjectedRaster> _raster)
 
 	raster = _raster;
 	cacheSize = 5;
+	firstIndex = -1;
+	lastIndex = -1;
 
 	return;
 }
@@ -111,7 +113,7 @@ RasterCache<PixelType>::~RasterCache()
 template <class PixelType>
 PixelType RasterCache<PixelType>::at(long x, long y)
 {
-	return at(x*y);
+	return at(x + y * raster->getColCount());
 }
 
 template <class PixelType>
@@ -127,8 +129,7 @@ PixelType RasterCache<PixelType>::at(long i)
 		try {
 			return pixels.at(i-firstIndex);
 		} catch (std::out_of_range &e) {
-			printf("Tried to Access: %ld, index: %ld vector size: %zd, firstindex: %ld, lastindex %ld\n",
-			       i, i-firstIndex, pixels.size(), firstIndex, lastIndex);  
+			throw e;
 		}
 	} else {
 		if (!fetchValue(i)) {
@@ -182,11 +183,8 @@ bool RasterCache<PixelType>::fetchValue(long i)
 	}
 
 	// Update ranges
-	firstIndex = i;
-	lastIndex = i + rows_to_fetch * raster->getColCount() - 1;
-	if (pixels.size() != 0) {
-		printf("NOOOOOOOOOOOOOOOOOOOOOOOOO %zd\n\n\n\n\n", pixels.size());
-	}
+	firstIndex = row * raster->getColCount();
+	lastIndex = firstIndex +  rows_to_fetch * raster->getColCount() - 1;
 
 	return true;
 }
