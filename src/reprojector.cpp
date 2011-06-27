@@ -171,6 +171,7 @@ vector<ChunkExtent> Chunker::getChunksByCount(int chunk_size, int process_count,
 					     
 	}
 	
+	// Push chunks belonging to process_index to ret vector 
 	if (process_index != process_count-1) {
 		for (int i=process_index*chunks_per_process; 
 		     i < (process_index+1)*chunks_per_process ;
@@ -216,11 +217,12 @@ void Reprojector::parallelReproject()
 	Chunker chunker(input, output);
 	printf("Finding chunks\n");
 	vector<ChunkExtent> chunks = chunker.getChunksByCount(50, numprocs, rank);
-	
+
 	printf("Reprojecting %zd chunks...\n", chunks.size());
 	for (int i = 0; i < (int)chunks.size(); ++i) {
 		reprojectChunk(chunks[i]);
 	}
+
 
 
 }
@@ -270,7 +272,7 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 			long pixel_height = (long)(fabs(temp1.y - temp2.y)/input->getPixelSize());
 
 			if (pixel_width == 0) {
-				pixel_width = 1;
+ 				pixel_width = 1;
 			}
 			if (pixel_height == 0) {
 				pixel_height = 1;
@@ -309,7 +311,6 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 	}
 	printf("done!\n");
 
-	printf("Writing from %ld, this many: %ld\n", chunk.firstIndex, chunk.rowCount);
 	// Write output raster
 	output->writeRaster(chunk.firstIndex, chunk.rowCount, &(outraster[0]));
 	

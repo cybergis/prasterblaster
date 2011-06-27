@@ -697,7 +697,7 @@ bool ProjectedRaster::makeRaster(string _filename,
 	  
 	// Set options
 	options = CSLSetNameValue( options, "INTERLEAVE", "PIXEL" );
-	options = CSLSetNameValue( options, "BIGTIFF", "NO" );
+	options = CSLSetNameValue( options, "BIGTIFF", "YES" );
 	options = CSLSetNameValue( options, "TILED", "NO" );
 	options = CSLSetNameValue( options, "COMPRESS", "NONE" );
 	options = CSLSetNameValue( options, "PHOTOMETRIC", "MINISBLACK");
