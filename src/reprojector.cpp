@@ -261,9 +261,9 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 			}
 			temp1 = pixelArea.ul;
 			temp2 = pixelArea.lr;
-
-			//! TODO: Check for overlap!	
-		// temp1&2 are now scaled to input raster coords, now resample!
+			if (temp1.x < 0)
+				temp1.x = 0;
+			// temp1&2 are now scaled to input raster coords, now resample!
 			// But does the rectangle defined by temp1 and temp2 actually
 			// contain any points? If not use nearest-neighbor...
 			long center_index = (long)((temp1.x + temp2.x)/2);
@@ -281,8 +281,6 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 
 			temp1.x = floor(temp1.x);
 			temp1.y = floor(temp1.y);
-			if (temp1.x < 0)
-				temp1.x = 0;
 
 			long index = 0;
 			unsigned char val1 = 0;
@@ -309,7 +307,6 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 		
 		}
 	}
-	printf("done!\n");
 
 	// Write output raster
 	output->writeRaster(chunk.firstIndex, chunk.rowCount, &(outraster[0]));
