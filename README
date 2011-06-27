@@ -1,0 +1,27 @@
+
+
+* pRasterBlaster 
+*** Installation: 
+To configure build, run './configure CXX=mpiCC' in the source
+directory, where 'mpiCC' is replaced by the local c++ mpi
+wrapper. After running 'make', the binary will be called 'src/prasterblaster'. 
+
+To run the included tests, first fetch the test data by changing the
+the 'tests/testdata' directory and run the 'getdata.sh' script. This
+will fetch some test rasters from USGS servers. To run the tests use
+the command 'tests/tests' from the pRasterBlaster directory.
+
+*** Use:
+The default binary is a simple program that will reproject rasters in
+parallel using mode statistical resampling. The program takes the following parameters:
+
+src/prasterblaster <input_raster> <output_raster> <Projection>
+
+For example:
+
+src/prasterblaster tests/testdata/glc_geographic_30sec.img tests/testdata/glc_mollweide_30sec.tif Mollweide
+
+This will produce a raster in the Mollweide projection. Projections
+supported by this binary are Mollweide, Sinosoidal and
+Hammer. Additional projections can be used by making calls to the
+pRasterBlaster library.
