@@ -123,7 +123,6 @@ void Chunker::clampGeoCoordinate(Coordinate *c)
 	if (c == 0) {
 		return; 
 	}
-
 	if (c->x < -180.0) {
 		c->x = -179.999999;
 	}
@@ -154,6 +153,10 @@ vector<ChunkExtent> Chunker::getChunksByCount(int chunk_size, int process_count,
 
 	if (process_count <= 0) {
 		throw std::invalid_argument("Invalid process count");
+	}
+
+	if (process_index > process_count) {
+		throw std::invalid_argument("Invalid process_index");
 	}
 
 	if (dest_raster->getRowCount() <= 0) {
