@@ -57,7 +57,7 @@ TEST_F(ChunkerTest, chunk_output_comprehensive) {
 	
 	Chunker c(in, out);
 	RasterCoordTransformer transformer(in, out);
-	vector<ChunkExtent> chunks = c.getChunksByCount(5, 10, 20);
+	vector<ChunkExtent> chunks = c.getChunksByCount(5, 10, 2);
 	Coordinate temp;
 
 
