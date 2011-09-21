@@ -163,6 +163,9 @@ public:
 	//! A normal member function taking two Arguments
 	Coordinate getProjectedCoordinate(int rasterX, int RasterY);
 	Coordinate getGeographicalCoordinate(int rasterX, int rasterY);
+
+	int getPixelIndex(double longitude, double latitude);
+	int getPixelIndex(Coordinate geographicalCoordinate);
   
   //! A normal member function taking no arguments.
 /*!

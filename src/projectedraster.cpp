@@ -354,6 +354,26 @@ Coordinate ProjectedRaster::getProjectedCoordinate(int rasterX, int rasterY)
 
 }
 
+int getPixelIndex(double longitude, double latitude)
+{
+
+	double x, y;
+	projection->forward(longitude, latitude, &x, &y);
+	x = ul_x - x;
+	y = ul_x - ;
+	latitude += ul_y;
+	longitude /= pixel_size;
+	latitude /= pixel_size;
+
+	return;
+
+}
+
+int getPixelIndex(Coordinate geographicalCoordinate)
+{
+
+}
+
 GDALDataType ProjectedRaster::getPixelType()
 {
 	return type;
