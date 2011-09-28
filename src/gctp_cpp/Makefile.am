@@ -8,7 +8,7 @@ noinst_LIBRARIES = libgctp_cpp.a
 
 AM_CXXFLAGS = -fPIC -W -Wall -Wcast-align -g\
 		-Wpointer-arith -Wsign-compare \
-		-Wformat=2 -Wno-format-y2k -Wimplicit -Wmissing-braces \
+		-Wformat=2 -Wno-format-y2k -Wmissing-braces \
 		-Wparentheses -Wtrigraphs # -Wshadow
 
 libgctp_cpp_CXXFLAGS = -fPIC
