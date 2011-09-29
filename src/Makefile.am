@@ -23,7 +23,7 @@ prasterblaster_SOURCES =  main.cpp
 
 AM_CPPFLAGS = $(all_includes) -IpRPL -Igctp_cpp
 
-AM_CXXFLAGS = -W -Wall -Wcast-align \
+AM_CXXFLAGS = -W -Wall -Wextra -Wcast-align \
 		-Wpointer-arith -Wsign-compare -g\
 		-Wformat=2 -Wno-format-y2k  -Wmissing-braces -Wparentheses \
 		-Wtrigraphs # -Wshadow -Wstrict-prototypes -Wnested-externs -Wimplicit
