@@ -372,7 +372,8 @@ int ProjectedRaster::getPixelIndex(double longitude, double latitude)
 int ProjectedRaster::getPixelIndex(Coordinate geographicalCoordinate)
 {
 
-	return 0;
+	return ProjectedRaster::getPixelIndex(geographicalCoordinate.x, 
+					      geographicalCoordinate.y);
 }
 
 GDALDataType ProjectedRaster::getPixelType()
