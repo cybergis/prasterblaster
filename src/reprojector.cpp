@@ -14,11 +14,10 @@
 #include <cfloat>
 #include <cmath>
 #include <cstdio>
+#include <memory>
 #include <set>
 #include <sstream>
 #include <vector>
-
-#include <boost/shared_ptr.hpp>
 
 #include <mpi.h>
 #include <gdal.h>
@@ -33,7 +32,7 @@
 #include "resampler.hh"
 
 
-using boost::shared_ptr;
+using std::shared_ptr;
 
 
 RasterCoordTransformer::RasterCoordTransformer(shared_ptr<ProjectedRaster> source,
@@ -203,8 +202,6 @@ Reprojector::Reprojector(shared_ptr<ProjectedRaster> _input, shared_ptr<Projecte
 	numchunks = numprocs * 10;
         maxx = maxy = 0;
         minx = miny = 1e+37;
-        resampler = &resampler::nearest_neighbor<unsigned char>;
-
 
         return;
 };

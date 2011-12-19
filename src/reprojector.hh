@@ -25,16 +25,12 @@
 
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
-
 #include "gctp_cpp/projection.h"
 
 #include "projectedraster.hh"
 #include "resampler.hh"
 
-using boost::shared_ptr;
-using resampler::resampler_func;
-
+using std::shared_ptr;
 
 class RasterCoordTransformer
 {
@@ -101,7 +97,6 @@ public:
 	shared_ptr<ProjectedRaster> input;
 	shared_ptr<ProjectedRaster> output;
 
-	resampler_func resampler;
 };
 
 Area FindRasterArea(shared_ptr<ProjectedRaster> source_raster,

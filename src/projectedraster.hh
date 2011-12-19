@@ -15,9 +15,8 @@
 #ifndef RASTER_HH
 #define RASTER_HH
 
+#include <memory>
 #include <string>
-
-#include <boost/shared_ptr.hpp>
 
 #include <gdal.h>
 #include <gdal_priv.h>
@@ -30,7 +29,7 @@
 #include "rasterinfo.h"
 
 using namespace std; // Don't do this :(
-using boost::shared_ptr;
+using std::shared_ptr;
 
 struct Area {
 	Coordinate ul;

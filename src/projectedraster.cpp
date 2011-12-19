@@ -25,8 +25,6 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include <boost/shared_ptr.hpp>
-
 #include <gdal.h>
 #include <gdal_priv.h>
 #include <ogr_spatialref.h>
@@ -41,7 +39,7 @@
 #include "projectedraster.hh"
 
 using namespace std;
-using boost::shared_ptr;
+using std::shared_ptr;
 
 
 ChunkExtent::ChunkExtent(long _firstIndex, 
