@@ -23,14 +23,19 @@
 #ifndef REPROJECTOR_HH
 #define REPROJECTOR_HH
 
+#include <memory>
 #include <vector>
 
 #include "gctp_cpp/projection.h"
 
 #include "projectedraster.hh"
+#include "rasterchunk.hh"
 #include "resampler.hh"
 
 using std::shared_ptr;
+using RasterChunk::IntervalPair;
+using RasterChunk::Interval;
+using RasterChunk::RasterChunk;
 
 class RasterCoordTransformer
 {
@@ -43,62 +48,16 @@ private:
 	shared_ptr<Projection> src_proj, dest_proj;
 };
 
-class Chunker
-{
-public:
-	Chunker(shared_ptr<ProjectedRaster> source, 
-		shared_ptr<ProjectedRaster> destination);
-	
-	void clampGeoCoordinate(Coordinate *c);
-	vector<ChunkExtent> getChunksByCount(int chunk_count, 
-					     int process_count, int process_index = -1);
-	vector<ChunkExtent> getChunksBySize(int max_size, int process_index = -1);
 
-	
-private:
-	shared_ptr<ProjectedRaster> source_raster;
-	shared_ptr<ProjectedRaster> dest_raster;
-		
+vector<Interval> ParititionByCount(shared_ptr<ProjectedRaster> destination,
+				   int partition_count);
 
-};
-
-class Reprojector
-{
-public:
-	/* Constructor that creates a Reprojector object, give an input and output raster.
-	 *
-	 * @param input Source raster
-	 * @param output Target raster
-	 * @param number of process to launch
-	 */ 
-	Reprojector(shared_ptr<ProjectedRaster> _input, 
-		    shared_ptr<ProjectedRaster> _output,
-		    int  processCount,
-		    int rank);
-	~Reprojector();
-
-	/* 
-	 * Initiates serial reprojection.
-	 * 
-	 * Only one processor is used.
-	 */
-	void reproject();
-
-	/*
-	 * Initiates parallel reprojection.
-	 *
-	 * The number and identity of nodes involved is determined by the mpi configuration.
-	 */
-	void parallelReproject();
-
-	void reprojectChunk(ChunkExtent chunk);
-	int numprocs, rank, numchunks;
-	double maxx, minx, maxy, miny;
-	shared_ptr<ProjectedRaster> input;
-	shared_ptr<ProjectedRaster> output;
-
-};
-
+Interval FindSourceInterval(shared_ptr<ProjectedRaster> source,
+			    shared_ptr<ProjectedRaster> destination,
+			    Interval dest_area);
+/*
+bool ReprojectChunk(RasterChunk *source, RasterChunk *destination);
+*/
 Area FindRasterArea(shared_ptr<ProjectedRaster> source_raster,
 		    shared_ptr<ProjectedRaster> dest_raster,
 		    int first_row,

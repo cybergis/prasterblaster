@@ -42,16 +42,6 @@ using namespace std;
 using std::shared_ptr;
 
 
-ChunkExtent::ChunkExtent(long _firstIndex, 
-			 long _lastIndex)
-
-{	
-  firstIndex = _firstIndex;
-  lastIndex = _lastIndex;
-  rowCount = lastIndex - firstIndex + 1;
-	return;
-}
-
 ProjectedRaster::ProjectedRaster(string _filename)
 {
 	OGRSpatialReference sr;

@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cctype>
+#include <memory>
 
 #include <mpi.h>
 
@@ -17,6 +18,7 @@
 
 #include <gdal_priv.h>
 
+using std::shared_ptr;
 
 double params[15] =  { 6370997.000000, 
 		       0, 0, 0, 0, 
@@ -30,7 +32,7 @@ int driver(string input_raster, string output_filename, string output_projection
 	int process_count = 1;
 	shared_ptr<ProjectedRaster> in, out;
 	shared_ptr<Projection> in_proj, out_proj;
-	shared_ptr<Reprojector> re;
+
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
 	MPI_Comm_size(MPI_COMM_WORLD, &process_count);
 
@@ -127,12 +129,12 @@ int driver(string input_raster, string output_filename, string output_projection
 	if (rank == 0) 
 		printf("done\n");
 
-	re = shared_ptr<Reprojector>(new Reprojector(in, out, process_count, rank));
+
 	if (rank == 0) {
 		printf("Reprojecting...");
 		fflush(stdout);
 	}
-	re->parallelReproject();
+
 	if (rank == 0)
 		printf("done!\n");
 

@@ -38,30 +38,6 @@ struct Area {
 	
 };
 
-/**
- * This class represents a range of rows of a raster.
- *
- */
-class ChunkExtent
-{
-public:
-  //! Constructor
-  /** 
-   * This constructor takes two arguments representing the first and
-   * last index(inclusive) of the range.
-   *
-   * @param firstIndex First index to be included in the range
-   * @param lastIndex Last index to be included in the range
-   */ 
-	ChunkExtent(long firstIndex,
-		    long lastIndex);
-
-	long firstIndex;
-	long lastIndex;
-	long rowCount;
-};
-
-	
 /*! ProjectedRaster class.
  *
  * This class represents a raster with a projection and location.

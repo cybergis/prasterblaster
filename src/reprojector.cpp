@@ -14,6 +14,7 @@
 #include <cfloat>
 #include <cmath>
 #include <cstdio>
+#include <limits>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -70,10 +71,8 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 	src_proj->forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
 
 	if (fabs(temp1.x - temp2.x) > 0.01) {
-		std::ostringstream s;
-		s << "Point Overlaps! " << source.x << ", " << source.x;
-		// Overlap detected!
-		throw std::runtime_error(s.str());
+		value.ul.x = std::numeric_limits<double>::quiet_NaN();
+		value.lr.x = value.ul.x;
 	}
 
 	temp1.x = ((double)source.x * src->pixel_size) + src->ul_x;
@@ -92,7 +91,6 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 	src_proj->inverse(temp2.x, temp2.y, &temp2.x, &temp2.y);
 	dest_proj-> forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
 	// temp1/temp2 now contain coords to input projection
-
 	// Now convert to points in the raster coordinate space.
 	temp1.x -= dest->ul_x;
 	temp1.y += dest->ul_y;
@@ -109,132 +107,71 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 	return value;
 }
 
-Chunker::Chunker(shared_ptr<ProjectedRaster> source, 
-		shared_ptr<ProjectedRaster> destination)
+vector<Interval> ParititionByCount(shared_ptr<ProjectedRaster> source,
+				   int partition_count)
 {
-	source_raster = source;
-	dest_raster = destination;
-	return;
-}
-
-void Chunker::clampGeoCoordinate(Coordinate *c)
-{
-	if (c == 0) {
-		return; 
-	}
-	if (c->x < -180.0) {
-		c->x = -179.999999;
-	}
+	vector<Interval> partitions(partition_count);
+	int source_size = (source->getColCount() * source->getRowCount()) / partition_count;
+	int last_size = (source->getColCount() * source->getRowCount()) % partition_count;
+	Interval temp;
 	
-	if (c->x > 180.0) {
-		c->x = 179.9999999;
+	if (last_size == 0) {
+		last_size = source_size;
 	}
 
-	if (c->y < -90.0) {
-		c->y = -89.9999999;
+	for (int i = 0; i < partitions.size()-1; ++i) {
+
+		temp.first_index = i * partition_count;
+		temp.last_index = ((i+1) * partition_count) - 1;
+		partitions.at(i) = (temp);
+	}
+	// Set last interval
+	temp.first_index = (partitions.size()-1) * partition_count;
+	temp.last_index = (source->getColCount() * source->getRowCount()) - 1;
+	partitions.back() = temp;
+
+	return partitions;
+}
+
+Interval FindSourceInterval(shared_ptr<ProjectedRaster> source,
+			    shared_ptr<ProjectedRaster> destination,
+			    Interval dest_area)
+{
+	Interval source_interval(source->getRowCount()*source->getColCount(), 0);
+	RasterCoordTransformer rt(source, destination);
+	Area temp;
+	Coordinate c;
+        int first(0), last(0);
+
+	for (int i = dest_area.first_index; i <= dest_area.last_index; ++i) {
+		c.x = i % destination->getColCount();
+		c.y = i / destination->getColCount();
+
+		temp = rt.Transform(c);
+                
+                first = (int)temp.ul.x * temp.ul.y * source->getColCount();
+                last = (int) temp.lr.x * temp.lr.y * source->getColCount();
+
+                if (first < source_interval.first_index) {
+                        source_interval.first_index = first;
+                }
+
+                if (last > source_interval.last_index) {
+                        source_interval.last_index = last;
+                }
 	}
 
-
-	if (c->y > 90.0) {
-		c->y = 89.99999999;
-	}
-
-	return;
+	return source_interval;
 }
 
 
-vector<ChunkExtent> Chunker::getChunksByCount(int chunk_size, int process_count, int process_index) 
-{
-	std::vector<ChunkExtent> chunks, ret;
-	long chunk_count = dest_raster->getRowCount() / chunk_size;
-	long leftover_rows = dest_raster->getRowCount() % chunk_size;
-	long chunks_per_process = chunk_count / process_count;
-
-	if (process_count <= 0) {
-		throw std::invalid_argument("Invalid process count");
-	}
-
-	if (process_index > process_count) {
-		throw std::invalid_argument("Invalid process_index");
-	}
-
-	if (dest_raster->getRowCount() <= 0) {
-		throw std::runtime_error("Destination raster has no rows");
-	}
-
-	for (int i=0; i < chunk_count; ++i) {
-		chunks.push_back(ChunkExtent(i*chunk_size,
-					     + (i+1)*chunk_size-1));
-	}
-
-	if (leftover_rows != 0) {
-		chunks.push_back(ChunkExtent(chunk_count*chunk_size,
-					     chunk_count*chunk_size + leftover_rows-1));
-					     
-	}
-	
-	// Push chunks belonging to process_index to ret vector 
-	if (process_index != process_count-1) {
-		for (int i=process_index*chunks_per_process; 
-		     i < (process_index+1)*chunks_per_process ;
-		     ++i) {
-			ret.push_back(chunks.at(i));
-		}
-	} else {
-		for (unsigned int i=process_index*chunks_per_process; 
-		     i < chunks.size() ;
-		     ++i) {
-			ret.push_back(chunks.at(i));
-		}
-		
-	}
-
-
-	return ret;
-}
-	
-
-Reprojector::Reprojector(shared_ptr<ProjectedRaster> _input, shared_ptr<ProjectedRaster> _output,
-			 int processCount, int rank) 
-        :
-        numprocs(processCount), rank(rank), input(_input), output(_output)
-{
-	numchunks = numprocs * 10;
-        maxx = maxy = 0;
-        minx = miny = 1e+37;
-
-        return;
-};
-
-Reprojector::~Reprojector()
-{
-
-        return;
-}
-
-void Reprojector::parallelReproject()
-{
-	Chunker chunker(input, output);
-	printf("Finding chunks\n");
-	vector<ChunkExtent> chunks = chunker.getChunksByCount(50, numprocs, rank);
-
-	printf("Reprojecting %zd chunks...\n", chunks.size());
-	for (int i = 0; i < (int)chunks.size(); ++i) {
-		reprojectChunk(chunks[i]);
-	}
-
-
-
-}
-
-void Reprojector::reprojectChunk(ChunkExtent chunk)
+bool ReprojectChunk(RasterChunk::RasterChunk source, RasterChunk::RasterChunk destination)
 {
         shared_ptr<Projection> outproj, inproj;
         Coordinate temp1, temp2;
 	std::vector<char> inraster, outraster;
 	set<long> overflow_rows;
-	RasterCache<unsigned char> sourceCache(input);
-	
+/*	
 
         outproj = output->getProjection();
         inproj = input->getProjection();
@@ -310,14 +247,8 @@ void Reprojector::reprojectChunk(ChunkExtent chunk)
 
 	// Write output raster
 	output->writeRaster(chunk.firstIndex, chunk.rowCount, &(outraster[0]));
-	
-	return;
-}
-
-void Reprojector::reproject()
-{
-	parallelReproject();
-
+*/	
+	return true;
 }
 
 

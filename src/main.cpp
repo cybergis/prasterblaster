@@ -28,7 +28,6 @@ int main(int argc, char *argv[])
  	long int rows, cols;
 
 	ProjectedRaster *out;
-	Reprojector *re = 0;
 	int rank;
 
         rows = cols = 0;
