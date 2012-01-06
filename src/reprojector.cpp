@@ -251,7 +251,6 @@ bool ReprojectChunk(RasterChunk::RasterChunk source, RasterChunk::RasterChunk de
 	return true;
 }
 
-
 void updateMinbox(double x, double y, Area *minbox) 
 {
 	if (x > -DBL_MAX && x < minbox->ul.x) 
@@ -324,91 +323,6 @@ void clampGeoCoordinate(Coordinate *c)
 	return;
 }
 		    
-
-Area FindGeographicalExtent(shared_ptr<Projection> projection, 
-			    Coordinate ul_point,
-			    int row_count,
-			    int col_count,
-			    double pixel_size)
-{
-	Area geoarea;
-	double lon, lat;
-	double x, y;
-	int check_count = 5;
-	Coordinate temp, temp1;
-	
-	geoarea.ul.x = DBL_MAX;
-	geoarea.ul.y = -DBL_MAX;
-	geoarea.lr.x = -DBL_MAX;
-	geoarea.lr.y = DBL_MAX;
-	lon = lat = x = y = 0.0;
-
-	if (row_count < check_count) {
-		check_count = row_count;
-	}
-
-	// Check every point
-	for (int row = 0; row < row_count; row += 5) {
-		for (int col = 0; col < col_count; col += 5) {
-			x = ul_point.x + (pixel_size * col);
-			y = ul_point.y - (pixel_size * row);
-			projection->inverse(x, y, &lon, &lat);
-			temp.x = lon;
-			temp.y = lat;
-			projection->forward(temp.x, temp.y, &temp.x, &temp.y);
-			if (fabs(temp.x - x) > 0.001 && 0) {
-//				printf("ASDFASDFASDF %f %f\n", temp.x, x);
-				continue;
-			} else {
-				updateMinbox(lon, lat, &geoarea);
-			}
-		}
-	}
-
-	clampGeoCoordinate(&geoarea.ul);
-	clampGeoCoordinate(&geoarea.lr);
-
-	if (geoarea.ul.x < -180.0)
-		geoarea.ul.x = -180.0;
-	if (geoarea.ul.y > 90.0) 
-		geoarea.ul.y = 90.0;
-	if (geoarea.lr.x > 180.0) 
-		geoarea.lr.x = 180.0;
-	if (geoarea.lr.y < -90.0)
-		geoarea.lr.y = -90.0;
-
-	return geoarea;
-
-}
-
-Area FindProjectedExtent(shared_ptr<Projection> projection,
-			 Area geographical_area,
-			 double pixel_size)
-{
-	Area projarea;
-	Coordinate projected;
-
-	projarea.ul.x = DBL_MAX;
-	projarea.ul.y = -DBL_MAX;
-	projarea.lr.x = -DBL_MAX;
-	projarea.lr.y = DBL_MAX;
-	pixel_size = 0;
-	// Check whole raster
-	for (double lon = geographical_area.ul.x; lon <= geographical_area.lr.x; lon += .05) {
-		for (double lat = geographical_area.lr.y; lat <= geographical_area.ul.y; lat += .05) {
-			projection->forward(lon, lat, &(projected.x), &(projected.y));
-			updateMinbox(projected.x, projected.y, &projarea);
-
-		}
-
-	}
-	printf("Geo Area: %f|||%f|||%f|||%f\n", 
-	       geographical_area.ul.x, geographical_area.ul.y,
-	       geographical_area.lr.x, geographical_area.lr.y);
-	printf("Calculated minbox: %f %f %f %f\n",
-	       projarea.ul.x, projarea.ul.y, projarea.lr.x, projarea.lr.y);
-	return projarea;
-}
 
 Area FindRasterExtent(shared_ptr<ProjectedRaster> raster,
 		      Area geographical_area)

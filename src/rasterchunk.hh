@@ -24,38 +24,20 @@
 
 namespace RasterChunk {
 
-	class Interval
-	{
-	public:
-		Interval() {};
-		Interval(int _first_index, int _last_index) : first_index(_first_index),
-                                                                          last_index(_last_index) {}
-		int first_index;
- 		int last_index;
-	};
-	
-	class IntervalPair
-	{
-	public:
-		IntervalPair() {};
-		IntervalPair(Interval _source, Interval _destination) : source(_source),
-									destination(_destination) {}
-									       
-		Interval getSourceInterval() { return source; }
-		Interval getDestinationInterval() { return destination; }
-		void setSourceInterval(Interval _source) { source = _source; }
-		void setDestinationInterval(Interval _destination) { destination = _destination; }
-	     
-	private:
-		Interval source;
-		Interval destination;
-	};
+        template<type t> class Coordinate
+        {
+        public:
+                t x;
+                t y;
+        };
 
 	class RasterChunk 
 	{
 	public:
 		shared_ptr<Projection> projection;
-		Interval extent;
+                Coordinate<int> upper_left_location;
+                int row_count;
+                int column_count;
 		GDALDataType *pixel_type;
 		int band_count;
 		double geotransform[6];

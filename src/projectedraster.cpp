@@ -67,24 +67,6 @@ ProjectedRaster::ProjectedRaster(string _filename)
 		
 	}
 
-	// Calculate Minbox
-	if (!ready) {
-		return;
-	}
-	Coordinate ul;
-	ul.x = ul_x;
-	ul.y = ul_y;
-	geographicalMinbox = FindGeographicalExtent(shared_ptr<Projection>(projection->copy()), 
-					     ul, rows, cols, pixel_size);
-	
-	
-	projectedMinbox.ul.x = ul_x;
-	projectedMinbox.ul.y = ul_y;
-	projectedMinbox.lr.x = ul_x + (pixel_size * cols);
-	projectedMinbox.lr.y = ul_y - (pixel_size * rows);
-	
-	
-
 	return;
 }
 
@@ -309,16 +291,6 @@ void ProjectedRaster::clampGeoCoordinate(Coordinate *c)
 	}
 
 	return;
-}
-
-Area ProjectedRaster::getGeographicalMinbox()
-{
-	return geographicalMinbox;
-}
-
-Area ProjectedRaster::getProjectedMinbox()
-{
-	return projectedMinbox;
 }
 
 Coordinate ProjectedRaster::getGeographicalCoordinate(int rasterX, int rasterY)
