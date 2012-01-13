@@ -19,29 +19,23 @@
 
 #include <gdal_priv.h>
 
-
 #include "projectedraster.hh"
 
 namespace RasterChunk {
 
-        template<type t> class Coordinate
-        {
-        public:
-                t x;
-                t y;
-        };
-
 	class RasterChunk 
 	{
 	public:
-		shared_ptr<Projection> projection;
-                Coordinate<int> upper_left_location;
-                int row_count;
-                int column_count;
-		GDALDataType *pixel_type;
-		int band_count;
-		double geotransform[6];
-		void *pixels;
+		shared_ptr<Projection> projection_;
+		Coordinate raster_location;
+		Coordinate ul_projected_corner_;
+		double pixel_size_; // in meters
+                int row_count_;
+                int column_count_;
+		GDALDataType *pixel_type_;
+		int band_count_;
+		double geotransform_[6];
+		void *pixels_;
 	};
 	
 }

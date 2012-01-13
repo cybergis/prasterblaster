@@ -33,58 +33,43 @@
 #include "resampler.hh"
 
 using std::shared_ptr;
-using RasterChunk::IntervalPair;
-using RasterChunk::Interval;
 using RasterChunk::RasterChunk;
 
 class RasterCoordTransformer
 {
 public:
 	RasterCoordTransformer(shared_ptr<ProjectedRaster> source, shared_ptr<ProjectedRaster> dest);
+	RasterCoordTransformer(shared_ptr<ProjectedRaster> source,
+			       shared_ptr<Projection> destination_projection,
+			        Coordinate destination_ul,
+			       double destination_pixel_size);
+	RasterCoordTransformer(shared_ptr<Projection> source_projection,
+			       Coordinate source_ul,
+			       double source_pixel_size,
+			       shared_ptr<Projection> destination_projection,
+			       Coordinate destination_ul,
+			       double destination_pixel_size);
 	~RasterCoordTransformer();
 	Area Transform(Coordinate source);
 private:
-	shared_ptr<ProjectedRaster> src, dest;
 	shared_ptr<Projection> src_proj, dest_proj;
+	Coordinate source_ul_;
+	double source_pixel_size_;
+	Coordinate destination_ul_;
+	double destination_pixel_size_;
 };
 
+vector<Area> ParititionByCount(shared_ptr<ProjectedRaster> destination,
+		       int partition_count);
 
-vector<Interval> ParititionByCount(shared_ptr<ProjectedRaster> destination,
-				   int partition_count);
+Area FindOutputArea(shared_ptr<ProjectedRaster> input,
+		    shared_ptr<Projection> output_projection,
+		    double output_pixel_size);
 
-Interval FindSourceInterval(shared_ptr<ProjectedRaster> source,
-			    shared_ptr<ProjectedRaster> destination,
-			    Interval dest_area);
-/*
-bool ReprojectChunk(RasterChunk *source, RasterChunk *destination);
-*/
-Area FindRasterArea(shared_ptr<ProjectedRaster> source_raster,
-		    shared_ptr<ProjectedRaster> dest_raster,
-		    int first_row,
-		    int last_row);
-
-
-Area FindGeographicalExtent(shared_ptr<Projection> projection, 
-			    Coordinate ul_point,
-			    int row_count,
-			    int col_count,
-			    double pixel_size);
-
-Area FindProjectedExtent(shared_ptr<Projection> projection,
-			 Area geographical_area,
-			 double pixel_size);
-
-
-/*!
- *
- */
-Area FindMinBox(double in_ul_x, double in_ul_y,
-		 double in_pix_size,
-		 int rows, int cols, 
-		 Projection *inproj,
-		 Projection *outproj,
-		 double out_pixsize);
-
+Area MapDestinationAreatoSource(shared_ptr<ProjectedRaster> source,
+				shared_ptr<Projection> destination_projection,
+				Area destination_area,
+				double destination_pixel_size);
 
 ProjectedRaster* GetOutputRaster(ProjectedRaster* input,
 				 Projection *out_proj,

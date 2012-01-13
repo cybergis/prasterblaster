@@ -40,12 +40,46 @@ RasterCoordTransformer::RasterCoordTransformer(shared_ptr<ProjectedRaster> sourc
 					       shared_ptr<ProjectedRaster> _dest)
 					       
 {
-	src = source;
-	dest = _dest;
 	src_proj = shared_ptr<Projection>(source->getProjection());
-	dest_proj = shared_ptr<Projection>(dest->getProjection());
+	source_pixel_size_ = source->getPixelSize();
+	source_ul_ = Coordinate(source->ul_x, source->ul_y, UNDEF);
+	dest_proj = shared_ptr<Projection>(_dest->getProjection());
+	destination_pixel_size_ = _dest->getPixelSize();
+	destination_ul_ = Coordinate(_dest->ul_x, _dest->ul_y, UNDEF);
 	
 	return;
+}
+
+RasterCoordTransformer::RasterCoordTransformer(shared_ptr<ProjectedRaster> source,
+					       shared_ptr<Projection> destination_projection,
+					       Coordinate destination_ul,
+					       double destination_pixel_size) 
+
+{
+	destination_pixel_size_ = destination_pixel_size;
+	destination_ul_ = destination_ul;
+	dest_proj = destination_projection;
+	src_proj =  shared_ptr<Projection>(source->getProjection());
+
+	return;
+}
+					       
+   
+RasterCoordTransformer::RasterCoordTransformer(shared_ptr<Projection> source_projection,
+					       Coordinate source_ul,
+					       double source_pixel_size,
+					       shared_ptr<Projection> destination_projection,
+					       Coordinate destination_ul,
+					       double destination_pixel_size)
+{
+	src_proj = source_projection;
+	source_ul_ = source_ul;
+	source_pixel_size_ = source_pixel_size;
+	
+	dest_proj = destination_projection;
+	destination_ul_ = destination_ul;
+	destination_pixel_size_ = destination_pixel_size;
+
 }
 
 RasterCoordTransformer::~RasterCoordTransformer()
@@ -64,8 +98,8 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 	value.ul = temp1;
 	value.lr = temp1;
 
-	temp1.x = ((double)source.x * src->pixel_size) + src->ul_x;
-	temp1.y = ((double)source.y * src->pixel_size) - src->ul_y;
+	temp1.x = ((double)source.x * source_pixel_size_) + source_ul_.x;
+	temp1.y = ((double)source.y * source_pixel_size_) - source_ul_.y;
 	
 	src_proj->inverse(temp1.x, temp1.y, &temp2.x, &temp2.y);
 	src_proj->forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
@@ -75,16 +109,16 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 		value.lr.x = value.ul.x;
 	}
 
-	temp1.x = ((double)source.x * src->pixel_size) + src->ul_x;
-	temp1.y = ((double)source.y * src->pixel_size) - src->ul_y;
+	temp1.x = ((double)source.x * source_pixel_size_) + source_ul_.x;
+	temp1.y = ((double)source.y * source_pixel_size_) - source_ul_.y;
 	temp2 = temp1;
 
 	// Now we are going to assign temp1 as the UL of our pixel and
 	// temp2 as LR
 //	temp1.x -= src->pixel_size/2;
 //	temp1.y += src->pixel_size/2;
-	temp2.x += src->pixel_size/2;
-	temp2.y -= src->pixel_size/2;
+	temp2.x += source_pixel_size_/2;
+	temp2.y -= source_pixel_size_/2;
 
 	src_proj->inverse(temp1.x, temp1.y, &temp1.x, &temp1.y);
 	dest_proj-> forward(temp1.x, temp1.y, &temp1.x, &temp1.y);
@@ -92,14 +126,14 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 	dest_proj-> forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
 	// temp1/temp2 now contain coords to input projection
 	// Now convert to points in the raster coordinate space.
-	temp1.x -= dest->ul_x;
-	temp1.y += dest->ul_y;
-	temp1.x /= dest->pixel_size;
-	temp1.y /= dest->pixel_size;
-	temp2.x -= dest->ul_x;
-	temp2.y += dest->ul_y;
-	temp2.x /= dest->pixel_size;
-	temp2.y /= dest->pixel_size;
+	temp1.x -= destination_ul_.x;
+	temp1.y += destination_ul_.y;
+	temp1.x /= destination_pixel_size_;
+	temp1.y /= destination_pixel_size_;
+	temp2.x -= destination_ul_.x;
+	temp2.y += destination_ul_.y;
+	temp2.x /= destination_pixel_size_;
+	temp2.y /= destination_pixel_size_;
 
 	value.ul = temp1;
 	value.lr = temp2;
@@ -107,63 +141,116 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 	return value;
 }
 
-vector<Interval> ParititionByCount(shared_ptr<ProjectedRaster> source,
-				   int partition_count)
+vector<Area> ParititionByCount(shared_ptr<ProjectedRaster> source,
+
+
+						       int partition_count)
 {
-	vector<Interval> partitions(partition_count);
-	int source_size = (source->getColCount() * source->getRowCount()) / partition_count;
-	int last_size = (source->getColCount() * source->getRowCount()) % partition_count;
-	Interval temp;
+	vector<Area> partitions(partition_count);
+	int chunk_size = (source->getColCount() * source->getRowCount()) / partition_count;
+	Area temp;
 	
-	if (last_size == 0) {
-		last_size = source_size;
+	for (int i = 0; i < (int)partitions.size(); ++i) {
+		temp.ul.x = (chunk_size * i) % source->getColCount();
+		temp.ul.y = (chunk_size * i) / source->getColCount();
+		temp.lr.x = temp.ul.x + chunk_size % source->getColCount();
+		temp.lr.y = temp.ul.y + chunk_size / source->getColCount();
+		partitions.at(i) = temp;
 	}
 
-	for (int i = 0; i < partitions.size()-1; ++i) {
-
-		temp.first_index = i * partition_count;
-		temp.last_index = ((i+1) * partition_count) - 1;
-		partitions.at(i) = (temp);
-	}
-	// Set last interval
-	temp.first_index = (partitions.size()-1) * partition_count;
-	temp.last_index = (source->getColCount() * source->getRowCount()) - 1;
-	partitions.back() = temp;
+	partitions.back().lr.x = source->getColCount();
+	partitions.back().lr.y = source->getRowCount();
 
 	return partitions;
+
+
 }
 
-Interval FindSourceInterval(shared_ptr<ProjectedRaster> source,
-			    shared_ptr<ProjectedRaster> destination,
-			    Interval dest_area)
+Area FindOutputArea(shared_ptr<ProjectedRaster> input,
+		      shared_ptr<Projection> output_projection,
+		      double output_pixel_size)
 {
-	Interval source_interval(source->getRowCount()*source->getColCount(), 0);
-	RasterCoordTransformer rt(source, destination);
+	Area geoarea; // Projected Area
+	shared_ptr<Projection> input_proj(input->getProjection());
+	
+	geoarea.ul.x = geoarea.lr.x = DBL_MAX;
+	geoarea.lr.x = geoarea.lr.y = -DBL_MAX;
+	
+	for (int x = 0; x < input->getColCount(); ++x) {
+		for (int y = 0; y < input->getRowCount(); ++y) {
+			Coordinate input_coord;
+			Coordinate temp;
+
+			input_coord.x = x * input->getPixelSize() + input->ul_x;
+			input_coord.x = x * input->getPixelSize() * input->ul_y;
+			
+			input_proj->inverse(input_coord.x, input_coord.y, &temp.x, &temp.y);
+			output_projection->forward(temp.x, temp.y, &temp.x, &temp.y);
+
+			if (temp.x  < geoarea.ul.x) 
+				geoarea.ul.x = temp.x;
+			if (temp.y < geoarea.ul.y)
+				geoarea.ul.y = temp.y;
+			if (temp.x > geoarea.lr.x) 
+				geoarea.lr.x = temp.x;
+			if (temp.y > geoarea.lr.y)
+				geoarea.lr.y = temp.y;
+					
+		}
+
+	}
+
+	
+	
+	return geoarea;
+}
+
+Area MapDestinationAreatoSource(shared_ptr<ProjectedRaster> source,
+				shared_ptr<Projection> destination_projection,
+				Area destination_area,
+				double destination_pixel_size)
+{
+	
+	Area source_area;
+	RasterCoordTransformer rt(source, destination_projection, destination_area.ul, destination_pixel_size);
 	Area temp;
 	Coordinate c;
         int first(0), last(0);
 
-	for (int i = dest_area.first_index; i <= dest_area.last_index; ++i) {
-		c.x = i % destination->getColCount();
-		c.y = i / destination->getColCount();
+	source_area.lr.x = 0;
+	source_area.lr.y = 0;
+	
+	source_area.ul.x = source->getColCount();
+	source_area.ul.y = source->getRowCount();
 
-		temp = rt.Transform(c);
+	for (int x = destination_area.ul.x; x < destination_area.lr.x; ++x) {
+		for (int y = destination_area.ul.y; y <= destination_area.lr.y; ++y) {
+
+			c.x = x;
+			c.y = y;
+
+			temp = rt.Transform(c);
                 
-                first = (int)temp.ul.x * temp.ul.y * source->getColCount();
-                last = (int) temp.lr.x * temp.lr.y * source->getColCount();
+			if (c.x > source_area.lr.x) {
+				source_area.lr.x = c.x;
+			}
+			
+			if (c.x < source_area.ul.x) {
+				source_area.ul.x = c.x;
+			}
 
-                if (first < source_interval.first_index) {
-                        source_interval.first_index = first;
-                }
+			if (c.y < source_area.ul.y) {
+				source_area.ul.y = c.y;
+			}
 
-                if (last > source_interval.last_index) {
-                        source_interval.last_index = last;
-                }
+			if (c.y > source_area.lr.y) {
+				source_area.lr.y = c.y;
+			}
+		}
 	}
 
-	return source_interval;
+	return source_area;
 }
-
 
 bool ReprojectChunk(RasterChunk::RasterChunk source, RasterChunk::RasterChunk destination)
 {
@@ -171,83 +258,69 @@ bool ReprojectChunk(RasterChunk::RasterChunk source, RasterChunk::RasterChunk de
         Coordinate temp1, temp2;
 	std::vector<char> inraster, outraster;
 	set<long> overflow_rows;
-/*	
 
-        outproj = output->getProjection();
-        inproj = input->getProjection();
+
+        outproj = destination.projection_;
+        inproj = source.projection_;
 	
-        // Setup raster vectors
-	outraster.resize(chunk.rowCount * output->getColCount() * output->bitsPerPixel()/8);
-	printf("Process: %u of %d Output raster chunk %ld %ld\n",  
-	       rank, numprocs, chunk.firstIndex, chunk.firstIndex+chunk.rowCount); 
 	Area pixelArea;
 	int count = 0;
 	int total = 0;
-	RasterCoordTransformer rt(output, input);        
+	RasterCoordTransformer rt(source.projection_, 
+				  source.ul_projected_corner_,
+				  source.pixel_size_,
+				  destination.projection_,
+				  destination.ul_projected_corner_,
+				  destination.pixel_size_);        
 
-	for (int chunk_y = 0; chunk_y < chunk.rowCount; ++chunk_y)  {
-		for (int chunk_x = 0; chunk_x < output->getColCount(); ++chunk_x) {
+	for (int chunk_y = 0; chunk_y < destination.row_count_; ++chunk_y)  {
+		for (int chunk_x = 0; chunk_x < destination.column_count_; ++chunk_x) {
 
-			// Determine location of equivalent input pixel
 			temp1.x = chunk_x; 
-			temp1.y = chunk_y + chunk.firstIndex;
+			temp1.y = chunk_y;
 			try {
 				pixelArea = rt.Transform(temp1);   /// Now makes sense.
 			} catch (std::runtime_error) {
 				continue;
 			}
+
 			temp1 = pixelArea.ul;
 			temp2 = pixelArea.lr;
-			if (temp1.x < 0)
-				temp1.x = 0;
-			// temp1&2 are now scaled to input raster coords, now resample!
-			// But does the rectangle defined by temp1 and temp2 actually
-			// contain any points? If not use nearest-neighbor...
-			long center_index = (long)((temp1.x + temp2.x)/2);
-			center_index += (long)((temp1.y + temp2.y)/2) * input->getColCount();
-			long pixel_width = (long)fabs((temp2.x - temp1.x)/input->getPixelSize());
-			long pixel_height = (long)(fabs(temp1.y - temp2.y)/input->getPixelSize());
 
-			if (pixel_width == 0) {
- 				pixel_width = 1;
+			long ul_x = (long)temp1.x;
+			long ul_y = (long)temp1.y;
+			long lr_x = (long)temp2.x;
+			long lr_y = (long)temp2.y;
+
+			if (ul_x < 0) {
+				ul_x = 0;
 			}
-			if (pixel_height == 0) {
-				pixel_height = 1;
-			}
-			std::vector<long> index_array(pixel_width*pixel_height, 0L);
-
-			temp1.x = floor(temp1.x);
-			temp1.y = floor(temp1.y);
-
-			long index = 0;
-			unsigned char val1 = 0;
-
-			index = (unsigned int)temp1.x;
-			index += ((unsigned int)temp1.y) * input->getColCount();
-			try{
-				val1 = sourceCache.at(index);
-			} catch (out_of_range &e) {
-				printf("%s\n", e.what());
-
-			}
-			try {
-				outraster.at(chunk_x+(chunk_y*output->getColCount())) = val1;
-				++total;
-			} catch (out_of_range &e) {
-				printf("Chunk_x %d, Chunk_y %d, up to %d %ld\n", chunk_x, chunk_y,
-				       output->getColCount(), chunk.rowCount);
-				outraster.at(chunk_x+(chunk_y*output->getColCount())) = 255;
-				++count;
-
+			
+			if (ul_y < 0) {
+				ul_y = 0;
 			}
 
-		
+			if (lr_x > (source.column_count_ - 1)) {
+				lr_x = source.column_count_ - 1;
+			}
+
+			if (lr_y > (source.row_count_ - 1)) {
+				lr_y = source.row_count_ - 1;
+			}
+			
+
+			// TODO: Check that ul/lr actually enclose an area
+			//       Otherwise, use nearest-neighbor
+
+			// Perform resampling...
+			
+
+			// Write pixel to destination
+			(unsigned char)pixels[chunk_x + chunk_y * destination.column_count_] = 
+				(unsigned char) pixels[chunk_x + chunk_y * source.column_count_];
 		}
 	}
 
-	// Write output raster
-	output->writeRaster(chunk.firstIndex, chunk.rowCount, &(outraster[0]));
-*/	
 	return true;
 }
 
@@ -327,10 +400,11 @@ void clampGeoCoordinate(Coordinate *c)
 Area FindRasterExtent(shared_ptr<ProjectedRaster> raster,
 		      Area geographical_area)
 {
+
 	Area rasterArea;
 	double pixel_size = raster->pixel_size;
 	shared_ptr<Projection> projection(raster->getProjection());
-	Area projArea = FindProjectedExtent(projection, geographical_area, raster->pixel_size);
+	Area projArea;// = FindProjectedExtent(projection, geographical_area, raster->pixel_size);
 	int rows = (int)((projArea.lr.x - projArea.ul.x) / pixel_size);
 	int cols = (int)((projArea.ul.y - projArea.lr.y) / pixel_size);
 	int first_row = (int)((raster->ul_x - projArea.ul.x) / pixel_size);
