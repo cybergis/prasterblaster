@@ -59,7 +59,7 @@ private:
 	double destination_pixel_size_;
 };
 
-vector<Area> ParititionByCount(shared_ptr<ProjectedRaster> destination,
+vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> destination,
 		       int partition_count);
 
 Area FindOutputArea(shared_ptr<ProjectedRaster> input,

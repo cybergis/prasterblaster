@@ -141,10 +141,8 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 	return value;
 }
 
-vector<Area> ParititionByCount(shared_ptr<ProjectedRaster> source,
-
-
-						       int partition_count)
+vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
+			       int partition_count)
 {
 	vector<Area> partitions(partition_count);
 	int chunk_size = (source->getColCount() * source->getRowCount()) / partition_count;
@@ -153,13 +151,14 @@ vector<Area> ParititionByCount(shared_ptr<ProjectedRaster> source,
 	for (int i = 0; i < (int)partitions.size(); ++i) {
 		temp.ul.x = (chunk_size * i) % source->getColCount();
 		temp.ul.y = (chunk_size * i) / source->getColCount();
-		temp.lr.x = temp.ul.x + chunk_size % source->getColCount();
-		temp.lr.y = temp.ul.y + chunk_size / source->getColCount();
+		temp.lr.x = temp.ul.x + chunk_size % source->getColCount() - 1;
+		printf("CHUUUUNKS: %d %d\n", chunk_size, chunk_size % source->getColCount());
+		temp.lr.y = temp.ul.y + chunk_size / source->getColCount() - 1;
 		partitions.at(i) = temp;
 	}
 
-	partitions.back().lr.x = source->getColCount();
-	partitions.back().lr.y = source->getRowCount();
+	partitions.back().lr.x = source->getColCount() - 1;
+	partitions.back().lr.y = source->getRowCount() - 1;
 
 	return partitions;
 
@@ -316,8 +315,8 @@ bool ReprojectChunk(RasterChunk::RasterChunk source, RasterChunk::RasterChunk de
 			
 
 			// Write pixel to destination
-			(unsigned char)pixels[chunk_x + chunk_y * destination.column_count_] = 
-				(unsigned char) pixels[chunk_x + chunk_y * source.column_count_];
+			((unsigned char*)destination.pixels_)[chunk_x + chunk_y * destination.column_count_] = 
+								    ((unsigned char*) source.pixels_)[chunk_x + chunk_y * source.column_count_];
 		}
 	}
 
