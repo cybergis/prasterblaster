@@ -24,7 +24,10 @@
 #define REPROJECTOR_HH
 
 #include <memory>
+#include <stdexcept>
 #include <vector>
+
+#include <gdal.h>
 
 #include "gctp_cpp/projection.h"
 
@@ -70,6 +73,79 @@ Area MapDestinationAreatoSource(shared_ptr<ProjectedRaster> source,
 				shared_ptr<Projection> destination_projection,
 				Area destination_area,
 				double destination_pixel_size);
+bool ReprojectChunk(RasterChunk::RasterChunk source, RasterChunk::RasterChunk destination);
+
+template <class pixelType>
+bool ReprojectChunkType(RasterChunk::RasterChunk source, RasterChunk::RasterChunk destination)
+{
+
+	shared_ptr<Projection> outproj, inproj;
+        Coordinate temp1, temp2;
+	std::vector<char> inraster, outraster;
+
+        outproj = destination.projection_;
+        inproj = source.projection_;
+	
+	Area pixelArea;
+	int count = 0;
+	int total = 0;
+	RasterCoordTransformer rt(source.projection_, 
+				  source.ul_projected_corner_,
+				  source.pixel_size_,
+				  destination.projection_,
+				  destination.ul_projected_corner_,
+				  destination.pixel_size_);        
+
+	for (int chunk_y = 0; chunk_y < destination.row_count_; ++chunk_y)  {
+		for (int chunk_x = 0; chunk_x < destination.column_count_; ++chunk_x) {
+
+			temp1.x = chunk_x; 
+			temp1.y = chunk_y;
+			try {
+				pixelArea = rt.Transform(temp1);   /// Now makes sense.
+			} catch (std::runtime_error) {
+				continue;
+			}
+
+			temp1 = pixelArea.ul;
+			temp2 = pixelArea.lr;
+
+			long ul_x = (long)temp1.x;
+			long ul_y = (long)temp1.y;
+			long lr_x = (long)temp2.x;
+			long lr_y = (long)temp2.y;
+
+			if (ul_x < 0) {
+				ul_x = 0;
+			}
+			
+			if (ul_y < 0) {
+				ul_y = 0;
+			}
+
+			if (lr_x > (source.column_count_ - 1)) {
+				lr_x = source.column_count_ - 1;
+			}
+
+			if (lr_y > (source.row_count_ - 1)) {
+				lr_y = source.row_count_ - 1;
+			}
+			
+
+			// TODO: Check that ul/lr actually enclose an area
+			//       Otherwise, use nearest-neighbor
+
+			// Perform resampling...
+			
+
+			// Write pixel to destination
+			reinterpret_cast<pixelType*>(destination.pixels_)[chunk_x + chunk_y * destination.column_count_] = 
+				reinterpret_cast<pixelType*>(source.pixels_)[chunk_x + chunk_y * source.column_count_];
+		}
+	}
+
+	return true;
+}
 
 ProjectedRaster* GetOutputRaster(ProjectedRaster* input,
 				 Projection *out_proj,

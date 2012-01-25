@@ -35,6 +35,7 @@
 #include "gctp_cpp/constants.h"
 #include "gctp_cpp/utm.h"
 #include "reprojector.hh"
+#include "rasterchunk.hh"
 
 #include "projectedraster.hh"
 
@@ -198,8 +199,8 @@ bool ProjectedRaster::CreateRaster(string _filename,
 	int num_cols, num_rows;
 
 	Area out_area =  FindOutputArea(input,
-					  output_proj,
-					  _pixel_size);
+					output_proj,
+					_pixel_size);
 	ulx = out_area.ul.x;
 	uly = out_area.ul.y;
 
@@ -510,6 +511,26 @@ bool ProjectedRaster::writeRaster(int firstRow, int numRows, void *data)
 	return false;
 }
 
+RasterChunk::RasterChunk* ProjectedRaster::createRasterChunk(Area area)
+{
+	RasterChunk::RasterChunk *temp = NULL;
+	unsigned char *pixels = (unsigned char*)malloc((area.lr.y - area.ul.y) * getColCount() * (GDALGetDataTypeSize(getPixelType())));
+
+	readRaster(area.ul.y, area.lr.y - area.ul.y, pixels);
+	temp = createEmptyRasterChunk(area);
+
+	// Read area of raster
+
+	return temp;
+
+}
+
+RasterChunk::RasterChunk* ProjectedRaster::createEmptyRasterChunk(Area area)
+{
+	return new RasterChunk::RasterChunk;
+
+}
+
 bool ProjectedRaster::configureFromXml(std::string xmlfilename)
 {
 	RasterInfo in_info(xmlfilename.c_str());
@@ -607,6 +628,7 @@ bool ProjectedRaster::loadRaster(string filename)
 	dataset = (GDALDataset*)GDALOpen( filename.c_str(), GA_Update );
 	
 	if (dataset == 0) {
+		fprintf(stderr, "Error opening GDAL dataset\n");
 		return false;
 	} 
 	
@@ -702,6 +724,10 @@ bool ProjectedRaster::makeRaster(string _filename,
 	_dataset->SetGeoTransform(geotransform);
 
 	_dataset->SetProjection(_projection->wkt().c_str());
+	if (_projection->wkt() == "") {
+		fprintf(stderr, "\nERROR: Unsupported projection: %s\n", _projection->name().c_str());
+
+	}
 
 	GDALClose(_dataset);
 

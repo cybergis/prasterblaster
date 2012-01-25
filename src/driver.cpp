@@ -108,21 +108,18 @@ int driver(string input_raster, string output_filename, string output_projection
 	out = shared_ptr<ProjectedRaster>(new ProjectedRaster(output_filename));
 	if (out == 0) {
 		fprintf(stderr, "Output allocation failed, something is very wrong!\n");
-		MPI_Finalize();
 		return 1;
 
 	}
 	
 	if (!in->isReady()) {
 		fprintf(stderr, "Error opening input raster, not ready!\n");
-		MPI_Finalize();
 		return 1;
 
 	}
 
 	if (!out->isReady()) {
 		fprintf(stderr, "Error opening output raster, not ready!\n");
-		MPI_Finalize();
 		return 1;
 
 	}
@@ -139,7 +136,6 @@ int driver(string input_raster, string output_filename, string output_projection
 		printf("done!\n");
 
 	// Cleanup
-	
 
 	return 0;
 }

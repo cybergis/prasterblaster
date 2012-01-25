@@ -26,10 +26,13 @@
 #include "gctp_cpp/projection.h"
 #include "gctp_cpp/transformer.h"
 
+#include "rasterchunk.hh"
 #include "rasterinfo.h"
 
 using namespace std; // Don't do this :(
+
 using std::shared_ptr;
+
 
 struct Area {
 	Coordinate ul;
@@ -207,6 +210,10 @@ public:
  * \returns A bool indicated a success or failure
  */
 	bool writeRaster(int firstRow, int numRows, void* data);
+
+
+	RasterChunk::RasterChunk* createRasterChunk(Area area);
+	RasterChunk::RasterChunk* createEmptyRasterChunk(Area area);
 
 	// Members
 	double ul_x, ul_y;

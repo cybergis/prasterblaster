@@ -60,8 +60,6 @@ TEST_F(ReprojTest, parition_comprehensiveness)
 		ASSERT_EQ(in->getColCount() - 1, parts.at(i).lr.x);
 
 	}
-
-
 }
 
 int main(int argc, char *argv[])

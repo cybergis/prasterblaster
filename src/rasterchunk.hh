@@ -16,23 +16,29 @@
 #ifndef RASTERCHUNK_HH_
 #define RASTERCHUNK_HH_
 
+#include <memory>
 
 #include <gdal_priv.h>
 
-#include "projectedraster.hh"
+#include "gctp_cpp/projection.h"
+#include "gctp_cpp/coordinate.h"
+
+using std::shared_ptr;
 
 namespace RasterChunk {
 
 	class RasterChunk 
 	{
 	public:
+		RasterChunk() {};
+		~RasterChunk() {};
 		shared_ptr<Projection> projection_;
 		Coordinate raster_location;
 		Coordinate ul_projected_corner_;
 		double pixel_size_; // in meters
                 int row_count_;
                 int column_count_;
-		GDALDataType *pixel_type_;
+		GDALDataType pixel_type_;
 		int band_count_;
 		double geotransform_[6];
 		void *pixels_;

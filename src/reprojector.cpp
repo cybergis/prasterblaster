@@ -10,13 +10,12 @@
  *
  *
  */
-#include <stdexcept>
 #include <cfloat>
 #include <cmath>
 #include <cstdio>
 #include <limits>
 #include <memory>
-#include <set>
+#include <cstdint>
 #include <sstream>
 #include <vector>
 
@@ -151,9 +150,16 @@ vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
 	for (int i = 0; i < (int)partitions.size(); ++i) {
 		temp.ul.x = (chunk_size * i) % source->getColCount();
 		temp.ul.y = (chunk_size * i) / source->getColCount();
-		temp.lr.x = temp.ul.x + chunk_size % source->getColCount() - 1;
-		printf("CHUUUUNKS: %d %d\n", chunk_size, chunk_size % source->getColCount());
+		temp.lr.x = temp.ul.x + chunk_size % source->getColCount();
+
+		if (temp.lr.x == 0.0) {  // Wrap column values around 
+			temp.lr.x = source->getColCount() - 1;
+		} else {
+			--temp.lr.x;
+		}
+		
 		temp.lr.y = temp.ul.y + chunk_size / source->getColCount() - 1;
+
 		partitions.at(i) = temp;
 	}
 
@@ -172,8 +178,8 @@ Area FindOutputArea(shared_ptr<ProjectedRaster> input,
 	Area geoarea; // Projected Area
 	shared_ptr<Projection> input_proj(input->getProjection());
 	
-	geoarea.ul.x = geoarea.lr.x = DBL_MAX;
-	geoarea.lr.x = geoarea.lr.y = -DBL_MAX;
+	geoarea.ul.x = geoarea.lr.y = DBL_MAX;
+	geoarea.ul.y = geoarea.lr.x = -DBL_MAX;
 	
 	for (int x = 0; x < input->getColCount(); ++x) {
 		for (int y = 0; y < input->getRowCount(); ++y) {
@@ -181,18 +187,18 @@ Area FindOutputArea(shared_ptr<ProjectedRaster> input,
 			Coordinate temp;
 
 			input_coord.x = x * input->getPixelSize() + input->ul_x;
-			input_coord.x = x * input->getPixelSize() * input->ul_y;
+			input_coord.y = y * input->getPixelSize() * input->ul_y;
 			
 			input_proj->inverse(input_coord.x, input_coord.y, &temp.x, &temp.y);
 			output_projection->forward(temp.x, temp.y, &temp.x, &temp.y);
 
 			if (temp.x  < geoarea.ul.x) 
 				geoarea.ul.x = temp.x;
-			if (temp.y < geoarea.ul.y)
+			if (temp.y > geoarea.ul.y)
 				geoarea.ul.y = temp.y;
 			if (temp.x > geoarea.lr.x) 
 				geoarea.lr.x = temp.x;
-			if (temp.y > geoarea.lr.y)
+			if (temp.y < geoarea.lr.y)
 				geoarea.lr.y = temp.y;
 					
 		}
@@ -251,76 +257,37 @@ Area MapDestinationAreatoSource(shared_ptr<ProjectedRaster> source,
 	return source_area;
 }
 
+bool ParallelReprojection(shared_ptr<ProjectedRaster> source, shared_ptr<ProjectedRaster> destination, 
+			  int rank, int process_count)
+{
+	vector<Area> parts = PartitionByCount(destination, process_count);
+	int parts_per_process = parts.size() / process_count;
+	int leftover = parts.size() % process_count;
+
+	
+
+}
+
 bool ReprojectChunk(RasterChunk::RasterChunk source, RasterChunk::RasterChunk destination)
 {
-        shared_ptr<Projection> outproj, inproj;
-        Coordinate temp1, temp2;
-	std::vector<char> inraster, outraster;
-	set<long> overflow_rows;
-
-
-        outproj = destination.projection_;
-        inproj = source.projection_;
-	
-	Area pixelArea;
-	int count = 0;
-	int total = 0;
-	RasterCoordTransformer rt(source.projection_, 
-				  source.ul_projected_corner_,
-				  source.pixel_size_,
-				  destination.projection_,
-				  destination.ul_projected_corner_,
-				  destination.pixel_size_);        
-
-	for (int chunk_y = 0; chunk_y < destination.row_count_; ++chunk_y)  {
-		for (int chunk_x = 0; chunk_x < destination.column_count_; ++chunk_x) {
-
-			temp1.x = chunk_x; 
-			temp1.y = chunk_y;
-			try {
-				pixelArea = rt.Transform(temp1);   /// Now makes sense.
-			} catch (std::runtime_error) {
-				continue;
-			}
-
-			temp1 = pixelArea.ul;
-			temp2 = pixelArea.lr;
-
-			long ul_x = (long)temp1.x;
-			long ul_y = (long)temp1.y;
-			long lr_x = (long)temp2.x;
-			long lr_y = (long)temp2.y;
-
-			if (ul_x < 0) {
-				ul_x = 0;
-			}
-			
-			if (ul_y < 0) {
-				ul_y = 0;
-			}
-
-			if (lr_x > (source.column_count_ - 1)) {
-				lr_x = source.column_count_ - 1;
-			}
-
-			if (lr_y > (source.row_count_ - 1)) {
-				lr_y = source.row_count_ - 1;
-			}
-			
-
-			// TODO: Check that ul/lr actually enclose an area
-			//       Otherwise, use nearest-neighbor
-
-			// Perform resampling...
-			
-
-			// Write pixel to destination
-			((unsigned char*)destination.pixels_)[chunk_x + chunk_y * destination.column_count_] = 
-								    ((unsigned char*) source.pixels_)[chunk_x + chunk_y * source.column_count_];
-		}
+	if (source.pixel_type_ != destination.pixel_type_) {
+		return false;
 	}
 
-	return true;
+
+	switch (source.pixel_type_) 
+	{
+	case GDT_Byte:
+		ReprojectChunkType<unsigned char>(source, destination);
+		break;
+	case GDT_UInt16:
+		ReprojectChunkType<uint16_t>(source, destination);
+		break;
+	default:
+		return false;
+		break;
+
+	}
 }
 
 void updateMinbox(double x, double y, Area *minbox) 
