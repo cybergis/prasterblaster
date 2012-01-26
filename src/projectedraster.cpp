@@ -519,7 +519,33 @@ RasterChunk::RasterChunk* ProjectedRaster::createRasterChunk(Area area)
 	readRaster(area.ul.y, area.lr.y - area.ul.y, pixels);
 	temp = createEmptyRasterChunk(area);
 
-	// Read area of raster
+        // Read area of raster
+        if (isReady() && dataset != 0) {
+                if (dataset->RasterIO(GF_Write,
+                                      area.ul.x,
+                                      area.ul.y,
+                                      area.ul.x - area.lr.x,
+                                      area.lr.y - area.ul.y,
+                                      pixels,
+                                      area.ul.x - area.lr.x,
+                                      area.lr.y - area.ul.y,
+                                      temp->pixel_type_,
+                                      bandCount(),
+                                      NULL,
+                                      0,0,0) != CE_None)
+                {
+                        // Cleanup and return error
+                        delete pixels;
+                        delete temp;
+                        return NULL;
+                }
+                                      
+
+        }
+
+
+
+
 
 	return temp;
 
