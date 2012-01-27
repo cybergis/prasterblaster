@@ -14,6 +14,7 @@
 #include "gctp_cpp/transformer.h"
 #include "gctp_cpp/mollweide.h"
 #include "projectedraster.hh"
+#include "rasterchunk.hh"
 #include "reprojector.hh"
 
 #include <gdal_priv.h>
@@ -32,9 +33,11 @@ int driver(string input_raster, string output_filename, string output_projection
 	int process_count = 1;
 	shared_ptr<ProjectedRaster> in, out;
 	shared_ptr<Projection> in_proj, out_proj;
+	int partition_count = 1;
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
 	MPI_Comm_size(MPI_COMM_WORLD, &process_count);
+	partition_count = process_count * 2;
 
 	// Open input raster and check for errors
 	if (rank == 0) {
@@ -126,10 +129,32 @@ int driver(string input_raster, string output_filename, string output_projection
 	if (rank == 0) 
 		printf("done\n");
 
-
+	// Now preform actual reprojection
 	if (rank == 0) {
 		printf("Reprojecting...");
 		fflush(stdout);
+	}
+
+	std::vector<Area> part_areas = PartitionByCount(out, partition_count);
+	RasterChunk::RasterChunk *out_chunk, *in_chunk;
+	Area output_area;
+	int first_index, last_index;
+
+	for (int i = rank * (part_areas.size()/process_count); i < part_areas.size()/process_count; ++i) {
+		output_area = FindOutputArea(in, out_proj, out->getPixelSize());
+		out_chunk = out->createRasterChunk(output_area);
+		in_chunk = in->createRasterChunk(part_areas.at(i));
+		if (out_chunk == NULL) { // break 
+		}
+						 
+		ReprojectChunk(*in_chunk, *out_chunk);
+	}
+
+	if (rank == process_count-1 && (part_areas.size() % process_count != 0)) {
+		for (int i = (part_areas.size() / process_count) * process_count; i < part_areas.size(); ++i) {
+			
+		}
+
 	}
 
 	if (rank == 0)
