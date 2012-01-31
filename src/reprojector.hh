@@ -73,6 +73,7 @@ Area MapDestinationAreatoSource(shared_ptr<ProjectedRaster> source,
 				shared_ptr<Projection> destination_projection,
 				Area destination_area,
 				double destination_pixel_size);
+
 bool ReprojectChunk(RasterChunk::RasterChunk source, RasterChunk::RasterChunk destination);
 
 template <class pixelType>

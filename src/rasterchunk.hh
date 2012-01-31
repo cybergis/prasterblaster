@@ -33,7 +33,7 @@ namespace RasterChunk {
 		RasterChunk() {};
 		~RasterChunk() {};
 		shared_ptr<Projection> projection_;
-		Coordinate raster_location;
+		Coordinate raster_location_;
 		Coordinate ul_projected_corner_;
 		double pixel_size_; // in meters
                 int row_count_;

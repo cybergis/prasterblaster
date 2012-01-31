@@ -214,6 +214,7 @@ public:
 
 	RasterChunk::RasterChunk* createRasterChunk(Area area);
 	RasterChunk::RasterChunk* createEmptyRasterChunk(Area area);
+	bool writeRasterChunk(RasterChunk::RasterChunk *chunk);
 
 	// Members
 	double ul_x, ul_y;

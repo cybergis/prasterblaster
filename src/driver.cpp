@@ -137,24 +137,43 @@ int driver(string input_raster, string output_filename, string output_projection
 
 	std::vector<Area> part_areas = PartitionByCount(out, partition_count);
 	RasterChunk::RasterChunk *out_chunk, *in_chunk;
-	Area output_area;
+	Area output_area, input_area;
 	int first_index, last_index;
 
-	for (int i = rank * (part_areas.size()/process_count); i < part_areas.size()/process_count; ++i) {
-		output_area = FindOutputArea(in, out_proj, out->getPixelSize());
-		out_chunk = out->createRasterChunk(output_area);
-		in_chunk = in->createRasterChunk(part_areas.at(i));
-		if (out_chunk == NULL) { // break 
-		}
-						 
-		ReprojectChunk(*in_chunk, *out_chunk);
+	first_index = rank * (part_areas.size()/process_count);
+	last_index = ((rank+1) * (part_areas.size()/process_count)) - 1;
+
+	// If we are the last process, make sure all of the
+	// RasterChunks are allocated
+	if (rank == process_count -1) {
+		last_index = part_areas.size() - 1;
 	}
 
-	if (rank == process_count-1 && (part_areas.size() % process_count != 0)) {
-		for (int i = (part_areas.size() / process_count) * process_count; i < part_areas.size(); ++i) {
-			
+	for (int i = first_index; i <= last_index; ++i) {
+
+		output_area = part_areas.at(i);
+		input_area = MapDestinationAreatoSource(out, in->getProjection(), output_area, in->getPixelSize());
+		out_chunk = out->createRasterChunk(output_area);
+		in_chunk = in->createRasterChunk(input_area);
+		
+		if (in_chunk == NULL) { // break 
+			fprintf(stderr, "Input RasterChunk allocation error!\n");
+			return 1;
 		}
 
+		if (out_chunk == NULL) { // break 
+			fprintf(stderr, "Output RasterChunk allocation error!\n");
+			return 1;
+		}
+
+		ReprojectChunk(*in_chunk, *out_chunk);
+
+		// Now write RasterChunk to output
+		out->writeRasterChunk(out_chunk);
+
+		// Cleanup
+		delete out_chunk;
+		delete in_chunk;
 	}
 
 	if (rank == 0)

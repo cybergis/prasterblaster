@@ -514,14 +514,24 @@ bool ProjectedRaster::writeRaster(int firstRow, int numRows, void *data)
 RasterChunk::RasterChunk* ProjectedRaster::createRasterChunk(Area area)
 {
 	RasterChunk::RasterChunk *temp = NULL;
-	unsigned char *pixels = (unsigned char*)malloc((area.lr.y - area.ul.y) * getColCount() * (GDALGetDataTypeSize(getPixelType())));
+	int buffer_size = (area.lr.y - area.ul.y) * (area.lr.x - area.ul.x) * (GDALGetDataTypeSize(getPixelType()));
+	unsigned char *pixels = (unsigned char*)malloc(buffer_size);
 
 	readRaster(area.ul.y, area.lr.y - area.ul.y, pixels);
 	temp = createEmptyRasterChunk(area);
 
+	if (pixels == NULL) {
+		fprintf(stderr, "Error allocating RasterChunk memory! %f %f %f %f, %d bytes\n", 
+			area.ul.x, area.ul.y, area.lr.x, area.lr.y, buffer_size);
+		delete temp;
+		return NULL;
+	}
+
+	temp->pixels_ = pixels;
+
         // Read area of raster
         if (isReady() && dataset != 0) {
-                if (dataset->RasterIO(GF_Write,
+                if (dataset->RasterIO(GF_Read,
                                       area.ul.x,
                                       area.ul.y,
                                       area.ul.x - area.lr.x,
@@ -543,17 +553,48 @@ RasterChunk::RasterChunk* ProjectedRaster::createRasterChunk(Area area)
 
         }
 
-
-
-
-
 	return temp;
-
 }
 
 RasterChunk::RasterChunk* ProjectedRaster::createEmptyRasterChunk(Area area)
 {
-	return new RasterChunk::RasterChunk;
+	RasterChunk::RasterChunk *temp = new RasterChunk::RasterChunk;
+
+	temp->projection_ = shared_ptr<Projection>(getProjection());
+	temp->raster_location_ = area.ul;
+	temp->ul_projected_corner_ = Coordinate(ul_x, ul_y, UNDEF);
+	temp->pixel_size_ = getPixelSize();
+	temp->row_count_ = area.lr.y - area.ul.y;
+	temp->column_count_ = area.lr.x - area.lr.x;
+	temp->pixel_type_ = getPixelType();
+	temp->band_count_ = band_count;
+	temp->pixels_ = NULL;
+
+	return temp;
+}
+
+bool ProjectedRaster::writeRasterChunk(RasterChunk::RasterChunk *chunk)
+{
+	// TODO: Add some more checks
+
+	if (dataset->RasterIO(GF_Write,
+			      chunk->raster_location_.x,
+			      chunk->raster_location_.y,
+			      chunk->column_count_,
+			      chunk->row_count_,
+			      chunk->pixels_,
+			      chunk->column_count_,
+			      chunk->row_count_,
+			      chunk->pixel_type_,
+			      chunk->band_count_,
+			      NULL, 0, 0, 0) != CE_None) {
+		// Error!
+		fprintf(stderr, "Error writing RasterChunk %p\n", chunk->pixels_);
+
+	}
+	dataset->FlushCache();
+			      
+
 
 }
 
@@ -727,7 +768,7 @@ bool ProjectedRaster::makeRaster(string _filename,
 	  
 	// Set options
 	options = CSLSetNameValue( options, "INTERLEAVE", "PIXEL" );
-	options = CSLSetNameValue( options, "BIGTIFF", "YES" );
+//	options = CSLSetNameValue( options, "BIGTIFF", "YES" );
 	options = CSLSetNameValue( options, "TILED", "NO" );
 	options = CSLSetNameValue( options, "COMPRESS", "NONE" );
 	options = CSLSetNameValue( options, "PHOTOMETRIC", "MINISBLACK");
