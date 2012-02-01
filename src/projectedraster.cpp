@@ -565,7 +565,7 @@ RasterChunk::RasterChunk* ProjectedRaster::createEmptyRasterChunk(Area area)
 	temp->ul_projected_corner_ = Coordinate(ul_x, ul_y, UNDEF);
 	temp->pixel_size_ = getPixelSize();
 	temp->row_count_ = area.lr.y - area.ul.y;
-	temp->column_count_ = area.lr.x - area.lr.x;
+	temp->column_count_ = area.lr.x - area.ul.x;
 	temp->pixel_type_ = getPixelType();
 	temp->band_count_ = band_count;
 	temp->pixels_ = NULL;
@@ -590,12 +590,13 @@ bool ProjectedRaster::writeRasterChunk(RasterChunk::RasterChunk *chunk)
 			      NULL, 0, 0, 0) != CE_None) {
 		// Error!
 		fprintf(stderr, "Error writing RasterChunk %p\n", chunk->pixels_);
+		return false;
 
 	}
 	dataset->FlushCache();
 			      
 
-
+	return true;
 }
 
 bool ProjectedRaster::configureFromXml(std::string xmlfilename)
