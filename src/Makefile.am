@@ -15,11 +15,16 @@ librasterblaster_a_SOURCES = projectedraster.cpp \
 #librasterblaster_a_LDFLAGS = $(all_libraries)  -Lgctp_cpp
 librasterblaster_a_LIBADD =  gctp_cpp/libgctp_cpp.a
 
-bin_PROGRAMS = prasterblaster
+bin_PROGRAMS = prasterblaster img2tif
 prasterblaster_CXXFLAGS = -lgdal -g -std=c++0x
 prasterblaster_LDFLAGS = $(all_libraries)  -Lgctp_cpp
 prasterblaster_LDADD = librasterblaster.a gctp_cpp/libgctp_cpp.a 
 prasterblaster_SOURCES =  main.cpp 
+
+img2tif_CXXFLAGS = -lgdal -g -std=c++0x
+img2tif_LDFLAGS = $(all_libraries) -Lgctp_cpp
+img2tif_LDADD = gctp_cpp/libgctp_cpp.a librasterblaster.a
+img2tif_SOURCES = img2tif.cpp
 
 AM_CPPFLAGS = $(all_includes) -IpRPL -Igctp_cpp
 
