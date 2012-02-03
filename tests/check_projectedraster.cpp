@@ -2,68 +2,38 @@
 
 #include <gtest/gtest.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "projectedraster.hh"
 
-using boost::shared_ptr;
+using std::shared_ptr;
 
 static string test_dir = "tests/testdata/";
+static string output_dir = "tests/testoutput/";
 
 class ChunkTest : public ::testing::Test {
 protected:
 	virtual void SetUp() {
 		in = shared_ptr<ProjectedRaster>(new ProjectedRaster(test_dir + "veg_geographic_1deg.img"));
+		
+		shared_ptr<Projection> outproj(Transformer::convertProjection(MOLL));
+		outproj->setUnits(METER);
+		outproj->setDatum(in->getDatum());
+		ProjectedRaster::CreateRaster(output_dir + "veg_mollweide_1deg_test.tif",
+					      in,
+					      outproj,
+					      in->getPixelType(),
+					      in->getPixelSize());
+		out = shared_ptr<ProjectedRaster>(new ProjectedRaster(output_dir + "veg_mollweide_1deg_test.tif"));
+	
+								   
+								      
+								      
 	}
 	shared_ptr<ProjectedRaster> in;
-
+	shared_ptr<ProjectedRaster> out;
 
 };
-
-
-TEST(PR_TEST, OpenFile) {
-	ProjectedRaster pr(test_dir + "veg_geographic_1deg.img");
-	EXPECT_TRUE(pr.isReady());
-}
-
-TEST(PR_TEST, GeoMinbox) {
-	ProjectedRaster pr(test_dir + "veg_geographic_1deg.img");
-
-	
-//	printf("Geo Minbox: %f %f %f %f\n", box.ul.x, box.ul.y, box.lr.x, box.lr.y);
-
-}
-
-TEST(PR_TEST, NEW_RASTER) {
-	shared_ptr<ProjectedRaster> in(new ProjectedRaster(test_dir + "veg_geographic_1deg.img"));
-	shared_ptr<ProjectedRaster> out; 
-
-	ASSERT_TRUE(in->isReady());
-
-	shared_ptr<Projection> in_proj(in->getProjection());
-	shared_ptr<Projection> out_proj (Transformer::convertProjection(MOLL));
-	out_proj->setUnits(in_proj->units());
-	out_proj->setDatum(in_proj->datum());
-	out_proj->setParams(in_proj->params());
-
-	bool result = ProjectedRaster::CreateRaster(test_dir + "veg_mollweide_1deg.tif",
-						    in,
-						    out_proj,
-						    in->type,
-						    in->pixel_size);
-
-	ASSERT_TRUE(result);
-
-	shared_ptr<ProjectedRaster> newpr(new ProjectedRaster(test_dir + "veg_mollweide_1deg.tif"));
-
-	ASSERT_TRUE(newpr->isReady());
-
-	// Check geographical extent
-	Area box = newpr->getGeographicalMinbox();
-
-	printf("New Geo Minbox: %f %f %f %f\n", box.ul.x, box.ul.y, box.lr.x, box.lr.y);
-
-}
 
 TEST_F(ChunkTest, raster_row_continuity) {
 
@@ -84,18 +54,27 @@ TEST_F(ChunkTest, raster_row_continuity) {
 	
 }
 
+TEST_F(ChunkTest, raster_writing) {
+	
+
+}
+
 TEST_F(ChunkTest, minbox_continuity) {
 
+	RasterChunk::RasterChunk *chunk = NULL;
+	Area area;
 
-	vector<ChunkExtent> chunks;
-	Area minbox; 
+	area.ul.x = 0;
+	area.ul.y = 0;
+	area.lr.x = in->getColCount() - 1;
+	area.lr.y = in->getRowCount() - 1;
 
-	for (int i = 0; i < chunks.size(); ++i) {
+	chunk = in->createRasterChunk(area);
 
-		printf("Chunk %d (%f,%f) to (%f,%f)\n", i, 
-		       minbox.ul.x, minbox.ul.y,
-		       minbox.lr.x, minbox.lr.y);
+	ASSERT_NE(chunk, (void*)NULL);
 
-	}
+	EXPECT_EQ(in->getPixelType(), chunk->pixel_type_);
+
+	delete chunk;
 
 }

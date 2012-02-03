@@ -42,8 +42,8 @@ TEST_F(ReprojTest, paritition_test)
 
 	EXPECT_EQ(parts.at(0).ul.x, 0);
 
-	EXPECT_EQ(in->getColCount() - 1, parts.back().lr.x);
-	
+	EXPECT_EQ(in->getColCount() - 1, parts.back().lr.x);	
+
 }
 
 TEST_F(ReprojTest, parition_comprehensiveness)
