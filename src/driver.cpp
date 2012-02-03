@@ -6,7 +6,6 @@
 #include <cstdio>
 #include <cstring>
 #include <cctype>
-#include <memory>
 
 #include <mpi.h>
 
@@ -167,7 +166,10 @@ int driver(string input_raster, string output_filename, string output_projection
 		
 		printf("Reprojecting UL: %f %f rows %d cols %d\n", in_chunk->raster_location_.x, in_chunk->raster_location_.y,
 		       in_chunk->row_count_, in_chunk->column_count_);
-		ReprojectChunk(*in_chunk, *out_chunk);
+
+		if (ReprojectChunk(*in_chunk, *out_chunk) == false) {
+			fprintf(stderr, "Error reprojecting chunk #%d\n", i);
+		}
 
 		// Now write RasterChunk to output
 		if (out->writeRasterChunk(out_chunk) == false) {
