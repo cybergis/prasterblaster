@@ -99,13 +99,14 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 
 	temp1.x = ((double)source.x * source_pixel_size_) + source_ul_.x;
 	temp1.y = ((double)source.y * source_pixel_size_) - source_ul_.y;
-	
+
 	src_proj->inverse(temp1.x, temp1.y, &temp2.x, &temp2.y);
 	src_proj->forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
 
 	if (fabs(temp1.x - temp2.x) > 0.01) {
-		value.ul.x = std::numeric_limits<double>::quiet_NaN();
-		value.lr.x = value.ul.x;
+		value.ul.x = -1.0;
+		value.lr.x = -1.0;
+		return value;
 	}
 
 	temp1.x = ((double)source.x * source_pixel_size_) + source_ul_.x;
@@ -157,7 +158,7 @@ vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
 		partitions.at(i) = temp;
 	}
 
-	partitions.back().lr.x = source->getColCount() - 1;
+//	partitions.back().lr.x = source->getColCount() - 1;
 	partitions.back().lr.y = source->getRowCount() - 1;
 
 	return partitions;
@@ -265,6 +266,7 @@ bool ParallelReprojection(shared_ptr<ProjectedRaster> source, shared_ptr<Project
 bool ReprojectChunk(RasterChunk::RasterChunk source, RasterChunk::RasterChunk destination)
 {
 	if (source.pixel_type_ != destination.pixel_type_) {
+		fprintf(stderr, "Source and destination chunks have different types!\n");
 		return false;
 	}
 
@@ -272,12 +274,13 @@ bool ReprojectChunk(RasterChunk::RasterChunk source, RasterChunk::RasterChunk de
 	switch (source.pixel_type_) 
 	{
 	case GDT_Byte:
-		ReprojectChunkType<unsigned char>(source, destination);
+		return ReprojectChunkType<unsigned char>(source, destination);
 		break;
 	case GDT_UInt16:
-		ReprojectChunkType<uint16_t>(source, destination);
+		return ReprojectChunkType<uint16_t>(source, destination);
 		break;
 	default:
+		fprintf(stderr, "Invalid type in ReprojectChunk!\n");
 		return false;
 		break;
 

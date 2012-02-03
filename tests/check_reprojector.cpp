@@ -54,10 +54,10 @@ TEST_F(ReprojTest, parition_comprehensiveness)
 	ASSERT_EQ(0, parts.at(0).ul.y);
 
 	for (int i = 0; i < parts.size() - 1; ++i) {
-		ASSERT_EQ(parts.at(i).lr.y, parts.at(i+1).ul.y - 1);
+		ASSERT_EQ(parts.at(i).lr.y, parts.at(i+1).ul.y);
 
 		ASSERT_EQ(0, parts.at(i).ul.x);
-		ASSERT_EQ(in->getColCount() - 1, parts.at(i).lr.x);
+		ASSERT_EQ(in->getColCount(), parts.at(i).lr.x);
 
 	}
 }

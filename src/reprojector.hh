@@ -23,6 +23,7 @@
 #ifndef REPROJECTOR_HH
 #define REPROJECTOR_HH
 
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <vector>
@@ -90,12 +91,12 @@ bool ReprojectChunkType(RasterChunk::RasterChunk source, RasterChunk::RasterChun
 	Area pixelArea;
 	int count = 0;
 	int total = 0;
-	RasterCoordTransformer rt(source.projection_, 
-				  source.ul_projected_corner_,
-				  source.pixel_size_,
-				  destination.projection_,
+	RasterCoordTransformer rt(destination.projection_, 
 				  destination.ul_projected_corner_,
-				  destination.pixel_size_);        
+				  destination.pixel_size_,
+				  source.projection_,
+				  source.ul_projected_corner_,
+				  source.pixel_size_);        
 
 	for (int chunk_y = 0; chunk_y < destination.row_count_; ++chunk_y)  {
 		for (int chunk_x = 0; chunk_x < destination.column_count_; ++chunk_x) {
@@ -106,6 +107,10 @@ bool ReprojectChunkType(RasterChunk::RasterChunk source, RasterChunk::RasterChun
 				pixelArea = rt.Transform(temp1);   /// Now makes sense.
 			} catch (std::runtime_error) {
 				continue;
+			}
+
+			if (pixelArea.ul.x == -1.0) {
+			  continue;
 			}
 
 			temp1 = pixelArea.ul;
@@ -141,7 +146,8 @@ bool ReprojectChunkType(RasterChunk::RasterChunk source, RasterChunk::RasterChun
 
 			// Write pixel to destination
 			reinterpret_cast<pixelType*>(destination.pixels_)[chunk_x + chunk_y * destination.column_count_] = 
-				reinterpret_cast<pixelType*>(source.pixels_)[chunk_x + chunk_y * source.column_count_];
+				reinterpret_cast<pixelType*>(source.pixels_)[(int)temp1.x + (int)temp1.y * source.column_count_];
+
 		}
 	}
 
