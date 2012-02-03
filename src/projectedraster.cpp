@@ -525,11 +525,11 @@ RasterChunk::RasterChunk* ProjectedRaster::createRasterChunk(Area area)
                 if (dataset->RasterIO(GF_Read,
                                       area.ul.x,
                                       area.ul.y,
-                                      area.ul.x - area.lr.x,
-                                      area.lr.y - area.ul.y,
+				      temp->column_count_,
+				      temp->row_count_,
 				      temp->pixels_,
-                                      area.ul.x - area.lr.x,
-                                      area.lr.y - area.ul.y,
+				      temp->column_count_,
+				      temp->row_count_,
                                       temp->pixel_type_,
                                       bandCount(),
                                       NULL,
@@ -592,7 +592,7 @@ RasterChunk::RasterChunk* ProjectedRaster::createEmptyRasterChunk(Area area)
 
 	temp->projection_ = shared_ptr<Projection>(getProjection());
 	temp->raster_location_ = area.ul;
-	temp->ul_projected_corner_ = Coordinate(ul_x+(area.ul.x*getPixelSize()), ul_y+(area.ul.y*getPixelSize()), UNDEF);
+	temp->ul_projected_corner_ = Coordinate(ul_x+(area.ul.x*getPixelSize()), ul_y-(area.ul.y*getPixelSize()), UNDEF);
 	temp->pixel_size_ = getPixelSize();
 	temp->row_count_ = area.lr.y - area.ul.y;
 	temp->column_count_ = area.lr.x - area.ul.x;
@@ -613,8 +613,8 @@ bool ProjectedRaster::writeRasterChunk(RasterChunk::RasterChunk *chunk)
 			      chunk->column_count_,
 			      chunk->row_count_,
 			      chunk->pixels_,
-			      getColCount(),
-			      getRowCount(),
+			      chunk->column_count_,
+			      chunk->row_count_,
 			      chunk->pixel_type_,
 			      chunk->band_count_,
 			      NULL, 0, 0, 0) != CE_None) {
