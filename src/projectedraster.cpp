@@ -513,21 +513,12 @@ bool ProjectedRaster::writeRaster(int firstRow, int numRows, void *data)
 
 RasterChunk::RasterChunk* ProjectedRaster::createRasterChunk(Area area)
 {
-	RasterChunk::RasterChunk *temp = NULL;
-	int buffer_size = (area.lr.y - area.ul.y) * (area.lr.x - area.ul.x) * (GDALGetDataTypeSize(getPixelType()));
-	unsigned char *pixels = (unsigned char*)malloc(buffer_size);
+	RasterChunk::RasterChunk *temp = createAllocatedRasterChunk(area);
 
-	readRaster(area.ul.y, area.lr.y - area.ul.y, pixels);
-	temp = createEmptyRasterChunk(area);
 
-	if (pixels == NULL) {
-		fprintf(stderr, "Error allocating RasterChunk memory! %f %f %f %f, %d bytes\n", 
-			area.ul.x, area.ul.y, area.lr.x, area.lr.y, buffer_size);
-		delete temp;
+	if (temp == NULL) {
 		return NULL;
 	}
-
-	temp->pixels_ = pixels;
 
         // Read area of raster
         if (isReady() && dataset != 0) {
@@ -536,7 +527,7 @@ RasterChunk::RasterChunk* ProjectedRaster::createRasterChunk(Area area)
                                       area.ul.y,
                                       area.ul.x - area.lr.x,
                                       area.lr.y - area.ul.y,
-                                      pixels,
+				      temp->pixels_,
                                       area.ul.x - area.lr.x,
                                       area.lr.y - area.ul.y,
                                       temp->pixel_type_,
@@ -545,15 +536,54 @@ RasterChunk::RasterChunk* ProjectedRaster::createRasterChunk(Area area)
                                       0,0,0) != CE_None)
                 {
                         // Cleanup and return error
-                        delete pixels;
                         delete temp;
                         return NULL;
                 }
                                       
 
-        }
+        } else{ 
+		ifstream ifs(filename.c_str(), ifstream::in);
+		// TODO: Verify parameters!
+
+		if (ifs.good()) {
+			int seekindex = area.ul.x + (area.ul.y*temp->column_count_) * (GDALGetDataTypeSize(temp->pixel_type_)/8);
+			ifs.seekg(seekindex);
+			int readamount = (area.lr.y-area.ul.y) * (area.lr.x-area.ul.x) * (GDALGetDataTypeSize(type)/8);
+			ifs.read((char*)temp->pixels_, readamount);
+
+		}
+		if (ifs.good()) {
+		} else if (ifs.fail()) {
+			printf("File read failed!\n");
+			return false;
+		} else if( ifs.bad()) {
+			printf("Bad file read\n");
+		} else if ( ifs.eof() ) {
+			printf("Attempted read past end of file.\n");
+		}
+			
+	}
 
 	return temp;
+}
+
+RasterChunk::RasterChunk* ProjectedRaster::createAllocatedRasterChunk(Area area)
+{
+	RasterChunk::RasterChunk *temp = createEmptyRasterChunk(area);
+	int buffer_size = (area.lr.y - area.ul.y) * (area.lr.x - area.ul.x);
+	unsigned char *pixels = (unsigned char*)calloc(buffer_size, GDALGetDataTypeSize(getPixelType())/8);
+	
+	if (pixels == NULL) {
+		fprintf(stderr, "Allocation error!\n");
+		delete temp;
+		return NULL;
+	}
+
+	temp->pixels_ = pixels;
+
+	return temp;
+	
+
 }
 
 RasterChunk::RasterChunk* ProjectedRaster::createEmptyRasterChunk(Area area)
@@ -562,7 +592,7 @@ RasterChunk::RasterChunk* ProjectedRaster::createEmptyRasterChunk(Area area)
 
 	temp->projection_ = shared_ptr<Projection>(getProjection());
 	temp->raster_location_ = area.ul;
-	temp->ul_projected_corner_ = Coordinate(ul_x, ul_y, UNDEF);
+	temp->ul_projected_corner_ = Coordinate(ul_x+(area.ul.x*getPixelSize()), ul_y+(area.ul.y*getPixelSize()), UNDEF);
 	temp->pixel_size_ = getPixelSize();
 	temp->row_count_ = area.lr.y - area.ul.y;
 	temp->column_count_ = area.lr.x - area.ul.x;
@@ -583,8 +613,8 @@ bool ProjectedRaster::writeRasterChunk(RasterChunk::RasterChunk *chunk)
 			      chunk->column_count_,
 			      chunk->row_count_,
 			      chunk->pixels_,
-			      chunk->column_count_,
-			      chunk->row_count_,
+			      getColCount(),
+			      getRowCount(),
 			      chunk->pixel_type_,
 			      chunk->band_count_,
 			      NULL, 0, 0, 0) != CE_None) {
