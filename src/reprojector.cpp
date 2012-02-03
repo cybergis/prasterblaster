@@ -144,21 +144,15 @@ vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
 			       int partition_count)
 {
 	vector<Area> partitions(partition_count);
-	int chunk_size = (source->getColCount() * source->getRowCount()) / partition_count;
+	int chunk_size = source->getRowCount() / partition_count;
 	Area temp;
 	
 	for (int i = 0; i < (int)partitions.size(); ++i) {
-		temp.ul.x = (chunk_size * i) % source->getColCount();
-		temp.ul.y = (chunk_size * i) / source->getColCount();
-		temp.lr.x = temp.ul.x + chunk_size % source->getColCount();
+		temp.ul.x = 0;
+		temp.ul.y = chunk_size * i;
 
-		if (temp.lr.x == 0.0) {  // Wrap column values around 
-			temp.lr.x = source->getColCount() - 1;
-		} else {
-			--temp.lr.x;
-		}
-		
-		temp.lr.y = temp.ul.y + chunk_size / source->getColCount() - 1;
+		temp.lr.x = source->getColCount() - 1;
+		temp.lr.y = (chunk_size * (i+1)) - 1;
 
 		partitions.at(i) = temp;
 	}
