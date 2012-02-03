@@ -150,12 +150,11 @@ int driver(string input_raster, string output_filename, string output_projection
 	}
 
 	for (int i = first_index; i <= last_index; ++i) {
-
 		output_area = part_areas.at(i);
 		input_area = MapDestinationAreatoSource(out, in->getProjection(), output_area, in->getPixelSize());
-		out_chunk = out->createRasterChunk(output_area);
+		out_chunk = out->createAllocatedRasterChunk(output_area);
 		in_chunk = in->createRasterChunk(input_area);
-		
+
 		if (in_chunk == NULL) { // break 
 			fprintf(stderr, "Input RasterChunk allocation error!\n");
 			return 1;
@@ -165,11 +164,17 @@ int driver(string input_raster, string output_filename, string output_projection
 			fprintf(stderr, "Output RasterChunk allocation error!\n");
 			return 1;
 		}
-
+		
+		printf("Reprojecting UL: %f %f rows %d cols %d\n", in_chunk->raster_location_.x, in_chunk->raster_location_.y,
+		       in_chunk->row_count_, in_chunk->column_count_);
 		ReprojectChunk(*in_chunk, *out_chunk);
 
 		// Now write RasterChunk to output
-		out->writeRasterChunk(out_chunk);
+		if (out->writeRasterChunk(out_chunk) == false) {
+			fprintf(stderr, "Error writing chunk!\n");
+		} 
+
+		
 
 		// Cleanup
 		delete out_chunk;
