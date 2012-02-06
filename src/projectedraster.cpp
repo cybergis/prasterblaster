@@ -484,29 +484,22 @@ bool ProjectedRaster::writeRaster(int firstRow, int numRows, void *data)
 	
 	if (isReady() && dataset == 0) { // img file
 		ofstream ofs(filename.c_str(), ifstream::out);
-
-		// TODO: Verify parameters!
 		
-
-		if (ofs.good()) {
-			ofs.seekp(firstRow * cols);
-			ofs.write((char*)data, 
-				 numRows * cols * (GDALGetDataTypeSize(type)/8));
-		} 
-	} else if (isReady() && dataset != 0) { // GTiff
-		if( dataset->RasterIO(GF_Write, 0, firstRow,
-				      cols, numRows,
-				      data, cols, numRows,
-				      type, bandCount(),
-				      NULL, 0, 0, 0) == CE_None) {
-			success = true;
-			dataset->FlushCache();
-		}
+		// TODO: Verify parameters!
+		if (isReady() && dataset != 0) { // GTiff
+			if( dataset->RasterIO(GF_Write, 0, firstRow,
+					      cols, numRows,
+					      data, cols, numRows,
+					      type, bandCount(),
+					      NULL, 0, 0, 0) == CE_None) {
+				success = true;
+				dataset->FlushCache();
+			}
 			
-	}
-
+		}
+		
 		return success;
-
+	}		
 	
 	return false;
 }
@@ -570,7 +563,7 @@ RasterChunk::RasterChunk* ProjectedRaster::createRasterChunk(Area area)
 RasterChunk::RasterChunk* ProjectedRaster::createAllocatedRasterChunk(Area area)
 {
 	RasterChunk::RasterChunk *temp = createEmptyRasterChunk(area);
-	int buffer_size = (area.lr.y - area.ul.y) * (area.lr.x - area.ul.x);
+	int buffer_size = (temp->row_count_ * temp->column_count_);
 	unsigned char *pixels = (unsigned char*)calloc(buffer_size, GDALGetDataTypeSize(getPixelType())/8);
 	
 	if (pixels == NULL) {
@@ -594,8 +587,8 @@ RasterChunk::RasterChunk* ProjectedRaster::createEmptyRasterChunk(Area area)
 	temp->raster_location_ = area.ul;
 	temp->ul_projected_corner_ = Coordinate(ul_x+(area.ul.x*getPixelSize()), ul_y-(area.ul.y*getPixelSize()), UNDEF);
 	temp->pixel_size_ = getPixelSize();
-	temp->row_count_ = area.lr.y - area.ul.y;
-	temp->column_count_ = area.lr.x - area.ul.x;
+	temp->row_count_ = area.lr.y - area.ul.y + 1;
+	temp->column_count_ = area.lr.x - area.ul.x + 1;
 	temp->pixel_type_ = getPixelType();
 	temp->band_count_ = band_count;
 	temp->pixels_ = NULL;
