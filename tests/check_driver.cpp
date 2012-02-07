@@ -21,10 +21,17 @@ protected:
 
 TEST(DriverTest, driver_output_creation) {
   
-  int ret = driver(test_dir + "veg_geographic_1deg.tif", 
-		   output_dir + "veg_mollweide_1deg.tif",
-		   "mollweide");
-
-  EXPECT_EQ(0, ret);
-
+	int ret = driver(test_dir + "veg_geographic_1deg.tif", 
+			 output_dir + "veg_mollweide_1deg.tif",
+			 "mollweide");
+	
+	EXPECT_EQ(0, ret);
+	
+	
+	ret = driver(test_dir + "glc_geographic_30sec.tif",
+		     output_dir + "glc_mollweide_30sec.tif",
+		     "mollweide");
+	
+	EXPECT_EQ(0, ret);
+	
 }
