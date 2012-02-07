@@ -37,7 +37,7 @@ int driver(string input_raster, string output_filename, string output_projection
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
 	MPI_Comm_size(MPI_COMM_WORLD, &process_count);
 	partition_count = process_count * 2;
-	partition_count = 1;
+
 	// Open input raster and check for errors
 	if (rank == 0) {
 	  printf("Opening input raster...");
