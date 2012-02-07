@@ -175,36 +175,70 @@ Area FindOutputArea(shared_ptr<ProjectedRaster> input,
 {
 	Area geoarea; // Projected Area
 	shared_ptr<Projection> input_proj(input->getProjection());
+	vector<int> indices;
+	const int buffer = 2;
+	const int shrink = 50;
 	
 	geoarea.ul.x = geoarea.lr.y = DBL_MAX;
 	geoarea.ul.y = geoarea.lr.x = -DBL_MAX;
 	
-	for (int x = 0; x < input->getColCount(); ++x) {
-		for (int y = 0; y < input->getRowCount(); ++y) {
-			Coordinate input_coord;
-			Coordinate temp;
+	// Check the top of the raster
+	indices.push_back(0);
+	indices.push_back(input->getColCount());
+	indices.push_back(0);
+	indices.push_back(buffer);
 
-			input_coord.x = x * input->getPixelSize() + input->ul_x;
-			input_coord.y = y * input->getPixelSize() * input->ul_y;
-			
-			input_proj->inverse(input_coord.x, input_coord.y, &temp.x, &temp.y);
-			output_projection->forward(temp.x, temp.y, &temp.x, &temp.y);
+	// Check the bottom of the raster
+	indices.push_back(0);
+	indices.push_back(input->getColCount());
+	if (input->getRowCount() - buffer < 0) {
+		indices.push_back(0);
+	} else {
+		indices.push_back(input->getRowCount()-buffer);
+	}
+	indices.push_back(input->getRowCount());
+	
+	// Check Left
+	indices.push_back(0);
+	indices.push_back(0);
+	indices.push_back(0);
+	indices.push_back(input->getRowCount());
 
-			if (temp.x  < geoarea.ul.x) 
-				geoarea.ul.x = temp.x;
-			if (temp.y > geoarea.ul.y)
-				geoarea.ul.y = temp.y;
-			if (temp.x > geoarea.lr.x) 
-				geoarea.lr.x = temp.x;
-			if (temp.y < geoarea.lr.y)
-				geoarea.lr.y = temp.y;
-					
+	// Check right
+	if (input->getColCount() - buffer < 0) {
+		indices.push_back(0);
+	} else {
+		indices.push_back(input->getColCount() - buffer);
+	}
+	indices.push_back(input->getColCount());
+	indices.push_back(0);
+	indices.push_back(input->getRowCount());
+
+	for (int i = 0; i < indices.size(); i += 4) {
+		for (int x = indices.at(i); x < indices.at(i+1); ++x) {
+			for (int y = indices.at(i+2); y < indices.at(i+3); ++y) {
+				Coordinate input_coord;
+				Coordinate temp;
+				
+				input_coord.x = x * input->getPixelSize() + input->ul_x;
+				input_coord.y = y * input->getPixelSize() * input->ul_y;
+				
+				input_proj->inverse(input_coord.x, input_coord.y, &temp.x, &temp.y);
+				output_projection->forward(temp.x, temp.y, &temp.x, &temp.y);
+				
+				if (temp.x  < geoarea.ul.x) 
+					geoarea.ul.x = temp.x;
+				if (temp.y > geoarea.ul.y)
+					geoarea.ul.y = temp.y;
+				if (temp.x > geoarea.lr.x) 
+					geoarea.lr.x = temp.x;
+				if (temp.y < geoarea.lr.y)
+					geoarea.lr.y = temp.y;
+				
+			}
 		}
-
 	}
 
-	
-	
 	return geoarea;
 }
 
