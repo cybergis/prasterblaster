@@ -72,8 +72,9 @@ Area FindOutputArea(shared_ptr<ProjectedRaster> input,
 
 Area MapDestinationAreatoSource(shared_ptr<ProjectedRaster> source,
 				shared_ptr<Projection> destination_projection,
-				Area destination_area,
-				double destination_pixel_size);
+				Coordinate destination_ul_corner,
+				double destination_pixel_size,
+				Area destination_raster_area);
 
 bool ReprojectChunk(RasterChunk::RasterChunk source, RasterChunk::RasterChunk destination);
 
@@ -91,6 +92,7 @@ bool ReprojectChunkType(RasterChunk::RasterChunk source, RasterChunk::RasterChun
 	Area pixelArea;
 	int count = 0;
 	int total = 0;
+
 	RasterCoordTransformer rt(destination.projection_, 
 				  destination.ul_projected_corner_,
 				  destination.pixel_size_,
@@ -98,9 +100,16 @@ bool ReprojectChunkType(RasterChunk::RasterChunk source, RasterChunk::RasterChun
 				  source.ul_projected_corner_,
 				  source.pixel_size_);        
 
+
+	for (int chunk_y = destination.row_count_-10; chunk_y < destination.row_count_; ++chunk_y) {
+		for (int chunk_x = 0; chunk_x < destination.column_count_; ++chunk_x) {
+			
+		}
+
+	}
+
 	for (int chunk_y = 0; chunk_y < destination.row_count_; ++chunk_y)  {
 		for (int chunk_x = 0; chunk_x < destination.column_count_; ++chunk_x) {
-
 			temp1.x = chunk_x; 
 			temp1.y = chunk_y;
 			try {
@@ -142,11 +151,9 @@ bool ReprojectChunkType(RasterChunk::RasterChunk source, RasterChunk::RasterChun
 			//       Otherwise, use nearest-neighbor
 
 			// Perform resampling...
-			
-
 			// Write pixel to destination
 			reinterpret_cast<pixelType*>(destination.pixels_)[chunk_x + chunk_y * destination.column_count_] = 
-				reinterpret_cast<pixelType*>(source.pixels_)[(int)temp1.x + (int)temp1.y * source.column_count_];
+				reinterpret_cast<pixelType*>(source.pixels_)[ul_x + ul_y * source.column_count_];
 
 		}
 	}

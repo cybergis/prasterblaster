@@ -57,6 +57,9 @@ RasterCoordTransformer::RasterCoordTransformer(shared_ptr<ProjectedRaster> sourc
 {
 	destination_pixel_size_ = destination_pixel_size;
 	destination_ul_ = destination_ul;
+	source_ul_ = Coordinate(source->ul_x, source->ul_y, UNDEF);
+	source_pixel_size_ = source->getPixelSize();
+
 	dest_proj = destination_projection;
 	src_proj =  shared_ptr<Projection>(source->getProjection());
 
@@ -207,44 +210,46 @@ Area FindOutputArea(shared_ptr<ProjectedRaster> input,
 
 Area MapDestinationAreatoSource(shared_ptr<ProjectedRaster> source,
 				shared_ptr<Projection> destination_projection,
-				Area destination_area,
-				double destination_pixel_size)
+				Coordinate destination_ul_corner,
+				double destination_pixel_size,
+				Area destination_raster_area)
 {
 	
 	Area source_area;
-	RasterCoordTransformer rt(source, destination_projection, destination_area.ul, destination_pixel_size);
+	RasterCoordTransformer rt(source, destination_projection, destination_ul_corner, destination_pixel_size);
 	Area temp;
 	Coordinate c;
         int first(0), last(0);
 
-	source_area.lr.x = 0;
-	source_area.lr.y = 0;
+	source_area.ul.x = source_area.ul.y = DBL_MAX;
+	source_area.lr.y = source_area.lr.x = -DBL_MAX;
 	
-	source_area.ul.x = source->getColCount();
-	source_area.ul.y = source->getRowCount();
-
-	for (int x = destination_area.ul.x; x < destination_area.lr.x; ++x) {
-		for (int y = destination_area.ul.y; y <= destination_area.lr.y; ++y) {
+	for (int x = destination_raster_area.ul.x; x <= destination_raster_area.lr.x; ++x) {
+		for (int y = destination_raster_area.ul.y; y <= destination_raster_area.lr.y; ++y) {
 
 			c.x = x;
 			c.y = y;
 
 			temp = rt.Transform(c);
-                
-			if (c.x > source_area.lr.x) {
-				source_area.lr.x = c.x;
+
+			if (temp.ul.x == -1) {
+			  continue;
+			}
+
+			if (temp.lr.x > source_area.lr.x) {
+				source_area.lr.x = temp.lr.x;
 			}
 			
-			if (c.x < source_area.ul.x) {
-				source_area.ul.x = c.x;
+			if (temp.ul.x < source_area.ul.x) {
+				source_area.ul.x = temp.ul.x;
 			}
 
-			if (c.y < source_area.ul.y) {
-				source_area.ul.y = c.y;
+			if (temp.ul.y < source_area.ul.y) {
+				source_area.ul.y = temp.ul.y;
 			}
 
-			if (c.y > source_area.lr.y) {
-				source_area.lr.y = c.y;
+			if (temp.lr.y > source_area.lr.y) {
+				source_area.lr.y = temp.lr.y;
 			}
 		}
 	}
@@ -259,7 +264,7 @@ bool ParallelReprojection(shared_ptr<ProjectedRaster> source, shared_ptr<Project
 	int parts_per_process = parts.size() / process_count;
 	int leftover = parts.size() % process_count;
 
-	
+	return true;
 
 }
 
