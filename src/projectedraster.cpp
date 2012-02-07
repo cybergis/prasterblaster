@@ -547,7 +547,7 @@ RasterChunk::RasterChunk* ProjectedRaster::createAllocatedRasterChunk(Area area)
 	RasterChunk::RasterChunk *temp = createEmptyRasterChunk(area);
 	int buffer_size = (temp->row_count_ * temp->column_count_);
 	unsigned char *pixels = (unsigned char*)calloc(buffer_size, GDALGetDataTypeSize(getPixelType())/8);
-	printf("AREA: %f %f %f %fAllocating %d bytes\n\n\n", area.ul.x, area.ul.y, area.lr.x, area.lr.y, buffer_size);
+
 	if (pixels == NULL) {
 		fprintf(stderr, "Allocation error!\n");
 		delete temp;
