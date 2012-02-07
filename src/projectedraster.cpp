@@ -14,6 +14,7 @@
 
 #include <string>
 #include <sstream>
+#include <cmath>
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
@@ -204,9 +205,8 @@ bool ProjectedRaster::CreateRaster(string _filename,
 	ulx = out_area.ul.x;
 	uly = out_area.ul.y;
 
-	num_rows = (int)((out_area.ul.y - out_area.lr.y) / _pixel_size);
-	num_cols = (int)((out_area.lr.x - out_area.ul.x) / _pixel_size);
-	printf("size is %d cols %d rows\n", num_cols, num_rows);
+	num_rows = (int)(ceil(out_area.ul.y - out_area.lr.y) / _pixel_size);
+	num_cols = (int)(ceil(out_area.lr.x - out_area.ul.x) / _pixel_size);
 
 	status = makeRaster(_filename,
 			    num_cols, 
@@ -535,26 +535,8 @@ RasterChunk::RasterChunk* ProjectedRaster::createRasterChunk(Area area)
                                       
 
         } else{ 
-		ifstream ifs(filename.c_str(), ifstream::in);
-		// TODO: Verify parameters!
-
-		if (ifs.good()) {
-			int seekindex = area.ul.x + (area.ul.y*temp->column_count_) * (GDALGetDataTypeSize(temp->pixel_type_)/8);
-			ifs.seekg(seekindex);
-			int readamount = (area.lr.y-area.ul.y) * (area.lr.x-area.ul.x) * (GDALGetDataTypeSize(type)/8);
-			ifs.read((char*)temp->pixels_, readamount);
-
-		}
-		if (ifs.good()) {
-		} else if (ifs.fail()) {
-			printf("File read failed!\n");
-			return false;
-		} else if( ifs.bad()) {
-			printf("Bad file read\n");
-		} else if ( ifs.eof() ) {
-			printf("Attempted read past end of file.\n");
-		}
-			
+		delete temp;
+		return NULL;
 	}
 
 	return temp;
@@ -565,7 +547,7 @@ RasterChunk::RasterChunk* ProjectedRaster::createAllocatedRasterChunk(Area area)
 	RasterChunk::RasterChunk *temp = createEmptyRasterChunk(area);
 	int buffer_size = (temp->row_count_ * temp->column_count_);
 	unsigned char *pixels = (unsigned char*)calloc(buffer_size, GDALGetDataTypeSize(getPixelType())/8);
-	
+	printf("AREA: %f %f %f %fAllocating %d bytes\n\n\n", area.ul.x, area.ul.y, area.lr.x, area.lr.y, buffer_size);
 	if (pixels == NULL) {
 		fprintf(stderr, "Allocation error!\n");
 		delete temp;

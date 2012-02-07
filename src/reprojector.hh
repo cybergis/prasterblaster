@@ -71,9 +71,7 @@ Area FindOutputArea(shared_ptr<ProjectedRaster> input,
 		    double output_pixel_size);
 
 Area MapDestinationAreatoSource(shared_ptr<ProjectedRaster> source,
-				shared_ptr<Projection> destination_projection,
-				Coordinate destination_ul_corner,
-				double destination_pixel_size,
+				shared_ptr<ProjectedRaster> destination,
 				Area destination_raster_area);
 
 bool ReprojectChunk(RasterChunk::RasterChunk source, RasterChunk::RasterChunk destination);

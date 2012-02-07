@@ -209,14 +209,13 @@ Area FindOutputArea(shared_ptr<ProjectedRaster> input,
 }
 
 Area MapDestinationAreatoSource(shared_ptr<ProjectedRaster> source,
-				shared_ptr<Projection> destination_projection,
-				Coordinate destination_ul_corner,
-				double destination_pixel_size,
+				shared_ptr<ProjectedRaster> destination,
 				Area destination_raster_area)
 {
 	
 	Area source_area;
-	RasterCoordTransformer rt(source, destination_projection, destination_ul_corner, destination_pixel_size);
+	RasterCoordTransformer rt(source, destination->getProjection(), 
+				  Coordinate(destination->ul_x, destination->ul_y, UNDEF), destination->getPixelSize());
 	Area temp;
 	Coordinate c;
         int first(0), last(0);
@@ -252,6 +251,24 @@ Area MapDestinationAreatoSource(shared_ptr<ProjectedRaster> source,
 				source_area.lr.y = temp.lr.y;
 			}
 		}
+	}
+
+	if (source_area.ul.x < 0)
+		source_area.ul.x = 0;
+	if (source_area.ul.y < 0)
+		source_area.ul.y = 0;
+	
+	source_area.ul.x = floor(source_area.ul.x);
+	source_area.ul.y = floor(source_area.ul.y);
+	source_area.lr.x = ceil(source_area.lr.x);
+	source_area.lr.y = ceil(source_area.lr.y);
+
+	if (source_area.lr.x > destination->getColCount() - 1) {
+		source_area.lr.x = destination->getColCount() - 1;
+	}
+
+	if (source_area.lr.y > destination->getRowCount() - 1) {
+		source_area.lr.y = destination->getRowCount() - 1;
 	}
 
 	return source_area;
