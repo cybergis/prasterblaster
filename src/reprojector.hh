@@ -74,40 +74,40 @@ Area MapDestinationAreatoSource(shared_ptr<ProjectedRaster> source,
 				shared_ptr<ProjectedRaster> destination,
 				Area destination_raster_area);
 
-bool ReprojectChunk(RasterChunk::RasterChunk source, RasterChunk::RasterChunk destination);
+bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination);
 
 template <class pixelType>
-bool ReprojectChunkType(RasterChunk::RasterChunk source, RasterChunk::RasterChunk destination)
+bool ReprojectChunkType(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination)
 {
 
 	shared_ptr<Projection> outproj, inproj;
         Coordinate temp1, temp2;
 	std::vector<char> inraster, outraster;
 
-        outproj = destination.projection_;
-        inproj = source.projection_;
+        outproj = destination->projection_;
+        inproj = source->projection_;
 	
 	Area pixelArea;
 	int count = 0;
 	int total = 0;
 
-	RasterCoordTransformer rt(destination.projection_, 
-				  destination.ul_projected_corner_,
-				  destination.pixel_size_,
-				  source.projection_,
-				  source.ul_projected_corner_,
-				  source.pixel_size_);        
+	RasterCoordTransformer rt(destination->projection_, 
+				  destination->ul_projected_corner_,
+				  destination->pixel_size_,
+				  source->projection_,
+				  source->ul_projected_corner_,
+				  source->pixel_size_);        
 
 
-	for (int chunk_y = destination.row_count_-10; chunk_y < destination.row_count_; ++chunk_y) {
-		for (int chunk_x = 0; chunk_x < destination.column_count_; ++chunk_x) {
+	for (int chunk_y = destination->row_count_-10; chunk_y < destination->row_count_; ++chunk_y) {
+		for (int chunk_x = 0; chunk_x < destination->column_count_; ++chunk_x) {
 			
 		}
 
 	}
 
-	for (int chunk_y = 0; chunk_y < destination.row_count_; ++chunk_y)  {
-		for (int chunk_x = 0; chunk_x < destination.column_count_; ++chunk_x) {
+	for (int chunk_y = 0; chunk_y < destination->row_count_; ++chunk_y)  {
+		for (int chunk_x = 0; chunk_x < destination->column_count_; ++chunk_x) {
 			temp1.x = chunk_x; 
 			temp1.y = chunk_y;
 			try {
@@ -136,12 +136,12 @@ bool ReprojectChunkType(RasterChunk::RasterChunk source, RasterChunk::RasterChun
 				ul_y = 0;
 			}
 
-			if (lr_x > (source.column_count_ - 1)) {
-				lr_x = source.column_count_ - 1;
+			if (lr_x > (source->column_count_ - 1)) {
+				lr_x = source->column_count_ - 1;
 			}
 
-			if (lr_y > (source.row_count_ - 1)) {
-				lr_y = source.row_count_ - 1;
+			if (ul_y > (source->row_count_ - 1)) {
+				ul_y = source->row_count_ - 1;
 			}
 			
 
@@ -150,9 +150,11 @@ bool ReprojectChunkType(RasterChunk::RasterChunk source, RasterChunk::RasterChun
 
 			// Perform resampling...
 			// Write pixel to destination
-			reinterpret_cast<pixelType*>(destination.pixels_)[chunk_x + chunk_y * destination.column_count_] = 
-				reinterpret_cast<pixelType*>(source.pixels_)[ul_x + ul_y * source.column_count_];
+			reinterpret_cast<pixelType*>(destination->pixels_)[chunk_x + chunk_y * destination->column_count_] = 
+			  reinterpret_cast<pixelType*>(source->pixels_)[ul_x + ul_y * source->column_count_];
 
+						
+			reinterpret_cast<pixelType*>(destination->pixels_)[chunk_x + chunk_y * destination->column_count_] = 254;
 		}
 	}
 

@@ -319,15 +319,15 @@ bool ParallelReprojection(shared_ptr<ProjectedRaster> source, shared_ptr<Project
 
 }
 
-bool ReprojectChunk(RasterChunk::RasterChunk source, RasterChunk::RasterChunk destination)
+bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination)
 {
-	if (source.pixel_type_ != destination.pixel_type_) {
+	if (source->pixel_type_ != destination->pixel_type_) {
 		fprintf(stderr, "Source and destination chunks have different types!\n");
 		return false;
 	}
 
 
-	switch (source.pixel_type_) 
+	switch (source->pixel_type_) 
 	{
 	case GDT_Byte:
 		return ReprojectChunkType<unsigned char>(source, destination);
