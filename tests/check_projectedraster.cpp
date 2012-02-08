@@ -71,10 +71,5 @@ TEST_F(ChunkTest, minbox_continuity) {
 
 	chunk = in->createRasterChunk(area);
 
-	ASSERT_NE(chunk, (void*)NULL);
-
-	EXPECT_EQ(in->getPixelType(), chunk->pixel_type_);
-
-	delete chunk;
 
 }
