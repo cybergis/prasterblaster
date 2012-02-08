@@ -36,7 +36,7 @@ int driver(string input_raster, string output_filename, string output_projection
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
 	MPI_Comm_size(MPI_COMM_WORLD, &process_count);
-	partition_count = process_count * 2;
+	partition_count = process_count * 50;
 
 	// Open input raster and check for errors
 	if (rank == 0) {
@@ -163,10 +163,11 @@ int driver(string input_raster, string output_filename, string output_projection
 			fprintf(stderr, "Output RasterChunk allocation error!\n");
 			return 1;
 		}
-		
-		if (ReprojectChunk(*in_chunk, *out_chunk) == false) {
+		printf("%d,", i);
+		fflush(stdout);
+		if (ReprojectChunk(in_chunk, out_chunk) == false) {
 			fprintf(stderr, "Error reprojecting chunk #%d\n", i);
-		}
+b		}
 
 		// Now write RasterChunk to output
 		if (out->writeRasterChunk(out_chunk) == false) {
@@ -178,10 +179,13 @@ int driver(string input_raster, string output_filename, string output_projection
 		// Cleanup
 		delete out_chunk;
 		delete in_chunk;
+		out_chunk = NULL;
+		in_chunk = NULL;
+
 	}
 
 	if (rank == 0)
-		printf("done!\n");
+		printf(" done!\n");
 
 	// Cleanup
 
