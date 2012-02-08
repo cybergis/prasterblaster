@@ -31,7 +31,7 @@ namespace RasterChunk {
 	{
 	public:
 		RasterChunk() {};
-		~RasterChunk() {};
+		~RasterChunk();
 		shared_ptr<Projection> projection_;
 		Coordinate raster_location_;
 		Coordinate ul_projected_corner_;

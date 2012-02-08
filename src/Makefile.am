@@ -11,6 +11,7 @@ librasterblaster_a_SOURCES = projectedraster.cpp \
                  tinyxmlparser.cpp \
                  rasterxml.cpp \
 		 resampler.cpp \
+                 rasterchunk.cpp \
 		 driver.cpp
 #librasterblaster_a_LDFLAGS = $(all_libraries)  -Lgctp_cpp
 librasterblaster_a_LIBADD =  gctp_cpp/libgctp_cpp.a
