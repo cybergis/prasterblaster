@@ -793,7 +793,8 @@ bool ProjectedRaster::makeRaster(string _filename,
 	geotransform[0] = _ul_x;
 	geotransform[3] = _ul_y;
 	geotransform[4] = geotransform[2] = 0.0;
-	geotransform[1] = geotransform[5] = _pixel_size;
+	geotransform[1] = _pixel_size;
+	geotransform[5] = -_pixel_size;
 	_dataset->SetGeoTransform(geotransform);
 
 	_dataset->SetProjection(_projection->wkt().c_str());
