@@ -153,8 +153,6 @@ bool ReprojectChunkType(RasterChunk::RasterChunk *source, RasterChunk::RasterChu
 			reinterpret_cast<pixelType*>(destination->pixels_)[chunk_x + chunk_y * destination->column_count_] = 
 			  reinterpret_cast<pixelType*>(source->pixels_)[ul_x + ul_y * source->column_count_];
 
-						
-			reinterpret_cast<pixelType*>(destination->pixels_)[chunk_x + chunk_y * destination->column_count_] = 254;
 		}
 	}
 
