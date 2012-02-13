@@ -167,7 +167,7 @@ int driver(string input_raster, string output_filename, string output_projection
 		fflush(stdout);
 		if (ReprojectChunk(in_chunk, out_chunk) == false) {
 			fprintf(stderr, "Error reprojecting chunk #%d\n", i);
-b		}
+		}
 
 		// Now write RasterChunk to output
 		if (out->writeRasterChunk(out_chunk) == false) {
