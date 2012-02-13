@@ -56,18 +56,7 @@ ProjectedRaster::ProjectedRaster(string _filename)
 
 	GDALAllRegister();
 
-	// Determine whether we have a imagine binary raster or a GTiff 
-	found = filename.rfind("img");
-
-	if (found == string::npos) { // Filename doesn't end in img, assuming GTiff
-		ready = loadRaster(filename);
-	} else { // Filename specifies imagine binary raster
-		_filename.replace(found-1, 4, ".xml");
-		bool status = configureFromXml(_filename);
-		band_count = 1;
-		ready = status;
-		
-	}
+	ready = loadRaster(filename);
 
 	return;
 }
@@ -421,27 +410,7 @@ bool ProjectedRaster::readRaster(int firstRow, int numRows, void *data)
 		return false;
 	}
 
-	if (isReady() && dataset == 0) { // img file
-		ifstream ifs(filename.c_str(), ifstream::in);
-		// TODO: Verify parameters!
-
-		if (ifs.good()) {
-			ifs.seekg(firstRow * cols * (GDALGetDataTypeSize(type)/8));
-			ifs.read((char*)data, 
-				 numRows * cols * (GDALGetDataTypeSize(type)/8));
-		}
-		if (ifs.good()) {
-			success = true;
-		} else if (ifs.fail()) {
-			printf("File read failed!\n");
-			return false;
-		} else if( ifs.bad()) {
-			printf("Bad file read\n");
-		} else if ( ifs.eof() ) {
-			printf("Attempted read past end of file.\n");
-		}
-			
-	} else if (isReady() && dataset != 0) { // GTiff
+	if (isReady() && dataset != 0) { // GTiff
 		if( dataset->RasterIO(GF_Read, 0, firstRow,
 				      cols, numRows,
 				      data, cols, numRows,
@@ -449,10 +418,10 @@ bool ProjectedRaster::readRaster(int firstRow, int numRows, void *data)
 				      NULL, 0, 0, 0) == CE_None) {
 			success = true; 
 		}
-			
+		
 	}
-
-		return success;
+	
+	return success;
 }
 
 bool ProjectedRaster::writeRaster(int firstRow, int numRows, void *data)
@@ -480,28 +449,22 @@ bool ProjectedRaster::writeRaster(int firstRow, int numRows, void *data)
 		       dataset->GetRasterYSize());
 		return false;
 	}
-		
 	
-	if (isReady() && dataset == 0) { // img file
-		ofstream ofs(filename.c_str(), ifstream::out);
-		
-		// TODO: Verify parameters!
-		if (isReady() && dataset != 0) { // GTiff
-			if( dataset->RasterIO(GF_Write, 0, firstRow,
-					      cols, numRows,
-					      data, cols, numRows,
-					      type, bandCount(),
-					      NULL, 0, 0, 0) == CE_None) {
-				success = true;
-				dataset->FlushCache();
-			}
-			
+	
+	// TODO: Verify parameters!
+	if (isReady() && dataset != 0) { // GTiff
+		if( dataset->RasterIO(GF_Write, 0, firstRow,
+				      cols, numRows,
+				      data, cols, numRows,
+				      type, bandCount(),
+				      NULL, 0, 0, 0) == CE_None) {
+			success = true;
+			dataset->FlushCache();
 		}
 		
-		return success;
-	}		
+	}
 	
-	return false;
+	return success;
 }
 
 RasterChunk::RasterChunk* ProjectedRaster::createRasterChunk(Area area)
@@ -544,8 +507,8 @@ RasterChunk::RasterChunk* ProjectedRaster::createRasterChunk(Area area)
 
 RasterChunk::RasterChunk* ProjectedRaster::createAllocatedRasterChunk(Area area)
 {
-	RasterChunk::RasterChunk *temp = createEmptyRasterChunk(area);
-	int buffer_size = (temp->row_count_ * temp->column_count_);
+	RasterChunk::RasterChunk *temp = createEmptyRasterChunk(area);	
+int buffer_size = (temp->row_count_ * temp->column_count_);
 	unsigned char *pixels = (unsigned char*)calloc(buffer_size, GDALGetDataTypeSize(getPixelType())/8);
 
 	if (pixels == NULL) {
