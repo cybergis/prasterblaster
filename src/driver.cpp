@@ -184,6 +184,7 @@ b		}
 
 	}
 
+	MPI_Barrier(MPI_COMM_WORLD);
 	if (rank == 0)
 		printf(" done!\n");
 
