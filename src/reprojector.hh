@@ -2,20 +2,19 @@
  * @file
  * @author David Matthew Mattli <dmattli@usgs.gov>
  *
- * @section LICENSE
- * This work was produced as a part of the official duties of a
- * federal employee and is in the public domain.
-
+ * @section LICENSE 
+ *
+ * This software is in the public domain, furnished "as is", without
+ * technical support, and with no warranty, express or implied, as to
+ * its usefulness for any purpose.
+ *
  * @section DESCRIPTION
  *
+ * This file implements the main reprojection functionality.
  *
  */
 
 /*! \mainpage Reprojector class for pRasterBlaster
- *
- * \section desc_sec Description 
- * The Reprojector class takes two
- * rasters and reprojects and resamples the source to fill the destination.
  *
  *
  */

@@ -2,10 +2,12 @@
  * @file
  * @author David Matthew Mattli <dmattli@usgs.gov>
  *
- * @section LICENSE
- * This work was produced as a part of the official duties of a
- * federal employee and is in the public domain.
-
+ * @section LICENSE 
+ *
+ * This software is in the public domain, furnished "as is", without
+ * technical support, and with no warranty, express or implied, as to
+ * its usefulness for any purpose.
+ *
  * @section DESCRIPTION
  *
  * The ProjectedRaster class represents a raster with a location and a projection.
@@ -30,7 +32,6 @@
 #include <gdal_priv.h>
 #include <ogr_spatialref.h>
 
-#include "rasterinfo.h"
 #include "gctp_cpp/transformer.h"
 #include "gctp_cpp/mercator.h"
 #include "gctp_cpp/constants.h"

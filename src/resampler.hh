@@ -2,12 +2,15 @@
  * @file
  * @author David Matthew Mattli <dmattli@usgs.gov>
  *
- * @section LICENSE
- * This work was produced as a part of the official duties of a
- * federal employee and is in the public domain.
-
+ * @section LICENSE 
+ *
+ * This software is in the public domain, furnished "as is", without
+ * technical support, and with no warranty, express or implied, as to
+ * its usefulness for any purpose.
+ *
  * @section DESCRIPTION
  *
+ * The resampler class implements a variety of resampling techniques.
  *
  */
 
@@ -22,30 +25,8 @@
 using RasterChunk::RasterChunk;
 
 namespace resampler 
-{
-/*
-	void NearestNeighbor(RasterChunk *source,
-			     RasterChunk *dest,
-			     int dest_pixel_index,
-			     int source_box_indices[4],
-			     int band_count)
-	{
-		dest->pixels[dest_pixel_index] = source->pixels[source_box_indices[0]];
-		
-		return;
-	}
-	
-	
-	
-	void bilinear(void *inraster, double in_x,
-		      double in_y, unsigned long in_cols,
-		      void *outraster,
-		      unsigned long out_x, unsigned long out_y,
-		      unsigned long out_cols);
-	
-	
-*/	
-	
+{	
+
 	
 } // namespace resampler
 
