@@ -149,9 +149,15 @@ bool ReprojectChunkType(RasterChunk::RasterChunk *source, RasterChunk::RasterChu
 
 			// Perform resampling...
 			// Write pixel to destination
+			/*
 			reinterpret_cast<pixelType*>(destination->pixels_)[chunk_x + chunk_y * destination->column_count_] = 
 			  reinterpret_cast<pixelType*>(source->pixels_)[ul_x + ul_y * source->column_count_];
-
+			*/
+			reinterpret_cast<pixelType*>(destination->pixels_)[chunk_x + chunk_y * destination->column_count_] = 
+				Resampler::Mean<pixelType>(Coordinate(ul_x, ul_y, UNDEF), 
+							   Coordinate(lr_x, lr_y, UNDEF), 
+							   source->column_count_,
+							   reinterpret_cast<pixelType*>(source->pixels_));
 		}
 	}
 

@@ -22,11 +22,26 @@
 
 #include "rasterchunk.hh"
 
-using RasterChunk::RasterChunk;
-
-namespace resampler 
+namespace Resampler
 {	
+	template <typename T>
+	T Mean(Coordinate input_ul,
+	       Coordinate input_lr,
+	       int input_column_count,
+	       T* input_pixels)
+	{
+		T temp = 0;
+		
+		for (int x = input_ul.x; x <= input_lr.x; ++x) {
+			for (int y = input_ul.y; y <= input_lr.y; ++y) {
+				temp += input_pixels[y * input_column_count + x];
+			}
+		}
 
+		temp /= (input_lr.x - input_ul.x) * (input_lr.y - input_ul.y);
+
+		return temp;
+	}
 	
 } // namespace resampler
 
