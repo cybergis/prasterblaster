@@ -11,7 +11,7 @@ AM_CXXFLAGS = -fPIC -W -Wall -Wextra -Wcast-align \
 		-Wformat=2 -Wno-format-y2k  -Wmissing-braces -Wparentheses \
 		-Wtrigraphs # -Wshadow -Wstrict-prototypes -Wnested-externs -Wimplicit
 
-libgctp_cpp_a_LIBADD = -lgdal
+
 libgctp_cpp_CXXFLAGS = -fPIC
 libgctp_cpp_a_SOURCES = alaskaconformal.cpp \
            albersConEqArea.cpp \
