@@ -22,6 +22,7 @@ protected:
 	//! See documentation for Projection
 	void _inverse(double x, double y);
 
+	std::string wkt();
 };
 
 #endif
