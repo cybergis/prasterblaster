@@ -80,11 +80,12 @@ int driver(string input_raster, string output_filename, string output_projection
 			out_proj = shared_ptr<Projection>(Transformer::convertProjection(HAMMER));
 		} else if (output_projection == "mollweide") {
 			out_proj = shared_ptr<Projection>(Transformer::convertProjection(MOLL));
-		} else if (output_projection == "sinosoidal") {
-			return 1;
+		} else if (output_projection == "sinusoidal") {
+			out_proj = shared_ptr<Projection>(Transformer::convertProjection(SNSOID));
 		} else {
 			// fail...
-			return 1;
+			fprintf(stderr, "Unknown projection: %s\n", output_projection.c_str());
+			Return. 1;
 		}
 		out_proj->setUnits(in_proj->units());
 		out_proj->setDatum(in_proj->datum());
