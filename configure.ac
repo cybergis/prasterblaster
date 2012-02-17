@@ -39,8 +39,6 @@ AC_PROG_CPP
 
 # Check for GDAL library and headers
 AC_CHECK_HEADER(gdal.h, [], [echo 'gdal.h not found! Set --with-gdal-incdir=path'; exit])
-AC_CHECK_LIB(gdal, GDALAllRegister, [], 
-             [echo "GDAL library not found! Set --with-gdal-libdir=path"; exit])
 	 	
 AC_CONFIG_HEADERS([config.h])  
 AC_CONFIG_FILES([  
