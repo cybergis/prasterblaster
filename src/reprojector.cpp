@@ -26,6 +26,7 @@
 #include <mpi.h>
 #include <gdal.h>
 #include <gdal_priv.h>
+#include <ogr_spatialref.h>
 
 #include "gctp_cpp/projection.h"
 #include "gctp_cpp/transformer.h"
@@ -164,7 +165,6 @@ vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
 		partitions.at(i) = temp;
 	}
 
-//	partitions.back().lr.x = source->getColCount() - 1;
 	partitions.back().lr.y = source->getRowCount() - 1;
 
 	return partitions;
@@ -180,8 +180,7 @@ Area FindOutputArea(shared_ptr<ProjectedRaster> input,
 	shared_ptr<Projection> input_proj(input->getProjection());
 	vector<int> indices;
 	const int buffer = 2;
-	const int shrink = 50;
-	
+
 	geoarea.ul.x = geoarea.lr.y = DBL_MAX;
 	geoarea.ul.y = geoarea.lr.x = -DBL_MAX;
 	
@@ -203,7 +202,7 @@ Area FindOutputArea(shared_ptr<ProjectedRaster> input,
 	
 	// Check Left
 	indices.push_back(0);
-	indices.push_back(0);
+	indices.push_back(buffer);
 	indices.push_back(0);
 	indices.push_back(input->getRowCount());
 
@@ -224,10 +223,18 @@ Area FindOutputArea(shared_ptr<ProjectedRaster> input,
 				Coordinate temp;
 				
 				input_coord.x = x * input->getPixelSize() + input->ul_x;
-				input_coord.y = y * input->getPixelSize() * input->ul_y;
-				
+				input_coord.y = input->ul_y - (y * input->getPixelSize());
+
 				input_proj->inverse(input_coord.x, input_coord.y, &temp.x, &temp.y);
 				output_projection->forward(temp.x, temp.y, &temp.x, &temp.y);
+
+				if (temp.x == INFINITY || temp.x == -INFINITY) {
+					continue;
+				}
+
+				if (temp.y == INFINITY || temp.y == -INFINITY) {
+					continue;
+				}
 				
 				if (temp.x  < geoarea.ul.x) 
 					geoarea.ul.x = temp.x;
@@ -311,17 +318,6 @@ Area MapDestinationAreatoSource(shared_ptr<ProjectedRaster> source,
 	return source_area;
 }
 
-bool ParallelReprojection(shared_ptr<ProjectedRaster> source, shared_ptr<ProjectedRaster> destination, 
-			  int rank, int process_count)
-{
-	vector<Area> parts = PartitionByCount(destination, process_count);
-	int parts_per_process = parts.size() / process_count;
-	int leftover = parts.size() % process_count;
-
-	return true;
-
-}
-
 bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination)
 {
 	if (source->pixel_type_ != destination->pixel_type_) {
@@ -365,7 +361,7 @@ Area FindRasterArea(shared_ptr<ProjectedRaster> source_raster,
 		    int first_row,
 		    int last_row)
 {
-	RasterCoordTransformer trans(source_raster, dest_raster);
+ 	RasterCoordTransformer trans(source_raster, dest_raster);
 
 	Area dest_area;
 	Coordinate temp;
@@ -440,3 +436,5 @@ Area FindRasterExtent(shared_ptr<ProjectedRaster> raster,
 	return rasterArea;
 
 }
+
+
