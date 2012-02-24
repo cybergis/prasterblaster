@@ -28,26 +28,23 @@
 #include "reprojector.hh"
 
 #include <gdal_priv.h>
+#include <ogr_spatialref.h>
 
 using std::shared_ptr;
 
-double params[15] =  { 6370997.000000, 
-		       0, 0, 0, 0, 
-		       0, 0, 0, 0, 0, 
-		       0, 0, 0, 0, 0};
-
-
-int driver(string input_raster, string output_filename, string output_projection)
+int driver(string input_raster, 
+	   string output_filename, 
+	   string output_srs, 
+	   string fillvalue,
+	   int partition_count)
 {
 	int rank = 0;
 	int process_count = 1;
 	shared_ptr<ProjectedRaster> in, out;
 	shared_ptr<Projection> in_proj, out_proj;
-	int partition_count = 1;
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
 	MPI_Comm_size(MPI_COMM_WORLD, &process_count);
-	partition_count = process_count * 50;
 
 	// Open input raster and check for errors
 	if (rank == 0) {
@@ -68,28 +65,27 @@ int driver(string input_raster, string output_filename, string output_projection
 
 	// If we are rank 0, create the output projection and raster
 	if (rank == 0) {
-		// Downcase output projection name
-		std::transform(output_projection.begin(),
-			       output_projection.end(),
-			       output_projection.begin(),
-			       (int(*) (int))std::tolower);
-
 		in_proj = shared_ptr<Projection>(in->getProjection());
+		OGRSpatialReference srs; 
 
-		if (output_projection == "hammer") {
-			out_proj = shared_ptr<Projection>(Transformer::convertProjection(HAMMER));
-		} else if (output_projection == "mollweide") {
-			out_proj = shared_ptr<Projection>(Transformer::convertProjection(MOLL));
-		} else if (output_projection == "sinusoidal") {
-			out_proj = shared_ptr<Projection>(Transformer::convertProjection(SNSOID));
-		} else {
-			// fail...
-			fprintf(stderr, "Unknown projection: %s\n", output_projection.c_str());
-			Return. 1;
+		OGRErr err = srs.importFromProj4(output_srs.c_str());
+
+		if (err != OGRERR_NONE) {
+			fprintf(stderr, "Error parsing projection!\n");
+			return -1;
 		}
+		long proj_code, datum_code, zone;
+		double *params = NULL;
+		
+		srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
+		
+		out_proj = shared_ptr<Projection>(Transformer::convertProjection(SNSOID));
+
 		out_proj->setUnits(in_proj->units());
 		out_proj->setDatum(in_proj->datum());
-		out_proj->setParams(in_proj->params());
+		out_proj->setParams(params);
+
+		OGRFree(params);
 
 		printf("Creating output raster...");
 		fflush(stdout);
@@ -158,6 +154,27 @@ int driver(string input_raster, string output_filename, string output_projection
 	// RasterChunks are allocated
 	if (rank == process_count -1) {
 		last_index = part_areas.size() - 1;
+	}
+
+
+	extern int analyze_partitions;
+	if (analyze_partitions == 1) {
+		for (int i = 0; i < partition_count; ++i) {
+			input_area = MapDestinationAreatoSource(out, in, part_areas.at(i));
+			Area part = part_areas.at(i);
+			out_chunk = out->createEmptyRasterChunk(part_areas.at(i));
+			in_chunk = in->createEmptyRasterChunk(input_area);
+			printf("\n-------------------------------------------------------------------------------\n");
+			printf("OUTPUT AREA: UL: %f %f LR: %f %f \n", part.ul.x, part.ul.x, part.lr.x, part.lr.y);
+			printf("             --- %d rows %d columns\n", out_chunk->row_count_, out_chunk->column_count_);
+			printf("INPUT AREA: UL: %f %f LR: %f %f \n", input_area.ul.x, input_area.ul.y, input_area.lr.x, input_area.lr.y);
+			printf("             --- %d rows %d columns\n", in_chunk->row_count_, in_chunk->column_count_);
+			printf("\n-------------------------------------------------------------------------------\n");
+			delete out_chunk;
+			delete in_chunk;
+			       
+		}
+		MPI_Abort(MPI_COMM_WORLD, 0);
 	}
 
 	for (int i = first_index; i <= last_index; ++i) {
