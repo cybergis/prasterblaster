@@ -87,8 +87,6 @@ bool ReprojectChunkType(RasterChunk::RasterChunk *source, RasterChunk::RasterChu
         inproj = source->projection_;
 	
 	Area pixelArea;
-	int count = 0;
-	int total = 0;
 
 	RasterCoordTransformer rt(destination->projection_, 
 				  destination->ul_projected_corner_,
@@ -143,16 +141,13 @@ bool ReprojectChunkType(RasterChunk::RasterChunk *source, RasterChunk::RasterChu
 				ul_y = source->row_count_ - 1;
 			}
 			
-
-			// TODO: Check that ul/lr actually enclose an area
-			//       Otherwise, use nearest-neighbor
-
 			// Perform resampling...
-			// Write pixel to destination
-			/*
-			reinterpret_cast<pixelType*>(destination->pixels_)[chunk_x + chunk_y * destination->column_count_] = 
-			  reinterpret_cast<pixelType*>(source->pixels_)[ul_x + ul_y * source->column_count_];
-			*/
+			if ((ul_x <= lr_x) || (lr_y <= ul_x)) { // ul/lr do not enclose an area, use NN
+				reinterpret_cast<pixelType*>(destination->pixels_)[chunk_x + chunk_y * destination->column_count_] = 
+				  reinterpret_cast<pixelType*>(source->pixels_)[ul_x + ul_y * source->column_count_];
+				continue;
+			}
+
 			reinterpret_cast<pixelType*>(destination->pixels_)[chunk_x + chunk_y * destination->column_count_] = 
 				Resampler::Mean<pixelType>(Coordinate(ul_x, ul_y, UNDEF), 
 							   Coordinate(lr_x, lr_y, UNDEF), 

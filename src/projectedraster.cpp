@@ -414,7 +414,7 @@ RasterChunk::RasterChunk* ProjectedRaster::createRasterChunk(Area area)
 RasterChunk::RasterChunk* ProjectedRaster::createAllocatedRasterChunk(Area area)
 {
 	RasterChunk::RasterChunk *temp = createEmptyRasterChunk(area);	
-int buffer_size = (temp->row_count_ * temp->column_count_);
+	size_t buffer_size = (temp->row_count_ * temp->column_count_);
 	unsigned char *pixels = (unsigned char*)calloc(buffer_size, GDALGetDataTypeSize(getPixelType())/8);
 
 	if (pixels == NULL) {
@@ -511,7 +511,7 @@ bool ProjectedRaster::loadRaster(string filename)
 		fprintf(stderr, "Error reading projection ref\n");
 		return false;
 	}
-	
+
 	double geo[6];
 	dataset->GetGeoTransform(geo);
 	pixel_size = geo[1];
@@ -536,7 +536,7 @@ bool ProjectedRaster::loadRaster(string filename)
 /*	shared_ptr<UTM> utm_projection(projection);
 	if ((ProjCode)projsys == _UTM)
 	(utm_projection->setZone(zone); */
-	projection->setParams(params);
+	projection->setParams(p);
 	projection->setDatum((ProjDatum)datum);
 
 	projection->setUnits(METER);
@@ -571,7 +571,7 @@ bool ProjectedRaster::makeRaster(string _filename,
 	  
 	// Set options
 	options = CSLSetNameValue( options, "INTERLEAVE", "PIXEL" );
-//	options = CSLSetNameValue( options, "BIGTIFF", "YES" );
+	options = CSLSetNameValue( options, "BIGTIFF", "YES" );
 	options = CSLSetNameValue( options, "TILED", "NO" );
 	options = CSLSetNameValue( options, "COMPRESS", "NONE" );
 	options = CSLSetNameValue( options, "PHOTOMETRIC", "MINISBLACK");
@@ -594,10 +594,15 @@ bool ProjectedRaster::makeRaster(string _filename,
 	geotransform[5] = -_pixel_size;
 	_dataset->SetGeoTransform(geotransform);
 
-	_dataset->SetProjection(_projection->wkt().c_str());
-	if (_projection->wkt() == "") {
-		fprintf(stderr, "\nERROR: Unsupported projection: %s\n", _projection->name().c_str());
+	srs.importFromUSGS(_projection->number(), 0, _projection->params(), _projection->datum());
 
+	char *wkt = NULL;
+	srs.exportToWkt(&wkt);
+	if (wkt != NULL) {
+		_dataset->SetProjection(wkt);
+		OGRFree(wkt);
+	} else {
+		fprintf(stderr, "\nERROR: Unsupported projection: %s\n", _projection->name().c_str());
 	}
 
 	GDALClose(_dataset);

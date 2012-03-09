@@ -152,21 +152,31 @@ vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
 			       int partition_count)
 {
 	vector<Area> partitions(partition_count);
-	int chunk_size = source->getRowCount() / partition_count;
-	Area temp;
-	
-	for (int i = 0; i < (int)partitions.size(); ++i) {
-		temp.ul.x = 0;
-		temp.ul.y = chunk_size * i;
+	long block_count = (long)sqrt((float)partition_count);
+	long block_width = source->cols / block_count;
+	long block_height = source->rows / block_count;
 
-		temp.lr.x = source->getColCount() - 1;
-		temp.lr.y = (chunk_size * (i+1)) - 1;
-
-		partitions.at(i) = temp;
+	// Set block sizes
+	printf("Blocks in column: %ld, Blocks in Column: %ld\n", blocks_in_col, blocks_in_row);
+	for (long row = 0; row < block_count; ++row) {
+		for (long col = 0; col < block_count; ++col) {
+			partitions.at(col + row * blocks_in_row).ul.x = col * normal_block_width;
+			partitions.at(col + row * blocks_in_row).lr.x = (col+1) * normal_block_width - 1;
+			partitions.at(col + row * blocks_in_row).ul.y = row * normal_block_height;
+			partitions.at(col + row * blocks_in_row).lr.y = (row+1) * normal_block_height - 1;
+		}
+	}
+/*
+	// Set blocks in last column to remaining width
+	for (long i = 0; i < partition_count; i += blocks_in_row) {
+		partitions.at(i).lr.x = source->cols - 1;
 	}
 
-	partitions.back().lr.y = source->getRowCount() - 1;
-
+	// Set blocks in last row to remaining height
+	for (long i = 0; i < blocks_in_row; ++i) {
+		partitions.at(partitions.size()-i-1).lr.y = source->rows - 1;
+	}
+*/
 	return partitions;
 
 

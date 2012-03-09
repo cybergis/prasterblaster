@@ -32,6 +32,45 @@
 
 using std::shared_ptr;
 
+bool driver_create_raster(shared_ptr<ProjectedRaster> in,
+			 string output_filename,
+			 string output_srs)
+{
+	shared_ptr<Projection> in_proj = shared_ptr<Projection>(in->getProjection());
+	shared_ptr<Projection>to out_proj;
+	OGRSpatialReference srs; 
+	
+	OGRErr err = srs.importFromProj4(output_srs.c_str());
+	
+	if (err != OGRERR_NONE) {
+		fprintf(stderr, "Error parsing projection!\n");
+		return -1;
+	}
+	long proj_code, datum_code, zone;
+	double *params = NULL;
+		
+	srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
+		
+	out_proj = shared_ptr<Projection>(Transformer::convertProjection(SNSOID));
+
+	out_proj->setUnits(in_proj->units());
+	out_proj->setDatum(in_proj->datum());
+	out_proj->setParams(in_proj->params());
+
+	OGRFree(params);
+
+	printf("Creating output raster...");
+	fflush(stdout);
+	bool result  = ProjectedRaster::CreateRaster(output_filename,
+						     in,
+						     shared_ptr<Projection>(out_proj->copy()),
+						     in->type ,
+						     in->pixel_size);
+
+
+}
+			 
+
 int driver(string input_raster, 
 	   string output_filename, 
 	   string output_srs, 
@@ -65,37 +104,7 @@ int driver(string input_raster,
 
 	// If we are rank 0, create the output projection and raster
 	if (rank == 0) {
-		in_proj = shared_ptr<Projection>(in->getProjection());
-		OGRSpatialReference srs; 
-
-		OGRErr err = srs.importFromProj4(output_srs.c_str());
-
-		if (err != OGRERR_NONE) {
-			fprintf(stderr, "Error parsing projection!\n");
-			return -1;
-		}
-		long proj_code, datum_code, zone;
-		double *params = NULL;
-		
-		srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
-		
-		out_proj = shared_ptr<Projection>(Transformer::convertProjection(SNSOID));
-
-		out_proj->setUnits(in_proj->units());
-		out_proj->setDatum(in_proj->datum());
-		out_proj->setParams(params);
-
-		OGRFree(params);
-
-		printf("Creating output raster...");
-		fflush(stdout);
-		bool result  = ProjectedRaster::CreateRaster(output_filename,
-							     in,
-							     shared_ptr<Projection>(out_proj->copy()),
-							     in->type ,
-							     in->pixel_size);
-
-		
+		bool result = driver_create_raster(in, output_filename, output_srs);
 		if (result == false) {
 			fprintf(stderr, "Failed to create output raster!\n");
 			MPI_Abort(MPI_COMM_WORLD, -1);
@@ -165,7 +174,8 @@ int driver(string input_raster,
 			out_chunk = out->createEmptyRasterChunk(part_areas.at(i));
 			in_chunk = in->createEmptyRasterChunk(input_area);
 			printf("\n-------------------------------------------------------------------------------\n");
-			printf("OUTPUT AREA: UL: %f %f LR: %f %f \n", part.ul.x, part.ul.x, part.lr.x, part.lr.y);
+			printf("PARTITION #%d\n", i);
+			printf("OUTPUT AREA: UL: %f %f LR: %f %f \n", part.ul.x, part.ul.y, part.lr.x, part.lr.y);
 			printf("             --- %d rows %d columns\n", out_chunk->row_count_, out_chunk->column_count_);
 			printf("INPUT AREA: UL: %f %f LR: %f %f \n", input_area.ul.x, input_area.ul.y, input_area.lr.x, input_area.lr.y);
 			printf("             --- %d rows %d columns\n", in_chunk->row_count_, in_chunk->column_count_);
@@ -179,6 +189,8 @@ int driver(string input_raster,
 
 	for (int i = first_index; i <= last_index; ++i) {
 		output_area = part_areas.at(i);
+		if (output_area.ul.x == output_area.ul.y) 
+			continue;
 		input_area = MapDestinationAreatoSource(out, in, output_area);
 		out_chunk = out->createAllocatedRasterChunk(output_area);
 		in_chunk = in->createRasterChunk(input_area);
