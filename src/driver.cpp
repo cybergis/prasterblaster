@@ -37,7 +37,7 @@ bool driver_create_raster(shared_ptr<ProjectedRaster> in,
 			 string output_srs)
 {
 	shared_ptr<Projection> in_proj = shared_ptr<Projection>(in->getProjection());
-	shared_ptr<Projection>to out_proj;
+	shared_ptr<Projection> out_proj;
 	OGRSpatialReference srs; 
 	
 	OGRErr err = srs.importFromProj4(output_srs.c_str());
