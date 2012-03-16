@@ -322,21 +322,20 @@ bool ParallelReprojection(shared_ptr<ProjectedRaster> source, shared_ptr<Project
 
 }
 
-bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination)
+bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination, string resampler_name)
 {
 	if (source->pixel_type_ != destination->pixel_type_) {
 		fprintf(stderr, "Source and destination chunks have different types!\n");
 		return false;
 	}
 
-
 	switch (source->pixel_type_) 
 	{
 	case GDT_Byte:
-		return ReprojectChunkType<unsigned char>(source, destination);
+		return ReprojectChunkType<unsigned char>(source, destination, &(Resampler::Max<unsigned char>));
 		break;
 	case GDT_UInt16:
-		return ReprojectChunkType<uint16_t>(source, destination);
+		return ReprojectChunkType<uint16_t>(source, destination, &(Resampler::Max<unsigned short>));
 		break;
 	default:
 		fprintf(stderr, "Invalid type in ReprojectChunk!\n");
@@ -344,6 +343,7 @@ bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *
 		break;
 
 	}
+	return true;
 }
 
 void updateMinbox(double x, double y, Area *minbox) 

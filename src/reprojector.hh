@@ -73,10 +73,13 @@ Area MapDestinationAreatoSource(shared_ptr<ProjectedRaster> source,
 				shared_ptr<ProjectedRaster> destination,
 				Area destination_raster_area);
 
-bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination);
+bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination, string resampler_name);
 
 template <class pixelType>
-bool ReprojectChunkType(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination)
+bool ReprojectChunkType(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination, pixelType (*resampler)(Coordinate, 
+															Coordinate,
+															int,
+															pixelType*))
 {
 
 	shared_ptr<Projection> outproj, inproj;
@@ -95,13 +98,6 @@ bool ReprojectChunkType(RasterChunk::RasterChunk *source, RasterChunk::RasterChu
 				  source->ul_projected_corner_,
 				  source->pixel_size_);        
 
-
-	for (int chunk_y = destination->row_count_-10; chunk_y < destination->row_count_; ++chunk_y) {
-		for (int chunk_x = 0; chunk_x < destination->column_count_; ++chunk_x) {
-			
-		}
-
-	}
 
 	for (int chunk_y = 0; chunk_y < destination->row_count_; ++chunk_y)  {
 		for (int chunk_x = 0; chunk_x < destination->column_count_; ++chunk_x) {
@@ -149,7 +145,7 @@ bool ReprojectChunkType(RasterChunk::RasterChunk *source, RasterChunk::RasterChu
 			}
 
 			reinterpret_cast<pixelType*>(destination->pixels_)[chunk_x + chunk_y * destination->column_count_] = 
-				Resampler::Mean<pixelType>(Coordinate(ul_x, ul_y, UNDEF), 
+				resampler(Coordinate(ul_x, ul_y, UNDEF), 
 							   Coordinate(lr_x, lr_y, UNDEF), 
 							   source->column_count_,
 							   reinterpret_cast<pixelType*>(source->pixels_));
