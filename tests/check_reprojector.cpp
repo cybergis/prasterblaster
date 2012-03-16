@@ -27,7 +27,7 @@ static string test_dir = "tests/testdata/";
 class ReprojTest : public ::testing::Test {
 protected:
 	virtual void SetUp() {
-		in = shared_ptr<ProjectedRaster>(new ProjectedRaster(test_dir + "/glc_geographic_30sec.img"));
+		in = shared_ptr<ProjectedRaster>(new ProjectedRaster(test_dir + "/glc_geographic_30sec.tif"));
 	}
 	shared_ptr<ProjectedRaster> in;
 };

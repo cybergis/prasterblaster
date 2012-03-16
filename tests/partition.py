@@ -1,7 +1,11 @@
 
 import math
+import bisect
 
 def partition2x2(ulx, uly, lrx, lry):
+    """
+    Partition area into squares with a power of 2 dimension, returns a list of tuples
+    """
     n = 1
     partitions = []
     remaining = [(ulx, uly, lrx, lry)]
@@ -50,7 +54,21 @@ def survey_areas(partitions):
 
     return areas
 
+def xkey(rect):
+    return rect[0]
+
+def ykey(rect):
+    return rect[3]
+
+def gen_x_index(partition_list):
+    
+
 def merge_rectangle_list(rectangles):
+    xparts = sorted(rectangles, key=lambda r: r[0])
+    yparts = sorted(rectangles, key=lambda r: r[1])
+    xindex = [r[0] for r in xparts]
+    yindex = [r[1] for r in yparts]
+    
     while len(rectangles) != 1:
         r1 = rectangles.pop(0)
         for i,v in enumerate(rectangles):
@@ -74,10 +92,11 @@ def merge_rectangles(rect1, rect2):
         return (rect1[0], rect1[1], rect2[2], rect2[3])
     elif rectangle_above(rect2, rect1):
         return (rect2[0], rect2[1], rect1[2], rect1[3])
-    elif rectangle_left(rect2, rect1):
-        return (rect2[0], rect2[1], rect1[2], rect1[3])
+    elif rectangle_left(rect2, rect1): 
+       return (rect2[0], rect2[1], rect1[2], rect1[3])
     else:
         return None
+
 
 def rectangle_above(rect1, rect2):
     """ Check whether the two arguments share a side and the shared
@@ -107,4 +126,5 @@ def rectangle_left(rect1, rect2):
 
 
     return False
+
 

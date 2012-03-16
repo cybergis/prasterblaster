@@ -14,7 +14,7 @@ static string output_dir = "tests/testoutput/";
 class ChunkTest : public ::testing::Test {
 protected:
 	virtual void SetUp() {
-		in = shared_ptr<ProjectedRaster>(new ProjectedRaster(test_dir + "veg_geographic_1deg.img"));
+		in = shared_ptr<ProjectedRaster>(new ProjectedRaster(test_dir + "veg_geographic_1deg.tif"));
 		
 		shared_ptr<Projection> outproj(Transformer::convertProjection(MOLL));
 		outproj->setUnits(METER);

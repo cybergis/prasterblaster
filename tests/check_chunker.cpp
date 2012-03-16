@@ -21,7 +21,7 @@ class ChunkerTest : public ::testing::Test {
 protected:
 	virtual void SetUp() {
 		bool result = false;
-		in = shared_ptr<ProjectedRaster>(new ProjectedRaster(test_dir + "glc_geographic_30sec.img"));
+		in = shared_ptr<ProjectedRaster>(new ProjectedRaster(test_dir + "glc_geographic_30sec.tif"));
 		shared_ptr<Projection> proj = shared_ptr<Projection>(Transformer::convertProjection(MOLL));
 		proj->setUnits(in->getProjection()->units());
 		proj->setDatum(in->getProjection()->datum());
