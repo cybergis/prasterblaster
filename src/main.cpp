@@ -41,8 +41,9 @@ extern char *optarg;
 extern int optind, opterr, optopt;
 int analyze_partitions = 0;
 
-const char *usage = "usage: prasterblaster <input raster path> <output raster path> " 
-  "<output raster projection> \n"; 
+const char *usage = "usage: prasterblaster [-n <partition count>] "
+	"-p <output projection srs> [-f <fill value>] "
+	"<input raster path> <output raster path> \n";
 
 struct option longopts[] = {
 	{"analyze-partitions", no_argument, &analyze_partitions, 1},
@@ -93,7 +94,7 @@ int main(int argc, char *argv[])
 	}
 	
 	if (argc < 2) {
-		printf("USAGE\n");
+		printf("USAGE %s\n", usage);
 		return 0;
 	}
 
