@@ -51,7 +51,7 @@ bool driver_create_raster(shared_ptr<ProjectedRaster> in,
 		
 	srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
 		
-	out_proj = shared_ptr<Projection>(Transformer::convertProjection(SNSOID));
+	out_proj = shared_ptr<Projection>(Transformer::convertProjection((ProjCode)proj_code));
 
 	out_proj->setUnits(in_proj->units());
 	out_proj->setDatum(in_proj->datum());
@@ -66,6 +66,7 @@ bool driver_create_raster(shared_ptr<ProjectedRaster> in,
 						     shared_ptr<Projection>(out_proj->copy()),
 						     in->type ,
 						     in->pixel_size);
+	return result;
 
 
 }
@@ -74,6 +75,7 @@ bool driver_create_raster(shared_ptr<ProjectedRaster> in,
 int driver(string input_raster, 
 	   string output_filename, 
 	   string output_srs, 
+	   string resampler,
 	   string fillvalue,
 	   int partition_count)
 {
@@ -85,7 +87,7 @@ int driver(string input_raster,
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
 	MPI_Comm_size(MPI_COMM_WORLD, &process_count);
 
-	// Open input raster and check for errors
+	// Open Input raster and check for errors
 	if (rank == 0) {
 	  printf("Opening input raster...");
 	  fflush(stdout);
@@ -166,7 +168,7 @@ int driver(string input_raster,
 	}
 
 
-	extern int analyze_partitions;
+	int analyze_partitions = 0;
 	if (analyze_partitions == 1) {
 		for (int i = 0; i < partition_count; ++i) {
 			input_area = MapDestinationAreatoSource(out, in, part_areas.at(i));
@@ -189,30 +191,28 @@ int driver(string input_raster,
 
 	for (int i = first_index; i <= last_index; ++i) {
 		output_area = part_areas.at(i);
-		if (output_area.ul.x == output_area.ul.y) 
-			continue;
 		input_area = MapDestinationAreatoSource(out, in, output_area);
 		out_chunk = out->createAllocatedRasterChunk(output_area);
 		in_chunk = in->createRasterChunk(input_area);
 
 		if (in_chunk == NULL) { // break 
-			fprintf(stderr, "Input RasterChunk allocation error!\n");
+			fprintf(stderr, "Rank: %d: Input RasterChunk allocation error!\n", rank);
 			return 1;
 		}
 
 		if (out_chunk == NULL) { // break 
-			fprintf(stderr, "Output RasterChunk allocation error!\n");
+			fprintf(stderr, "Rank %d: Output RasterChunk allocation error!\n", rank);
 			return 1;
 		}
 		printf("%d,", i);
 		fflush(stdout);
-		if (ReprojectChunk(in_chunk, out_chunk) == false) {
-			fprintf(stderr, "Error reprojecting chunk #%d\n", i);
+		if (ReprojectChunk(in_chunk, out_chunk, resampler) == false) {
+			fprintf(stderr, "Rank %d, Error reprojecting chunk #%d\n", rank, i);
 		}
 
 		// Now write RasterChunk to output
 		if (out->writeRasterChunk(out_chunk) == false) {
-			fprintf(stderr, "Error writing chunk!\n");
+			fprintf(stderr, "Rank %d, Error writing chunk!\n", rank);
 		} 
 
 		
