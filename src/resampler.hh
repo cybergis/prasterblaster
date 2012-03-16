@@ -25,6 +25,27 @@
 namespace Resampler
 {	
 	template <typename T>
+	T Max(Coordinate input_ul,
+	      Coordinate input_lr,
+	      int input_column_count,
+	      T* input_pixels)
+	{
+		T temp = input_pixels[(int)input_ul.y * input_column_count + (int)input_ul.x];
+		T temp2 = 0;
+		for (int x = input_ul.x; x <= input_lr.x; ++x) {
+			for (int y = input_ul.y; y <= input_lr.y; ++y) {
+				temp2 = input_pixels[y * input_column_count + x];
+				
+				if (temp2 < temp) {
+					temp = temp2;
+				}
+			}
+		}
+
+		return temp;
+	}
+
+	template <typename T>
 	T Mean(Coordinate input_ul,
 	       Coordinate input_lr,
 	       int input_column_count,
