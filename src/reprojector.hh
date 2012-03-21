@@ -65,21 +65,21 @@ private:
 vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> destination,
 		       int partition_count);
 
-Area FindOutputArea(shared_ptr<ProjectedRaster> input,
+Area Minbox(shared_ptr<ProjectedRaster> input,
 		    shared_ptr<Projection> output_projection,
 		    double output_pixel_size);
 
-Area MapDestinationAreatoSource(shared_ptr<ProjectedRaster> source,
+Area Minbox(shared_ptr<ProjectedRaster> source,
 				shared_ptr<ProjectedRaster> destination,
 				Area destination_raster_area);
 
-bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination, string resampler_name);
+bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination, string fillvalue, string resampler_name);
 
 template <class pixelType>
-bool ReprojectChunkType(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination, pixelType (*resampler)(Coordinate, 
-															Coordinate,
-															int,
-															pixelType*))
+bool ReprojectChunkType(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination, pixelType fillvalue, pixelType (*resampler)(Coordinate, 
+																	     Coordinate,
+																	     int,
+																	     pixelType*))
 {
 
 	shared_ptr<Projection> outproj, inproj;
@@ -103,13 +103,12 @@ bool ReprojectChunkType(RasterChunk::RasterChunk *source, RasterChunk::RasterChu
 		for (int chunk_x = 0; chunk_x < destination->column_count_; ++chunk_x) {
 			temp1.x = chunk_x; 
 			temp1.y = chunk_y;
-			try {
-				pixelArea = rt.Transform(temp1);   /// Now makes sense.
-			} catch (std::runtime_error) {
-				continue;
-			}
+			
+			pixelArea = rt.Transform(temp1);
 
 			if (pixelArea.ul.x == -1.0) {
+			  // The pixel is outside of the projected area
+			  reinterpret_cast<pixelType*>(destination->pixels_)[chunk_x + chunk_y * destination->column_count_] = fillvalue;
 			  continue;
 			}
 

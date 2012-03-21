@@ -171,7 +171,7 @@ int driver(string input_raster,
 	int analyze_partitions = 0;
 	if (analyze_partitions == 1) {
 		for (int i = 0; i < partition_count; ++i) {
-			input_area = MapDestinationAreatoSource(out, in, part_areas.at(i));
+			input_area = Minbox(out, in, part_areas.at(i));
 			Area part = part_areas.at(i);
 			out_chunk = out->createEmptyRasterChunk(part_areas.at(i));
 			in_chunk = in->createEmptyRasterChunk(input_area);
@@ -191,7 +191,7 @@ int driver(string input_raster,
 
 	for (int i = first_index; i <= last_index; ++i) {
 		output_area = part_areas.at(i);
-		input_area = MapDestinationAreatoSource(out, in, output_area);
+		input_area = Minbox(out, in, output_area);
 		out_chunk = out->createAllocatedRasterChunk(output_area);
 		in_chunk = in->createRasterChunk(input_area);
 
@@ -206,7 +206,7 @@ int driver(string input_raster,
 		}
 		printf("%d,", i);
 		fflush(stdout);
-		if (ReprojectChunk(in_chunk, out_chunk, resampler) == false) {
+		if (ReprojectChunk(in_chunk, out_chunk, fillvalue, resampler) == false) {
 			fprintf(stderr, "Rank %d, Error reprojecting chunk #%d\n", rank, i);
 		}
 

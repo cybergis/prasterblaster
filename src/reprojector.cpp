@@ -17,6 +17,7 @@
 #include <cfloat>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <limits>
 #include <memory>
 #include <cstdint>
@@ -172,7 +173,7 @@ vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
 
 }
 
-Area FindOutputArea(shared_ptr<ProjectedRaster> input,
+Area Minbox(shared_ptr<ProjectedRaster> input,
 		      shared_ptr<Projection> output_projection,
 		      double output_pixel_size)
 {
@@ -245,7 +246,7 @@ Area FindOutputArea(shared_ptr<ProjectedRaster> input,
 	return geoarea;
 }
 
-Area MapDestinationAreatoSource(shared_ptr<ProjectedRaster> source,
+Area Minbox(shared_ptr<ProjectedRaster> source,
 				shared_ptr<ProjectedRaster> destination,
 				Area destination_raster_area)
 {
@@ -322,20 +323,22 @@ bool ParallelReprojection(shared_ptr<ProjectedRaster> source, shared_ptr<Project
 
 }
 
-bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination, string resampler_name)
+bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination, string fillvalue, string resampler_name)
 {
 	if (source->pixel_type_ != destination->pixel_type_) {
 		fprintf(stderr, "Source and destination chunks have different types!\n");
 		return false;
 	}
 
+	double fvalue = strtod(fillvalue.c_str(), NULL);
+	
 	switch (source->pixel_type_) 
 	{
 	case GDT_Byte:
-		return ReprojectChunkType<unsigned char>(source, destination, &(Resampler::Max<unsigned char>));
+		return ReprojectChunkType<unsigned char>(source, destination, (unsigned char)fvalue, &(Resampler::Max<unsigned char>));
 		break;
 	case GDT_UInt16:
-		return ReprojectChunkType<uint16_t>(source, destination, &(Resampler::Max<unsigned short>));
+		return ReprojectChunkType<uint16_t>(source, destination, (unsigned short)fvalue, &(Resampler::Max<unsigned short>));
 		break;
 	default:
 		fprintf(stderr, "Invalid type in ReprojectChunk!\n");
