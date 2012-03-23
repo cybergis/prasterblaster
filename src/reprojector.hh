@@ -165,8 +165,4 @@ bool ReprojectChunkType(RasterChunk::RasterChunk *source, RasterChunk::RasterChu
 	return true;
 }
 
-ProjectedRaster* GetOutputRaster(ProjectedRaster* input,
-				 Projection *out_proj,
-				 double out_pixel_size);
-
 #endif // REPROJECTOR_HH

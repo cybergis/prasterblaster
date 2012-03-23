@@ -373,7 +373,7 @@ bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *
 	return true;
 }
 
-void updateMinbox(double x, double y, Area *minbox) 
+void (double x, double y, Area *minbox) 
 {
 	if (x > -DBL_MAX && x < minbox->ul.x) 
 		minbox->ul.x = x;
@@ -446,24 +446,3 @@ void clampGeoCoordinate(Coordinate *c)
 }
 		    
 
-Area FindRasterExtent(shared_ptr<ProjectedRaster> raster,
-		      Area geographical_area)
-{
-
-	Area rasterArea;
-	double pixel_size = raster->pixel_size;
-	shared_ptr<Projection> projection(raster->getProjection());
-	Area projArea;// = FindProjectedExtent(projection, geographical_area, raster->pixel_size);
-	int rows = (int)((projArea.lr.x - projArea.ul.x) / pixel_size);
-	int cols = (int)((projArea.ul.y - projArea.lr.y) / pixel_size);
-	int first_row = (int)((raster->ul_x - projArea.ul.x) / pixel_size);
-	int first_col = 0;
-
-	rasterArea.ul.y = first_row;
-	rasterArea.ul.x = first_col;
-	rasterArea.lr.y = first_row + rows;
-	rasterArea.lr.x =  cols;
-
-	return rasterArea;
-
-}
