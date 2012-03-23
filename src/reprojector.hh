@@ -38,6 +38,17 @@
 using std::shared_ptr;
 using RasterChunk::RasterChunk;
 
+/** An enum Type
+ * Enumerates the types of resamplers available.
+ */
+enum RESAMPLER {
+	NEAREST,
+	MIN,
+	MAX
+};
+
+/*! Raster Coordinate transformation class */
+
 class RasterCoordTransformer
 {
 public:
@@ -69,7 +80,7 @@ Area ProjectedMinbox(shared_ptr<ProjectedRaster> input,
 		    shared_ptr<Projection> output_projection,
 		    double output_pixel_size);
 
-Area Minbox(shared_ptr<ProjectedRaster> source,
+Area RasterMinbox(shared_ptr<ProjectedRaster> source,
 				shared_ptr<ProjectedRaster> destination,
 				Area destination_raster_area);
 
@@ -137,7 +148,7 @@ bool ReprojectChunkType(RasterChunk::RasterChunk *source, RasterChunk::RasterChu
 			}
 			
 			// Perform resampling...
-			if ((ul_x <= lr_x) || (lr_y <= ul_x)) { // ul/lr do not enclose an area, use NN
+			if (resampler != NULL && (ul_x <= lr_x) || (lr_y <= ul_x)) { // ul/lr do not enclose an area, use NN
 				reinterpret_cast<pixelType*>(destination->pixels_)[chunk_x + chunk_y * destination->column_count_] = 
 				  reinterpret_cast<pixelType*>(source->pixels_)[ul_x + ul_y * source->column_count_];
 				continue;
