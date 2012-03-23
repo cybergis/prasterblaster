@@ -1,27 +1,67 @@
 
 
 * pRasterBlaster 
-*** Installation: 
-To configure build, run './configure CXX=mpiCC' in the source
-directory, where 'mpiCC' is replaced by the local c++ mpi
-wrapper. After running 'make', the binary will be called 'src/prasterblaster'. 
+*** Buildling: 
+Run the following commands in the source directory, be sure to set the MPICC variable to your c++ mpi wrapper:
 
-To run the included tests, first fetch the test data by changing the
-the 'tests/testdata' directory and run the 'getdata.sh' script. This
-will fetch some test rasters from USGS servers. To run the tests use
-the command 'tests/tests' from the pRasterBlaster directory.
+autoreconf -iv
+./configure MPICC=mpiCC
+make
+
 
 *** Use:
 The default binary is a simple program that will reproject rasters in
-parallel using mode statistical resampling. The program takes the following parameters:
+parallel using mode statistical resampling. The program takes the
+following parameters:
 
-src/prasterblaster <input_raster> <output_raster> <Projection>
+src/prasterblaster  [-n <partition count>] -p <output projection srs> [-f <fill value>] [-r resampler] <input raster path> <output raster path> 
+
+**** Option descriptions
++ -p, --projection=
+  The projection is specified using a proj.4 parameter string. For example:
+  -p "+proj=latlong"
+  specifies and unprojected dataset.
+  -p "+proj=moll"
+  specifies the Mollweide projection.
+
++ -n, --partition-count= 
+
+  This parameter specifies the number of partitions to divide the
+  rasters into.
+
+  For example:
+  -n 500 
+  specifies 500 partitions
+
+
++ -f, --fill-value=
+
+  This parameter specifies a value to assign to pixels outside of the
+  projected area.
+
+  For example: --fill-value=100 
+
+  Specifies the fill value to be 100. How the value is interpreted
+  depends on the type of the raster pixels. I.E. you specify a float
+  and the raster value is integral the fill value will be truncated.
+
++ -r, --resampler=
+
+  This parameter specifies a resampler to use to calculate output values.
+
+  Possible values: Min, Max, Mean, Mode, Bilinear, 
+
++ <input raster path>, <output raster path>
+
+  These specify the locations of input and output rasters. The input
+  must be in geotiff. The output will be written in geotiff.
+
 
 For example:
 
-src/prasterblaster tests/testdata/glc_geographic_30sec.img tests/testdata/glc_mollweide_30sec.tif Mollweide
+src/prasterblaster -f 254 -r Min -n 100 -p "+proj=moll" \
+                   tests/testdata/glc_geographic_30sec.tif \
+		   tests/testdata/glc_mollweide_30sec.tif 
 
-This will produce a raster in the Mollweide projection. Projections
-supported by this binary are Mollweide, Sinosoidal and
-Hammer. Additional projections can be used by making calls to the
-pRasterBlaster library.
+This will produce a raster in the Mollweide projection.
+
