@@ -18,9 +18,12 @@ src/prasterblaster  [-n <partition count>] -p <output projection srs> [-f <fill 
 
 **** Option descriptions
 + -p, --projection=
+
   The projection is specified using a proj.4 parameter string. For example:
+
   "-p "+proj=latlong""
   specifies and unprojected dataset.
+
   "-p "+proj=moll""
   specifies the Mollweide projection.
 
