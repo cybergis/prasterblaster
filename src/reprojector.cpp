@@ -373,7 +373,7 @@ bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *
 	return true;
 }
 
-void (double x, double y, Area *minbox) 
+void updateMinbox(double x, double y, Area *minbox) 
 {
 	if (x > -DBL_MAX && x < minbox->ul.x) 
 		minbox->ul.x = x;

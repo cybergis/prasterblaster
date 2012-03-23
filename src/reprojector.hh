@@ -38,7 +38,8 @@
 using std::shared_ptr;
 using RasterChunk::RasterChunk;
 
-/** An enum Type
+//! An enum 
+/*!
  * Enumerates the types of resamplers available.
  */
 enum RESAMPLER {
@@ -47,16 +48,46 @@ enum RESAMPLER {
 	MAX
 };
 
-/*! Raster Coordinate transformation class */
-
+//! Raster Coordinate transformation class */
+/*!
+  This class implements the transformation of raster coordinates between two raster spaces with different projections and scales.
+ */
 class RasterCoordTransformer
 {
 public:
+	//! A constructor
+	/*!  
+
+	  This constructor takes two initialized ProjectedRaster
+	  shared_ptrs and constructs a ready RasterCoordTransformer.
+	 */
 	RasterCoordTransformer(shared_ptr<ProjectedRaster> source, shared_ptr<ProjectedRaster> dest);
+
+        //! A constructor
+	/*!
+
+	  This constructor takes a shared_ptr to a source raster and
+	  three parameters that describe a destination raster: a
+	  projection, upper-left coordinate, and a pixel size in
+	  meters.
+
+	 */
 	RasterCoordTransformer(shared_ptr<ProjectedRaster> source,
 			       shared_ptr<Projection> destination_projection,
-			        Coordinate destination_ul,
+			       Coordinate destination_ul,
 			       double destination_pixel_size);
+
+	//! A constructor
+	/*! 
+
+	  This constructor takes six parameters. The first three
+	  describe the source raster: a projection, upper-left
+	  coordinate in projected coordinates, and a pixel size in meters.
+
+	  The second set of three parameters are the same as the first
+	  three but for the destination raster.
+
+	*/
 	RasterCoordTransformer(shared_ptr<Projection> source_projection,
 			       Coordinate source_ul,
 			       double source_pixel_size,
@@ -64,6 +95,19 @@ public:
 			       Coordinate destination_ul,
 			       double destination_pixel_size);
 	~RasterCoordTransformer();
+
+	//! A normal member taking a single argument and returning an Area struct.
+	/*
+
+	  This function takes a coordinate in the source raster space
+	  and maps is to an area in the destination raster space. The
+	  returned area consists of two points: an upper-left
+	  coordinate, and a lower-right. The coordinates are
+	  _inclusive_. So if the area consists of a single point, the
+	  upper-left == lower-right.
+
+	   \param source a Coordinate struct that specifies the point in the source raster space to map to the destination raster space.
+	*/
 	Area Transform(Coordinate source);
 private:
 	shared_ptr<Projection> src_proj, dest_proj;
@@ -72,6 +116,7 @@ private:
 	Coordinate destination_ul_;
 	double destination_pixel_size_;
 };
+
 
 vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> destination,
 		       int partition_count);
