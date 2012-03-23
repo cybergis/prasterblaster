@@ -56,14 +56,19 @@ src/prasterblaster  [-n <partition count>] -p <output projection srs> [-f <fill 
 
 + <input raster path>, <output raster path>
 
-  These specify the locations of input and output rasters. The input
-  must be in geotiff. The output will be written in geotiff.
+  These are file paths that specify the locations of input and output
+  rasters. The input must be in geotiff. The output will be written in
+  geotiff.
+
+  For example:
+
+  tests/testdata/input.tif 
 
 
 **** Examples:
 
-src/prasterblaster -f 254 -r Min -n 100 -p "+proj=moll" \
-                   tests/testdata/glc_geographic_30sec.tif \
+src/prasterblaster -f 254 -r Min -n 100 -p "+proj=moll" 
+                   tests/testdata/glc_geographic_30sec.tif
 		   tests/testdata/glc_mollweide_30sec.tif 
 
 This will produce a raster in the Mollweide projection.
