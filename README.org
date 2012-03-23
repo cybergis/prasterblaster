@@ -60,7 +60,7 @@ src/prasterblaster  [-n <partition count>] -p <output projection srs> [-f <fill 
   must be in geotiff. The output will be written in geotiff.
 
 
-For example:
+**** Examples:
 
 src/prasterblaster -f 254 -r Min -n 100 -p "+proj=moll" \
                    tests/testdata/glc_geographic_30sec.tif \
