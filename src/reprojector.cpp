@@ -14,6 +14,7 @@
  *
  */
 
+#include <algorithm>
 #include <cfloat>
 #include <cmath>
 #include <cstdio>
@@ -22,6 +23,7 @@
 #include <memory>
 #include <cstdint>
 #include <sstream>
+#include <string>
 #include <vector>
 
 #include <mpi.h>
@@ -246,7 +248,7 @@ Area ProjectedMinbox(shared_ptr<ProjectedRaster> input,
 	return geoarea;
 }
 
-Area Minbox(shared_ptr<ProjectedRaster> source,
+Area RasterMinbox(shared_ptr<ProjectedRaster> source,
 				shared_ptr<ProjectedRaster> destination,
 				Area destination_raster_area)
 {
@@ -270,7 +272,7 @@ Area Minbox(shared_ptr<ProjectedRaster> source,
 			temp = rt.Transform(c);
 
 			if (temp.ul.x == -1) {
-			  continue;
+				continue;
 			}
 
 			if (temp.lr.x > source_area.lr.x) {
@@ -331,11 +333,33 @@ bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *
 	}
 
 	double fvalue = strtod(fillvalue.c_str(), NULL);
+
+	std::transform(resampler_name.begin(), resampler_name.end(), resampler_name.begin(), ::tolower);
+
+	RESAMPLER resampler = MIN;
+
+	if (resampler_name == "min") {
+		resampler = MIN;
+	} else if (resampler_name == "max") {
+		resampler = MAX;
+	} else if (resampler_name == "nearest") {
+		resampler = NEAREST;
+	}
 	
 	switch (source->pixel_type_) 
 	{
 	case GDT_Byte:
-		return ReprojectChunkType<unsigned char>(source, destination, (unsigned char)fvalue, &(Resampler::Max<unsigned char>));
+		switch (resampler){
+		case MIN:
+			return ReprojectChunkType<unsigned char>(source, destination, (unsigned char)fvalue, &(Resampler::Min<unsigned char>));
+			break;
+		case MAX:
+			return ReprojectChunkType<unsigned char>(source, destination, (unsigned char)fvalue, &(Resampler::Max<unsigned char>));
+		case NEAREST:
+		default:
+			return ReprojectChunkType<unsigned char>(source, destination, (unsigned char)fvalue, NULL);
+			
+		}
 		break;
 	case GDT_UInt16:
 		return ReprojectChunkType<uint16_t>(source, destination, (unsigned short)fvalue, &(Resampler::Max<unsigned short>));
