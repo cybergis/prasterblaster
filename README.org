@@ -19,9 +19,9 @@ src/prasterblaster  [-n <partition count>] -p <output projection srs> [-f <fill 
 **** Option descriptions
 + -p, --projection=
   The projection is specified using a proj.4 parameter string. For example:
-  -p "+proj=latlong"
+  "-p "+proj=latlong""
   specifies and unprojected dataset.
-  -p "+proj=moll"
+  "-p "+proj=moll""
   specifies the Mollweide projection.
 
 + -n, --partition-count= 
@@ -30,7 +30,7 @@ src/prasterblaster  [-n <partition count>] -p <output projection srs> [-f <fill 
   rasters into.
 
   For example:
-  -n 500 
+  "-n 500"
   specifies 500 partitions
 
 
