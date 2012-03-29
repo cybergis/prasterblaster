@@ -227,7 +227,7 @@ Area ProjectedMinbox(shared_ptr<ProjectedRaster> input,
 				Coordinate temp;
 				
 				input_coord.x = x * input->getPixelSize() + input->ul_x;
-				input_coord.y = y * input->getPixelSize() * input->ul_y;
+				input_coord.y = y * input->getPixelSize() + input->ul_y;
 				
 				input_proj->inverse(input_coord.x, input_coord.y, &temp.x, &temp.y);
 				output_projection->forward(temp.x, temp.y, &temp.x, &temp.y);
