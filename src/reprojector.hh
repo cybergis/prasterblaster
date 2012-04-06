@@ -193,7 +193,7 @@ bool ReprojectChunkType(RasterChunk::RasterChunk *source, RasterChunk::RasterChu
 			}
 			
 			// Perform resampling...
-			if (resampler != NULL && (ul_x <= lr_x) || (lr_y <= ul_x)) { // ul/lr do not enclose an area, use NN
+			if (resampler != NULL && ((ul_x <= lr_x) || (lr_y <= ul_x))) { // ul/lr do not enclose an area, use NN
 				reinterpret_cast<pixelType*>(destination->pixels_)[chunk_x + chunk_y * destination->column_count_] = 
 				  reinterpret_cast<pixelType*>(source->pixels_)[ul_x + ul_y * source->column_count_];
 				continue;

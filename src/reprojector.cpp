@@ -175,77 +175,126 @@ vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
 
 }
 
+void SearchAndUpdate(Area input_area,
+		     shared_ptr<Projection> input_projection,
+		     shared_ptr<Projection> output_projection,
+		     double input_ulx,
+		     double input_uly,
+		     double input_pixel_size,
+		     Area *output_area)
+{
+	Coordinate input_coord;
+	Coordinate temp;
+
+	for (long x = input_area.ul.x; x <= input_area.lr.x; ++x) {
+		for (long y = input_area.ul.y; y >= input_area.lr.y; --y) {
+			input_coord.x = x * input_pixel_size + input_ulx;
+			input_coord.y = input_uly - (y * input_pixel_size);
+			
+			input_projection->inverse(input_coord.x, input_coord.y, &temp.x, &temp.y);
+			output_projection->forward(temp.x, temp.y, &temp.x, &temp.y);
+			
+			if (temp.x  < output_area->ul.x) 
+				output_area->ul.x = temp.x;
+			if (temp.y > output_area->ul.y)
+				output_area->ul.y = temp.y;
+			if (temp.x > output_area->lr.x) 
+				output_area->lr.x = temp.x;
+			if (temp.y < output_area->lr.y)
+				output_area->lr.y = temp.y;
+		}
+	}
+
+	return;
+}
+		     
+		     
+
 Area ProjectedMinbox(shared_ptr<ProjectedRaster> input,
 		      shared_ptr<Projection> output_projection,
 		      double output_pixel_size)
 {
-	Area geoarea; // Projected Area
+	Area ia; // Input area, projected coordinates
+	Area output_area; // Projected Area
 	shared_ptr<Projection> input_proj(input->getProjection());
-	vector<int> indices;
 	const int buffer = 2;
 	const int shrink = 50;
 	
-	geoarea.ul.x = geoarea.lr.y = DBL_MAX;
-	geoarea.ul.y = geoarea.lr.x = -DBL_MAX;
+	output_area.ul.x = output_area.lr.y = DBL_MAX;
+	output_area.ul.y = output_area.lr.x = -DBL_MAX;
 	
 	// Check the top of the raster
-	indices.push_back(0);
-	indices.push_back(input->getColCount());
-	indices.push_back(0);
-	indices.push_back(buffer);
+	ia.ul.x = 0;
+	ia.lr.x = input->getColCount() - 1;
+	ia.ul.y = input->getRowCount() - 1;
+	ia.lr.y = input->getRowCount() - 1 - buffer;
+	
+	SearchAndUpdate(ia,
+			input_proj,
+			output_projection,
+			input->ul_x,
+			input->ul_y,
+			input->getPixelSize(),
+			&output_area);
 
 	// Check the bottom of the raster
-	indices.push_back(0);
-	indices.push_back(input->getColCount());
-	if (input->getRowCount() - buffer < 0) {
-		indices.push_back(0);
-	} else {
-		indices.push_back(input->getRowCount()-buffer);
-	}
-	indices.push_back(input->getRowCount());
-	
+	ia.ul.x = 0;
+	ia.lr.x = input->getColCount() - 1;
+	ia.ul.y = buffer;
+	ia.lr.y = 0;
+
+	SearchAndUpdate(ia,
+			input_proj,
+			output_projection,
+			input->ul_x,
+			input->ul_y,
+			input->getPixelSize(),
+			&output_area);
+
 	// Check Left
-	indices.push_back(0);
-	indices.push_back(0);
-	indices.push_back(0);
-	indices.push_back(input->getRowCount());
+	ia.ul.x = 0;
+	ia.lr.x = buffer;
+	ia.ul.y = input->getRowCount() - 1;
+	ia.lr.y = 0;
+
+	SearchAndUpdate(ia,
+			input_proj,
+			output_projection,
+			input->ul_x,
+			input->ul_y,
+			input->getPixelSize(),
+			&output_area);
+
+
 
 	// Check right
-	if (input->getColCount() - buffer < 0) {
-		indices.push_back(0);
-	} else {
-		indices.push_back(input->getColCount() - buffer);
-	}
-	indices.push_back(input->getColCount());
-	indices.push_back(0);
-	indices.push_back(input->getRowCount());
+	ia.ul.x = input->getColCount() - 1;
+	ia.lr.x = input->getColCount() - 1;
+	ia.ul.y = input->getRowCount() - 1;
+	ia.lr.y = 0;
+	
+	SearchAndUpdate(ia,
+			input_proj,
+			output_projection,
+			input->ul_x,
+			input->ul_y,
+			input->getPixelSize(),
+			&output_area);
 
-	for (int i = 0; i < indices.size(); i += 4) {
-		for (int x = indices.at(i); x < indices.at(i+1); ++x) {
-			for (int y = indices.at(i+2); y < indices.at(i+3); ++y) {
-				Coordinate input_coord;
-				Coordinate temp;
-				
-				input_coord.x = x * input->getPixelSize() + input->ul_x;
-				input_coord.y = y * input->getPixelSize() + input->ul_y;
-				
-				input_proj->inverse(input_coord.x, input_coord.y, &temp.x, &temp.y);
-				output_projection->forward(temp.x, temp.y, &temp.x, &temp.y);
-				
-				if (temp.x  < geoarea.ul.x) 
-					geoarea.ul.x = temp.x;
-				if (temp.y > geoarea.ul.y)
-					geoarea.ul.y = temp.y;
-				if (temp.x > geoarea.lr.x) 
-					geoarea.lr.x = temp.x;
-				if (temp.y < geoarea.lr.y)
-					geoarea.lr.y = temp.y;
-				
-			}
-		}
-	}
+	return output_area;
+}
 
-	return geoarea;
+Area ProjectedMinbox(shared_ptr<Projection> input_projection,
+		double input_ul_x,
+		double input_ul_y,
+		double input_pixel_size,
+		shared_ptr<Projection> output_projection,
+		double output_ul_x,
+		double output_ul_y,
+		double output_pixel_size)
+{
+	
+
 }
 
 Area RasterMinbox(shared_ptr<ProjectedRaster> source,
