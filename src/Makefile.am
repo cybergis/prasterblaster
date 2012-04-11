@@ -11,7 +11,7 @@ librasterblaster_a_SOURCES = projectedraster.cpp \
 librasterblaster_a_LIBADD =  gctp_cpp/libgctp_cpp.a
 
 bin_PROGRAMS = prasterblaster
-prasterblaster_CXXFLAGS = -g -std=c++0x
+prasterblaster_CXXFLAGS = -g 
 prasterblaster_LDFLAGS = $(all_libraries)  -Lgctp_cpp
 prasterblaster_LDADD = librasterblaster.a gctp_cpp/libgctp_cpp.a -lgdal
 prasterblaster_SOURCES =  main.cpp 
