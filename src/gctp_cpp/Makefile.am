@@ -9,8 +9,7 @@ noinst_LIBRARIES = libgctp_cpp.a
 AM_CXXFLAGS = -W -Wall -Wextra -Wcast-align \
                 -Wpointer-arith -Wsign-compare -g\
                 -Wformat=2 -Wno-format-y2k  -Wmissing-braces -Wparentheses \
-                -Wtrigraphs -std=c++0x \
-                -Wstrict-aliasing=2 -Werror
+                -Wtrigraphs -Wstrict-aliasing=2 -Werror
 
 libgctp_cpp_CXXFLAGS = -fPIC
 libgctp_cpp_a_SOURCES = alaskaconformal.cpp \
