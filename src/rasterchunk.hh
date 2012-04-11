@@ -18,14 +18,11 @@
 #ifndef RASTERCHUNK_HH_
 #define RASTERCHUNK_HH_
 
-#include <memory>
-
 #include <gdal_priv.h>
 
 #include "gctp_cpp/projection.h"
 #include "gctp_cpp/coordinate.h"
-
-using std::shared_ptr;
+#include "sharedptr.hh"
 
 namespace RasterChunk {
 

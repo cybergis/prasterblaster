@@ -1,13 +1,19 @@
 # Filename: configure.ac
 # Author: David Mattli <dmattli@usgs.gov
 # License: PUBLIC DOMAIN
-
+# Portions from to
 
 AC_INIT([prasterblaster], [0.01], [dmattli@usgs.gov])  
 	 	
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])  
 AC_PROG_LIBTOOL
 AC_CONFIG_MACRO_DIR([m4])
+
+# Check for programs
+AC_PROG_CXX
+AC_PROG_INSTALL
+
+AC_LANG([C++])
 	 	
 AC_ARG_WITH(gdal-incdir,
   AS_HELP_STRING( [--with-gdal-incdir=path],
@@ -32,6 +38,25 @@ AC_SUBST(GDAL_CPPFLAGS)
 AC_SUBST(GDAL_CFLAGS)
 CPPFLAGS="${CPPFLAGS} ${GDAL_CPPFLAGS}"
 CXXFLAGS="$CXXFLAGS $GDAL_CXXFLAGS"
+
+
+dnl Check for shared_ptr
+AC_MSG_CHECKING([for std::shared_ptr])
+AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM([[#include <memory>]],
+                     [[std::shared_ptr<int> test_shared_ptr;]])],
+    [AC_MSG_RESULT([yes])
+     AC_DEFINE_UNQUOTED([HAVE_STD_SHARED_PTR], 1, [Define to 1 if you have std::shared_ptr.])],
+    [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <tr1/memory>]],
+                                        [[std::tr1::shared_ptr<int> test_shared_ptr;]])],
+         [AC_MSG_RESULT([yes])
+          AC_DEFINE_UNQUOTED([HAVE_TR1_SHARED_PTR], 1, [Define to 1 if you have std::tr1::shared_ptr.])],
+         [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <boost/shared_ptr.hpp>]],
+                                             [[boost::shared_ptr<int> test_shared_ptr;]])],
+            [AC_MSG_RESULT([yes])
+             AC_DEFINE_UNQUOTED([HAVE_BOOST_SHARED_PTR], 1, [Define to 1 if you have boost::shared_ptr.])],
+            [AC_MSG_RESULT([no])
+             AC_MSG_ERROR([configure cannot find shared_ptr.])])])])
 
 AC_PROG_CC([mpicc])
 AC_PROG_CXX([mpiCC mpiCXX mpic++])

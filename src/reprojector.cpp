@@ -20,7 +20,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <limits>
-#include <memory>
 #include <cstdint>
 #include <sstream>
 #include <string>
@@ -36,9 +35,7 @@
 
 #include "reprojector.hh"
 #include "resampler.hh"
-
-
-using std::shared_ptr;
+#include "sharedptr.hh"
 
 
 RasterCoordTransformer::RasterCoordTransformer(shared_ptr<ProjectedRaster> source,
@@ -150,10 +147,10 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 	return value;
 }
 
-vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
+std::vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
 			       int partition_count)
 {
-	vector<Area> partitions(partition_count);
+	std::vector<Area> partitions(partition_count);
 	int chunk_size = source->getRowCount() / partition_count;
 	Area temp;
 	
@@ -366,7 +363,7 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
 bool ParallelReprojection(shared_ptr<ProjectedRaster> source, shared_ptr<ProjectedRaster> destination, 
 			  int rank, int process_count)
 {
-	vector<Area> parts = PartitionByCount(destination, process_count);
+	std::vector<Area> parts = PartitionByCount(destination, process_count);
 	int parts_per_process = parts.size() / process_count;
 	int leftover = parts.size() % process_count;
 

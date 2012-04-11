@@ -4,8 +4,7 @@
 
 #include "driver.hh"
 #include "projectedraster.hh"
-
-using std::shared_ptr;
+#include "sharedptr.hh"
 
 static string test_dir = "tests/testdata/";
 static string output_dir = "tests/testoutput/";

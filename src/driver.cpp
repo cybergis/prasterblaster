@@ -20,17 +20,17 @@
 
 #include <mpi.h>
 
+#include <gdal_priv.h>
+#include <ogr_spatialref.h>
+
 #include "gctp_cpp/projection.h"
 #include "gctp_cpp/transformer.h"
 #include "gctp_cpp/mollweide.h"
 #include "projectedraster.hh"
 #include "rasterchunk.hh"
 #include "reprojector.hh"
+#include "sharedptr.hh"
 
-#include <gdal_priv.h>
-#include <ogr_spatialref.h>
-
-using std::shared_ptr;
 
 bool driver_create_raster(shared_ptr<ProjectedRaster> in,
 			 string output_filename,

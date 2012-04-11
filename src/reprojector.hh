@@ -23,7 +23,6 @@
 #define REPROJECTOR_HH
 
 #include <limits>
-#include <memory>
 #include <stdexcept>
 #include <vector>
 
@@ -34,8 +33,8 @@
 #include "projectedraster.hh"
 #include "rasterchunk.hh"
 #include "resampler.hh"
+#include "sharedptr.hh"
 
-using std::shared_ptr;
 using RasterChunk::RasterChunk;
 
 //! An enum 
@@ -118,7 +117,7 @@ private:
 };
 
 
-vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> destination,
+std::vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> destination,
 		       int partition_count);
 
 Area ProjectedMinbox(shared_ptr<ProjectedRaster> input,

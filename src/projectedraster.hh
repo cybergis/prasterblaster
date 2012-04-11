@@ -17,7 +17,6 @@
 #ifndef RASTER_HH
 #define RASTER_HH
 
-#include <memory>
 #include <string>
 
 #include <gdal.h>
@@ -29,11 +28,9 @@
 #include "gctp_cpp/transformer.h"
 
 #include "rasterchunk.hh"
+#include "sharedptr.hh"
 
-using namespace std; // Don't do this :(
-
-using std::shared_ptr;
-
+using std::string;
 
 struct Area {
 	Coordinate ul;

@@ -38,17 +38,15 @@
 #include "gctp_cpp/utm.h"
 #include "reprojector.hh"
 #include "rasterchunk.hh"
+#include "sharedptr.hh"
 
 #include "projectedraster.hh"
 
-using namespace std;
-using std::shared_ptr;
-
+using std::string;
 
 ProjectedRaster::ProjectedRaster(string _filename)
 {
 	OGRSpatialReference sr;
-	size_t found;
 
 	filename = _filename;
 	dataset = 0;
