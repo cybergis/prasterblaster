@@ -35,8 +35,6 @@
 #include "resampler.hh"
 #include "sharedptr.hh"
 
-using RasterChunk::RasterChunk;
-
 //! An enum 
 /*!
  * Enumerates the types of resamplers available.
