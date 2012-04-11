@@ -10,7 +10,8 @@ AC_PROG_LIBTOOL
 AC_CONFIG_MACRO_DIR([m4])
 
 # Check for programs
-AC_PROG_CXX
+AC_PROG_CXX([mpiCC mpiCXX mpic++])
+AC_PROG_CPP
 AC_PROG_INSTALL
 
 AC_LANG([C++])
@@ -58,9 +59,6 @@ AC_COMPILE_IFELSE(
             [AC_MSG_RESULT([no])
              AC_MSG_ERROR([configure cannot find shared_ptr.])])])])
 
-AC_PROG_CC([mpicc])
-AC_PROG_CXX([mpiCC mpiCXX mpic++])
-AC_PROG_CPP
 
 # Check for GDAL library and headers
 AC_CHECK_HEADER(gdal.h, [], [echo 'gdal.h not found! Set --with-gdal-incdir=path'; exit])
