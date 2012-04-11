@@ -20,7 +20,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <limits>
-#include <cstdint>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -408,7 +407,7 @@ bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *
 		}
 		break;
 	case GDT_UInt16:
-		return ReprojectChunkType<uint16_t>(source, destination, (unsigned short)fvalue, &(Resampler::Max<unsigned short>));
+		return ReprojectChunkType<unsigned short>(source, destination, (unsigned short)fvalue, &(Resampler::Max<unsigned short>));
 		break;
 	default:
 		fprintf(stderr, "Invalid type in ReprojectChunk!\n");
