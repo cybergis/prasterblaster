@@ -40,6 +40,29 @@ AC_SUBST(GDAL_CFLAGS)
 CPPFLAGS="${CPPFLAGS} ${GDAL_CPPFLAGS}"
 CXXFLAGS="$CXXFLAGS $GDAL_CXXFLAGS"
 
+LIBS="$LIBS -lm"
+
+dnl Check for sincos
+AC_MSG_CHECKING([for sincos])
+AC_LINK_IFELSE([
+AC_LANG_SOURCE([[
+#include <stdio.h>
+#include <math.h>
+int main (void) {
+double s, c;
+scanf ("%f", &s);
+sincos (s, &s, &c);
+printf ("%f %f", s, c);
+return 0;
+}
+]])
+],[
+  AC_MSG_RESULT([yes])
+  AC_DEFINE(HAVE_SINCOS, 1, [Define if the sincos() function is available])
+],[
+  AC_MSG_RESULT([no])
+])
+
 
 dnl Check for shared_ptr
 AC_MSG_CHECKING([for std::shared_ptr])

@@ -5,6 +5,8 @@
 #include <math.h>
 //#include "proj.h"
 
+#include "config.h"
+
 #define PI 	3.141592653589793238
 #define HALF_PI (PI*0.5)
 #define TWO_PI 	(PI*2.0)
@@ -81,12 +83,14 @@ S. Nelson, EROS		Jan, 1998	Changed misspelled error message
 #define MAXLONG 2147483647.
 #define DBLLONG 4.61168601e18
 
+#if HAVE_SINCOS == 0
 /* Function to calculate the sine and cosine in one call.  Some computer
    systems have implemented this function, resulting in a faster implementation
    than calling each function separately.  It is provided here for those
    computer systems which don`t implement this function
   ----------------------------------------------------*/
 void sincos(double val,double *sin_val,double *cos_val );
+#endif // HAVE_SINCOS
 
 /* Function to eliminate roundoff errors in asin
 ----------------------------------------------*/

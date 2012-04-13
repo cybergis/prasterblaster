@@ -1,11 +1,16 @@
+
+#include "config.h"
+
 #include "cproj.h"
 
+#if HAVE_SINCOS == 0
 void sincos(double val,double *sin_val,double *cos_val )
 {
  *sin_val = sin(val);
  *cos_val = cos(val);
  return;
 }
+#endif // HAVE_SINCOS
 
 double asinz ( double con )
 {
