@@ -147,24 +147,27 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 }
 
 std::vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
-			       int partition_count)
+				   int partition_count)
 {
 	std::vector<Area> partitions(partition_count);
-	int chunk_size = source->getRowCount() / partition_count;
+	int axis_partitions = sqrt((double)partition_count);
+	int chunk_width = source->getColCount() / axis_partitions;
+	int chunk_height = source->getRowCount() / axis_partitions;
 	Area temp;
-	
-	for (int i = 0; i < (int)partitions.size(); ++i) {
-		temp.ul.x = 0;
-		temp.ul.y = chunk_size * i;
 
-		temp.lr.x = source->getColCount() - 1;
-		temp.lr.y = (chunk_size * (i+1)) - 1;
+	// Test if either chunk dimension is zero, if so make as many partitions as we can (sigle pixels)
+	if (chunk_width == 0) {
+		
+	} else if (chunk_height == 0) {
 
-		partitions.at(i) = temp;
 	}
-
-//	partitions.back().lr.x = source->getColCount() - 1;
-	partitions.back().lr.y = source->getRowCount() - 1;
+	
+	for (int i = 0; i < axis_partitions; ++i) {
+		for (int j = 0; j < axis_partitions; ++j) {
+			
+		}
+	}
+	
 
 	return partitions;
 
@@ -207,14 +210,12 @@ void SearchAndUpdate(Area input_area,
 		     
 
 Area ProjectedMinbox(shared_ptr<ProjectedRaster> input,
-		      shared_ptr<Projection> output_projection,
-		      double output_pixel_size)
+		     shared_ptr<Projection> output_projection)
 {
 	Area ia; // Input area, projected coordinates
 	Area output_area; // Projected Area
 	shared_ptr<Projection> input_proj(input->getProjection());
 	const int buffer = 2;
-	const int shrink = 50;
 	
 	output_area.ul.x = output_area.lr.y = DBL_MAX;
 	output_area.ul.y = output_area.lr.x = -DBL_MAX;
@@ -280,19 +281,6 @@ Area ProjectedMinbox(shared_ptr<ProjectedRaster> input,
 	return output_area;
 }
 
-Area ProjectedMinbox(shared_ptr<Projection> input_projection,
-		double input_ul_x,
-		double input_ul_y,
-		double input_pixel_size,
-		shared_ptr<Projection> output_projection,
-		double output_ul_x,
-		double output_ul_y,
-		double output_pixel_size)
-{
-	
-
-}
-
 Area RasterMinbox(shared_ptr<ProjectedRaster> source,
 				shared_ptr<ProjectedRaster> destination,
 				Area destination_raster_area)
@@ -303,7 +291,6 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
 				  Coordinate(destination->ul_x, destination->ul_y, UNDEF), destination->getPixelSize());
 	Area temp;
 	Coordinate c;
-        int first(0), last(0);
 
 	source_area.ul.x = source_area.ul.y = DBL_MAX;
 	source_area.lr.y = source_area.lr.x = -DBL_MAX;
@@ -357,17 +344,6 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
 	}
 
 	return source_area;
-}
-
-bool ParallelReprojection(shared_ptr<ProjectedRaster> source, shared_ptr<ProjectedRaster> destination, 
-			  int rank, int process_count)
-{
-	std::vector<Area> parts = PartitionByCount(destination, process_count);
-	int parts_per_process = parts.size() / process_count;
-	int leftover = parts.size() % process_count;
-
-	return true;
-
 }
 
 bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *destination, string fillvalue, string resampler_name)

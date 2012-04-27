@@ -93,8 +93,8 @@ bool ProjectedRaster::CreateRaster(string _filename,
 	int num_cols, num_rows;
 
 	Area out_area =  ProjectedMinbox(input,
-					 output_proj,
-					 _pixel_size);
+					 output_proj);
+				
 	ulx = out_area.ul.x;
 	uly = out_area.ul.y;
 

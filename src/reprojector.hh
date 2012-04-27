@@ -119,8 +119,8 @@ std::vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> destination,
 		       int partition_count);
 
 Area ProjectedMinbox(shared_ptr<ProjectedRaster> input,
-		    shared_ptr<Projection> output_projection,
-		    double output_pixel_size);
+		     shared_ptr<Projection> output_projection);
+
 
 Area RasterMinbox(shared_ptr<ProjectedRaster> source,
 				shared_ptr<ProjectedRaster> destination,
