@@ -24,7 +24,6 @@
 #include <string>
 #include <vector>
 
-#include <mpi.h>
 #include <gdal.h>
 #include <gdal_priv.h>
 
@@ -79,7 +78,6 @@ RasterCoordTransformer::RasterCoordTransformer(shared_ptr<Projection> source_pro
 	src_proj = source_projection;
 	source_ul_ = source_ul;
 	source_pixel_size_ = source_pixel_size;
-	
 	dest_proj = destination_projection;
 	destination_ul_ = destination_ul;
 	destination_pixel_size_ = destination_pixel_size;
@@ -149,22 +147,30 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 std::vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
 				   int partition_count)
 {
-	std::vector<Area> partitions(partition_count);
-	int axis_partitions = sqrt((double)partition_count);
-	int chunk_width = source->getColCount() / axis_partitions;
-	int chunk_height = source->getRowCount() / axis_partitions;
+	Area noval(-1, -1, -1, -1);
+	std::vector<Area> partitions(partition_count, noval);
+	int chunk_width = source->getColCount() / partition_count;
+	int chunk_height = source->getRowCount() / partition_count;
+	int part_rows = source->getRowCount() / chunk_height;
+	int part_cols = source->getColCount() / chunk_width;
 	Area temp;
 
-	// Test if either chunk dimension is zero, if so make as many partitions as we can (sigle pixels)
+	// Test if either chunk dimension is zero, if so make as many partitions as we can (single pixels)
 	if (chunk_width == 0) {
 		
 	} else if (chunk_height == 0) {
 
 	}
 	
-	for (int i = 0; i < axis_partitions; ++i) {
-		for (int j = 0; j < axis_partitions; ++j) {
+	for (int i = 0; i < part_cols; ++i) {
+		for (int j = 0; j < part_rows; ++j) {
+			temp.ul.x = (i * chunk_width);
+			temp.ul.y = (i * chunk_height);
 			
+			temp.lr.x = (i * chunk_width) + chunk_width - 1;
+			temp.lr.y = (i * chunk_height) + chunk_height - 1;
+			
+			partitions.at(i) = temp;
 		}
 	}
 	
@@ -282,8 +288,8 @@ Area ProjectedMinbox(shared_ptr<ProjectedRaster> input,
 }
 
 Area RasterMinbox(shared_ptr<ProjectedRaster> source,
-				shared_ptr<ProjectedRaster> destination,
-				Area destination_raster_area)
+		  shared_ptr<ProjectedRaster> destination,
+		  Area destination_raster_area)
 {
 	
 	Area source_area;
