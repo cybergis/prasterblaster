@@ -22,7 +22,6 @@ HEADERS += projectedraster.hh \
            resampler.hh \
            shared_ptr.hh
 
-HAVE_TR1_SHARED_PTR= 1
 QMAKE_CXXFLAGS += -DHAVE_TR1_SHARED_PTR
 
 symbian {
