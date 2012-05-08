@@ -99,6 +99,11 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
+	if (partition_count <= 0) {
+		fprintf(stderr, "Invalid partition count!\n");
+		return 1;
+	}
+
 	if (driver(argv[argc-2], argv[argc-1], output_srs, resampler, fillvalue, partition_count) != 0) {
 		MPI_Abort(MPI_COMM_WORLD, 1);
 		return 1;
