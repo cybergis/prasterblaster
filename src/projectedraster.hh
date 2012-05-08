@@ -33,6 +33,9 @@
 using std::string;
 
 struct Area {
+	Area() {}
+	Area(double ulx, double uly, double lrx, double lry) : ul(ulx, uly, UNDEF), lr(lrx, lry, UNDEF) {}
+		
 	Coordinate ul;
 	Coordinate lr;
 	ProjUnit units;
