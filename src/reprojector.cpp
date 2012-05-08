@@ -148,36 +148,45 @@ std::vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
 				   int partition_count)
 {
 	Area noval(-1, -1, -1, -1);
-	std::vector<Area> partitions(partition_count, noval);
+	std::vector<Area> partitions(partition_count * partition_count, noval);
 	int chunk_width = source->getColCount() / partition_count;
 	int chunk_height = source->getRowCount() / partition_count;
-	int part_rows = source->getRowCount() / chunk_height;
-	int part_cols = source->getColCount() / chunk_width;
-	Area temp;
 
 	// Test if either chunk dimension is zero, if so make as many partitions as we can (single pixels)
 	if (chunk_width == 0) {
-		
-	} else if (chunk_height == 0) {
-
+		chunk_width = 1;
 	}
-	
-	for (int i = 0; i < part_cols; ++i) {
-		for (int j = 0; j < part_rows; ++j) {
-			temp.ul.x = (i * chunk_width);
+
+	if (chunk_height == 0) {
+		chunk_height = 1;
+	}
+
+	int part_rows = source->getRowCount() / chunk_height;
+	int part_cols = source->getColCount() / chunk_width;
+	Area temp;
+	printf("Size o vector: %lu\n", partitions.size());
+	printf("Raster size: %d cols %d rows\n", part_rows, part_cols);
+	for (int i = 0; i < part_rows; ++i) {
+		for (int j = 0; j < part_cols; ++j) {
+			temp.ul.x = (j * chunk_width);
 			temp.ul.y = (i * chunk_height);
+						
+			temp.lr.x = temp.ul.x + chunk_width - 1; 
+			temp.lr.y = temp.ul.y + chunk_height - 1;
 			
-			temp.lr.x = (i * chunk_width) + chunk_width - 1;
-			temp.lr.y = (i * chunk_height) + chunk_height - 1;
-			
-			partitions.at(i) = temp;
+			if (j == part_cols-1) {
+				temp.lr.x = source->getColCount()-1;
+			}
+
+			if (i == part_rows-1) {
+				temp.lr.y = source->getRowCount()-1;
+			}
+
+			partitions.at(i * part_rows + j) = temp;
 		}
 	}
-	
 
 	return partitions;
-
-
 }
 
 void SearchAndUpdate(Area input_area,
