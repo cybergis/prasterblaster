@@ -20,7 +20,7 @@ HEADERS += projectedraster.hh \
            rasterchunk.hh \
            reprojector.hh \
            resampler.hh \
-           shared_ptr.hh
+           sharedptr.hh
 
 QMAKE_CXXFLAGS += -DHAVE_TR1_SHARED_PTR
 
