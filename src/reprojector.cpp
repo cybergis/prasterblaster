@@ -34,6 +34,7 @@
 #include "reprojector.hh"
 #include "resampler.hh"
 #include "sharedptr.hh"
+#include "quadtree.hh"
 
 
 RasterCoordTransformer::RasterCoordTransformer(shared_ptr<ProjectedRaster> source,
@@ -148,45 +149,12 @@ std::vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
 				   int partition_count)
 {
 	Area noval(-1, -1, -1, -1);
-	std::vector<Area> partitions(partition_count * partition_count, noval);
-	int chunk_width = source->getColCount() / partition_count;
-	int chunk_height = source->getRowCount() / partition_count;
+	size_t area_size = source->getColCount() * source->getRowCount();
+	size_t partition_area = area_size / partition_count;
+	
+	QuadTree tree(source->getRowCount(), source->getColCount(), partition_area);
 
-	// Test if either chunk dimension is zero, if so make as many partitions as we can (single pixels)
-	if (chunk_width == 0) {
-		chunk_width = 1;
-	}
-
-	if (chunk_height == 0) {
-		chunk_height = 1;
-	}
-
-	int part_rows = source->getRowCount() / chunk_height;
-	int part_cols = source->getColCount() / chunk_width;
-	Area temp;
-	printf("Size o vector: %lu\n", partitions.size());
-	printf("Raster size: %d cols %d rows\n", part_rows, part_cols);
-	for (int i = 0; i < part_rows; ++i) {
-		for (int j = 0; j < part_cols; ++j) {
-			temp.ul.x = (j * chunk_width);
-			temp.ul.y = (i * chunk_height);
-						
-			temp.lr.x = temp.ul.x + chunk_width - 1; 
-			temp.lr.y = temp.ul.y + chunk_height - 1;
-			
-			if (j == part_cols-1) {
-				temp.lr.x = source->getColCount()-1;
-			}
-
-			if (i == part_rows-1) {
-				temp.lr.y = source->getRowCount()-1;
-			}
-
-			partitions.at(i * part_rows + j) = temp;
-		}
-	}
-
-	return partitions;
+	return tree.collectLeaves();
 }
 
 void SearchAndUpdate(Area input_area,
@@ -205,7 +173,8 @@ void SearchAndUpdate(Area input_area,
 			input_coord.x = x * input_pixel_size + input_ulx;
 			input_coord.y = input_uly - (y * input_pixel_size);
 			
-			input_projection->inverse(input_coord.x, input_coord.y, &temp.x, &temp.y);
+			input_projection->inverse(input_coord.x, 
+						  input_coord.y, &temp.x, &temp.y);
 			output_projection->forward(temp.x, temp.y, &temp.x, &temp.y);
 			
 			if (temp.x  < output_area->ul.x) 

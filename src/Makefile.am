@@ -6,7 +6,8 @@ librasterblaster_a_SOURCES = projectedraster.cpp \
 	         reprojector.cpp \
 		 resampler.cpp \
                  rasterchunk.cpp \
-		 driver.cpp
+                 quadtree.cpp \
+		 driver.cpp 
 #librasterblaster_a_LDFLAGS = $(all_libraries)  -Lgctp_cpp
 librasterblaster_a_LIBADD =  gctp_cpp/libgctp_cpp.a
 

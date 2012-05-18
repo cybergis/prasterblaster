@@ -196,12 +196,22 @@ int driver(string input_raster,
 
 	for (int i = first_index; i <= last_index; ++i) {
 		output_area = part_areas.at(i);
+
+		// Swap y dimension
+		output_area.ul.y = out->getRowCount() - output_area.ul.y - 1;
+		output_area.lr.y = out->getRowCount() - output_area.lr.y - 1;
+		if (output_area.ul.x == -1) {
+			continue;
+		}
+		
 		input_area = RasterMinbox(out, in, output_area);
 		out_chunk = out->createAllocatedRasterChunk(output_area);
 		in_chunk = in->createRasterChunk(input_area);
 
 		if (in_chunk == NULL) { // break 
 			fprintf(stderr, "Rank: %d: Input RasterChunk allocation error!\n", rank);
+			fprintf(stderr, "      %f %f %f %f\n", input_area.ul.x, input_area.ul.y,
+				input_area.lr.x, input_area.lr.y);
 			return 1;
 		}
 
