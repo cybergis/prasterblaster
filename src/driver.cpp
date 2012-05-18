@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cctype>
+#include <sstream>
 
 #include <mpi.h>
 
@@ -92,6 +93,10 @@ int driver(string input_raster,
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
 	MPI_Comm_size(MPI_COMM_WORLD, &process_count);
 
+	std::stringstream sout;
+	sout << rank;
+	output_filename = output_filename + sout.str();
+	
 	// Open Input raster and check for errors
 	if (rank == 0) {
 	  printf("Opening input raster...");
@@ -110,7 +115,7 @@ int driver(string input_raster,
         }
 
 	// If we are rank 0, create the output projection and raster
-	if (rank == 0) {
+	if (0 == 0) {
 		bool result = driver_create_raster(in, output_filename, output_srs);
 		if (result == false) {
 			fprintf(stderr, "Failed to create output raster!\n");
@@ -127,7 +132,7 @@ int driver(string input_raster,
 	
 	
 	// Now we re-open the output raster on each node.
-	if (rank == 0) {
+	if (0 == 0) {
 		printf("Opening new output raster...");
 		fflush(stdout);
 	}
@@ -219,8 +224,16 @@ int driver(string input_raster,
 			fprintf(stderr, "Rank %d: Output RasterChunk allocation error!\n", rank);
 			return 1;
 		}
-		printf("%d,", i);
-		fflush(stdout);
+		int t = last_index - first_index;
+		if (i % (t/100) == 0) {
+			int c = i - first_index;
+			for (int k=0; k<rank; ++k) {
+				printf("\t\t\t\t");
+			}
+			printf("[Rank %d] %d/%d {%.2f%%}\n", 
+			       rank, c, t, 100*((double)c/(double)t));
+			fflush(stdout);
+		}
 		if (ReprojectChunk(in_chunk, out_chunk, fillvalue, resampler) == false) {
 			fprintf(stderr, "Rank %d, Error reprojecting chunk #%d\n", rank, i);
 		}
