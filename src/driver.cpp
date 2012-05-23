@@ -89,13 +89,16 @@ int driver(string input_raster,
 	int process_count = 1;
 	shared_ptr<ProjectedRaster> in, out;
 	shared_ptr<Projection> in_proj, out_proj;
+	string final_output_filename = output_filename;
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
 	MPI_Comm_size(MPI_COMM_WORLD, &process_count);
 
 	std::stringstream sout;
 	sout << rank;
-	output_filename = output_filename + sout.str();
+	if (rank != 0) {
+		output_filename = output_filename + sout.str();
+	}
 	
 	// Open Input raster and check for errors
 	if (rank == 0) {
@@ -106,33 +109,28 @@ int driver(string input_raster,
 	if (rank == 0) 
 	  printf("done\n");
 
-        if (in->isReady() == true) {
-
-        } else {
+        if (in->isReady() == false) {
                 fprintf(stderr, "Error opening input raster\n");
 		MPI_Abort(MPI_COMM_WORLD, -1);
                 return 1;
         }
 
-	// If we are rank 0, create the output projection and raster
-	if (0 == 0) {
-		bool result = driver_create_raster(in, output_filename, output_srs);
-		if (result == false) {
-			fprintf(stderr, "Failed to create output raster!\n");
-			MPI_Abort(MPI_COMM_WORLD, -1);
-		} else {
-			printf("done\n");
-		}
-		printf("Syncing nodes...");
-		MPI_Barrier(MPI_COMM_WORLD);
-		printf("done\n");
+	// Create an output raster for each process
+	bool result = driver_create_raster(in, output_filename, output_srs);
+	if (result == false) {
+		fprintf(stderr, "Failed to create output raster!\n");
+		MPI_Abort(MPI_COMM_WORLD, -1);
 	} else {
-		MPI_Barrier(MPI_COMM_WORLD);
+		printf("done\n");
 	}
+	printf("Syncing nodes...");
+	MPI_Barrier(MPI_COMM_WORLD);
+	printf("done\n");
+	
 	
 	
 	// Now we re-open the output raster on each node.
-	if (0 == 0) {
+	if (rank == 0) {
 		printf("Opening new output raster...");
 		fflush(stdout);
 	}
@@ -205,6 +203,7 @@ int driver(string input_raster,
 		// Swap y dimension
 		output_area.ul.y = out->getRowCount() - output_area.ul.y - 1;
 		output_area.lr.y = out->getRowCount() - output_area.lr.y - 1;
+		part_areas.at(i) = output_area;
 		if (output_area.ul.x == -1) {
 			continue;
 		}
@@ -225,7 +224,7 @@ int driver(string input_raster,
 			return 1;
 		}
 		int t = last_index - first_index;
-		if (i % (t/100) == 0) {
+		if ((t/100) == 0 || i % (t/100) == 0) {
 			int c = i - first_index;
 			for (int k=0; k<rank; ++k) {
 				printf("\t\t\t\t");
@@ -252,6 +251,29 @@ int driver(string input_raster,
 		in_chunk = NULL;
 
 	}
+
+	// Now copy temporary rasters to rank 0's 
+	for (int i=1; i<process_count; ++i) {
+		MPI_Barrier(MPI_COMM_WORLD);
+		if (rank == i) {
+			printf("Copying from rank %d...", rank);
+			fflush(stdout);
+			shared_ptr<ProjectedRaster> main_raster(new ProjectedRaster(final_output_filename));
+			for (int i = first_index; i <= last_index; ++i) {
+				out_chunk = out->createRasterChunk(part_areas.at(i));
+				if (out_chunk == NULL) {
+					fprintf(stderr, "Error Allocating output chunk!\n");
+					exit(1);
+				}
+				main_raster->writeRasterChunk(out_chunk);
+				delete out_chunk;
+			}			
+			printf("done!\n");
+			main_raster.reset();
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
+
 
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (rank == 0)
