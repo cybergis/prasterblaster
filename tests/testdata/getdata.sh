@@ -1,8 +1,11 @@
 #!/bin/sh
 
-wget ftp://ftpext.usgs.gov/pub/cr/mo/rolla/carto_research/projections/input_files/Global_Vegetation/veg_geographic_1deg.img
-wget ftp://ftpext.usgs.gov/pub/cr/mo/rolla/carto_research/projections/input_files/Global_Vegetation/veg_geographic_1deg.xml
-wget ftp://ftpext.usgs.gov/pub/cr/mo/rolla/carto_research/projections/input_files/Holdridge_Life_Zones/holdnorm_geographic_30min.img
-wget ftp://ftpext.usgs.gov/pub/cr/mo/rolla/carto_research/projections/input_files/Holdridge_Life_Zones/holdnorm_geographic_30min.xml
-wget ftp://ftpext.usgs.gov/pub/cr/mo/rolla/carto_research/projections/input_files/Global_Land_Cover/glc_geographic_30sec.img
-wget ftp://ftpext.usgs.gov/pub/cr/mo/rolla/carto_research/projections/input_files/Global_Land_Cover/glc_geographic_30sec.xml
+wget -c http://mattli.us/veg_mollweide_1deg.tif
+wget -c http://mattli.us/holdnorm_geographic_30min.tif
+wget -c http://mattli.us/glc_geographic_30sec.tif.bz2
+bunzip2 glc_geographic_30sec.tif.bz2
+
+wget -c http://mattli.us/nlcd2006_landcover_4-20-11_se5.tif.bz2
+bunzip2 nlcd2006_landcover_4-20-11_se5.tif.bz2
+
+
