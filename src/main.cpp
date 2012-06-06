@@ -52,6 +52,7 @@ struct option longopts[] = {
 	{"partition-count", required_argument, NULL, 'n'},
 	{"resampler", required_argument, NULL, 'r'},
 	{"fill-value", required_argument, NULL, 'f'},
+	{"temporary-path", required_argument, NULL, 't'},
 	{0, 0, 0, 0}
 
 };
@@ -63,7 +64,7 @@ int main(int argc, char *argv[])
 
 	ProjectedRaster *out;
 	int rank, c;
-	string output_srs, resampler, fillvalue("");
+	string output_srs, temporary_path, resampler, fillvalue("");
 	int partition_count = 1;
         rows = cols = 0;
 
@@ -88,6 +89,9 @@ int main(int argc, char *argv[])
 		case 'f':
 			fillvalue = optarg;
 			break;
+		case 't':
+			temporary_path = optarg;
+			break;
 		default:
 			fprintf(stderr, "%s: option '-%c' is invalid: ignored\n", argv[0], optopt);
 			break;
@@ -104,7 +108,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (driver(argv[argc-2], argv[argc-1], output_srs, resampler, fillvalue, partition_count) != 0) {
+	if (driver(argv[argc-2], argv[argc-1], temporary_path, output_srs, resampler, fillvalue, partition_count) != 0) {
 		MPI_Abort(MPI_COMM_WORLD, 1);
 		return 1;
 	}

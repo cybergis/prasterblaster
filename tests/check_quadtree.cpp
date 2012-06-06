@@ -15,9 +15,6 @@ TEST(QUADTREE, quadtree_init)
 	vector<Area> leaves = tree.collectLeaves();
 
 	for (int i = 0; i < leaves.size(); ++i) {
-		printf("Leaf %d: %f %f %f %f\n", i, 
-		       leaves.at(i).ul.x, leaves.at(i).ul.y, 
-		       leaves.at(i).lr.x, leaves.at(i).lr.y);
 
 	}
 

@@ -18,6 +18,7 @@
 #include <cstring>
 #include <cctype>
 #include <sstream>
+#include <unistd.h>
 
 #include <mpi.h>
 
@@ -80,6 +81,7 @@ bool driver_create_raster(shared_ptr<ProjectedRaster> in,
 
 int driver(string input_raster, 
 	   string output_filename, 
+	   string temporary_path,
 	   string output_srs, 
 	   string resampler,
 	   string fillvalue,
@@ -160,8 +162,15 @@ int driver(string input_raster,
 		printf("Reprojecting...");
 		fflush(stdout);
 	}
-
+	
+	if (rank == 0) {
+		printf("Finding partitions...");
+		fflush(stdout);
+	}
 	std::vector<Area> part_areas = PartitionByCount(out, partition_count);
+	if (rank == 0) {
+		printf("done!\n");
+	}
 	RasterChunk::RasterChunk *out_chunk, *in_chunk;
 	Area output_area, input_area;
 	int first_index, last_index;
@@ -267,6 +276,7 @@ int driver(string input_raster,
 				}
 				main_raster->writeRasterChunk(out_chunk);
 				delete out_chunk;
+				unlink(output_filename.c_str());
 			}			
 			printf("done!\n");
 			main_raster.reset();
