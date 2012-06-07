@@ -15,12 +15,14 @@ SOURCES += projectedraster.cpp \
            rasterchunk.cpp \
            reprojector.cpp \
            resampler.cpp \
+           quadtree.cpp
 
 HEADERS += projectedraster.hh \
            rasterchunk.hh \
            reprojector.hh \
            resampler.hh \
-           sharedptr.hh
+           sharedptr.hh \
+           quadtree.hh
 
 QMAKE_CXXFLAGS += -DHAVE_TR1_SHARED_PTR
 
