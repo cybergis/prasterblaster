@@ -5,7 +5,9 @@
 #include <math.h>
 //#include "proj.h"
 
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 
 #define PI 	3.141592653589793238
 #define HALF_PI (PI*0.5)
