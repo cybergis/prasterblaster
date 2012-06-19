@@ -34,49 +34,6 @@
 #include "sharedptr.hh"
 
 
-bool driver_create_raster(shared_ptr<ProjectedRaster> in,
-			 string output_filename,
-			 string output_srs)
-{
-	shared_ptr<Projection> in_proj = shared_ptr<Projection>(in->getProjection());
-	shared_ptr<Projection> out_proj;
-	OGRSpatialReference srs; 
-	
-	OGRErr err = srs.importFromProj4(output_srs.c_str());
-	
-	if (err != OGRERR_NONE) {
-		fprintf(stderr, "Error parsing projection!\n");
-		return -1;
-	}
-
-	long proj_code, datum_code, zone;
-	double *params = NULL;
-		
-	srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
-		
-	out_proj = shared_ptr<Projection>(Transformer::convertProjection((ProjCode)proj_code));
-	
-	if (!out_proj) {
-		return false;
-	}
-
-	out_proj->setUnits(in_proj->units());
-	out_proj->setDatum(in_proj->datum());
-	out_proj->setParams(in_proj->params());
-
-	OGRFree(params);
-
-	printf("Creating output raster...");
-	fflush(stdout);
-	bool result  = ProjectedRaster::CreateRaster(output_filename,
-						     in,
-						     shared_ptr<Projection>(out_proj->copy()),
-						     in->type ,
-						     in->pixel_size);
-	return result;
-
-
-}
 			 
 
 int driver(string input_raster, 
@@ -118,7 +75,7 @@ int driver(string input_raster,
         }
 
 	// Create an output raster for each process
-	bool result = driver_create_raster(in, output_filename, output_srs);
+	bool result = CreateOutputRaster(in, output_filename, output_srs);
 	if (result == false) {
 		fprintf(stderr, "Failed to create output raster!\n");
 		MPI_Abort(MPI_COMM_WORLD, -1);

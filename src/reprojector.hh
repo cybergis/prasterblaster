@@ -42,7 +42,12 @@
 enum RESAMPLER {
 	NEAREST,
 	MIN,
-	MAX
+	MAX,
+	MEAN,
+	MEDIAN,
+	MODE,
+	SUM, 
+	BILINEAR
 };
 
 //! Raster Coordinate transformation class */
@@ -114,9 +119,31 @@ private:
 	double destination_pixel_size_;
 };
 
+/**
+ * This function creates a new raster file at the path output_filename, with projection specified by output_srs .
+ *
+ * @param in The ProjectedRaster that is used to determine the size of the new raster
+ * @param output_filename The path the new raster will be created at.
+ * @param output_srs The Proj.4 specification of  projection and projection parameters.
+ *
+ */
+bool CreateOutputRaster(shared_ptr<ProjectedRaster> in,
+			string output_filename,
+			string output_srs);
 
+
+/**
+ * This function partitions the _area_ of the specified ProjectedRaster into approximately partition_count pieces.
+ * 
+ *
+ * @param destination The ProjectedRaster to partition
+ * @param partition_count The number of partitions to create
+ * @return A std:vector of Areas. The Areas represent areas in raster coordinates. They will cover the entire
+ *         raster and will not overlap. If the ul.x value of an Area is -1, the area is invalid and should be
+ *         ignored. This will happen if you, for example, ask for 100 paritions from a raster with 99 pixels.  
+ */
 std::vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> destination,
-		       int partition_count);
+				   int partition_count);
 
 Area ProjectedMinbox(shared_ptr<ProjectedRaster> input,
 		     shared_ptr<Projection> output_projection);

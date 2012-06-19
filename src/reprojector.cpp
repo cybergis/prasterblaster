@@ -24,6 +24,8 @@
 #include <string>
 #include <vector>
 
+#include <ogr_api.h>
+#include <ogr_spatialref.h>
 #include <gdal.h>
 #include <gdal_priv.h>
 
@@ -144,6 +146,49 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 	
 	return value;
 }
+
+bool CreateOutputRaster(shared_ptr<ProjectedRaster> in,
+			 string output_filename,
+			 string output_srs)
+{
+	shared_ptr<Projection> in_proj = shared_ptr<Projection>(in->getProjection());
+	shared_ptr<Projection> out_proj;
+	OGRSpatialReference srs; 
+	
+	OGRErr err = srs.importFromProj4(output_srs.c_str());
+	
+	if (err != OGRERR_NONE) {
+		fprintf(stderr, "Error parsing projection!\n");
+		return -1;
+	}
+
+	long proj_code, datum_code, zone;
+	double *params = NULL;
+		
+	srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
+		
+	out_proj = shared_ptr<Projection>(Transformer::convertProjection((ProjCode)proj_code));
+	
+	if (!out_proj) {
+		return false;
+	}
+
+	out_proj->setUnits(in_proj->units());
+	out_proj->setDatum(in_proj->datum());
+	out_proj->setParams(in_proj->params());
+
+	OGRFree(params);
+
+	bool result  = ProjectedRaster::CreateRaster(output_filename,
+						     in,
+						     shared_ptr<Projection>(out_proj->copy()),
+						     in->type ,
+						     in->pixel_size);
+	return result;
+
+
+}
+
 
 std::vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
 				   int partition_count)
