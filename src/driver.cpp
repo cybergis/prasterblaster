@@ -50,6 +50,7 @@ int driver(string input_raster,
 	shared_ptr<Projection> in_proj, out_proj;
 	string final_output_filename = output_filename;
 
+	output_filename = temporary_path + output_filename;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
 	MPI_Comm_size(MPI_COMM_WORLD, &process_count);
 
