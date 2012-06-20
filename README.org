@@ -64,12 +64,17 @@ src/prasterblaster  [-n <partition count>] -p <output projection srs> [-f <fill 
 
   tests/testdata/input.tif 
 
++ -t, --temporary-path
+
+  This parameter specifies a path that per-process temporary files
+  will be store in. This path should not be network shared.
+
 
 **** Examples:
 
-src/prasterblaster -f 254 -r Min -n 100 -p "+proj=moll" 
-                   tests/testdata/glc_geographic_30sec.tif
-		   tests/testdata/glc_mollweide_30sec.tif 
+src/prasterblaster -f 254 -r Min -n 100 -p "+proj=moll" -t /tmp/ \
+                   tests/testdata/glc_geographic_30sec.tif \
+                   tests/testdata/glc_mollweide_30sec.tif
 
 This will produce a raster in the Mollweide projection.
 

@@ -120,7 +120,10 @@ private:
 };
 
 /**
- * This function creates a new raster file at the path output_filename, with projection specified by output_srs .
+ * This function creates a new raster file at the path
+ * output_filename, with projection specified by output_srs. The
+ * minbox of in is calculated with the new projection.
+ *
  *
  * @param in The ProjectedRaster that is used to determine the size of the new raster
  * @param output_filename The path the new raster will be created at.
@@ -131,6 +134,20 @@ bool CreateOutputRaster(shared_ptr<ProjectedRaster> in,
 			string output_filename,
 			string output_srs);
 
+/**
+ * This function creates a new raster with a maximum size of
+ * output_size x output_size, meant to be used to make reprojection previews.
+ *
+ * @param input The ProjectedRaster that is used to determine the geographic area  of the output file
+ * @param output_filename File path that the new raster will be created at
+ * @param output_srs Projection specification string
+ * @param Maximum pixel count of one dimension of new raster, eg 100 means raster will be maximum of 100x100
+ *
+ */
+bool CreateSampleOutput(shared_ptr<ProjectedRaster> input,
+			string output_filename,
+			string output_srs, 
+			int output_size);
 
 /**
  * This function partitions the _area_ of the specified ProjectedRaster into approximately partition_count pieces.

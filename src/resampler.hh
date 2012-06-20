@@ -84,7 +84,43 @@ namespace Resampler
 
 		return temp;
 	}
+
+	template <typename T>
+	T Median(Coordinate input_ul,
+		 Coordinate input_lr,
+		 int input_column_count,
+		 T* input_pixels)
+	{
+		
+	}
 	
+	template <typename T>
+	T Mode(Coordinate input_ul,
+	       Coordinate input_lr,
+	       int input_column_count,
+	       T* input_pixels)
+	{
+		
+	}
+
+	template <typename T>
+	T Sum(Coordinate input_ul,
+		   Coordinate input_lr,
+		   int input_column_count,
+		   T* input_pixels)
+	{
+		
+	}
+
+
+	template <typename T>
+	T Bilinear(Coordinate input_ul,
+		   Coordinate input_lr,
+		   int input_column_count,
+		   T* input_pixels)
+	{
+		
+	}
 } // namespace resampler
 
 #endif // RESAMPLER_HH
