@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	// Parse options
-	while ((c = getopt_long(argc, argv, "p:r:f:n:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "p:r:f:n:t:", longopts, NULL)) != -1) {
 		switch (c) {
 		case 0:
 			// getopt_long() set a variable, just keep going
