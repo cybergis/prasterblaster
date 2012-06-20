@@ -132,6 +132,7 @@ private:
  */
 bool CreateOutputRaster(shared_ptr<ProjectedRaster> in,
 			string output_filename,
+			double output_pixel_size,
 			string output_srs);
 
 /**
@@ -140,6 +141,7 @@ bool CreateOutputRaster(shared_ptr<ProjectedRaster> in,
  *
  * @param input The ProjectedRaster that is used to determine the geographic area  of the output file
  * @param output_filename File path that the new raster will be created at
+ * @param output_pixel_size Size in meters of the pixels in the output raster
  * @param output_srs Projection specification string
  * @param Maximum pixel count of one dimension of new raster, eg 100 means raster will be maximum of 100x100
  *

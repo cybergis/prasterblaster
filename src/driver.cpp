@@ -75,7 +75,7 @@ int driver(string input_raster,
         }
 
 	// Create an output raster for each process
-	bool result = CreateOutputRaster(in, output_filename, output_srs);
+	bool result = CreateOutputRaster(in, output_filename, in->pixel_size, output_srs);
 	if (result == false) {
 		fprintf(stderr, "Failed to create output raster!\n");
 		MPI_Abort(MPI_COMM_WORLD, -1);

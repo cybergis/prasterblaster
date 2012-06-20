@@ -148,8 +148,9 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 }
 
 bool CreateOutputRaster(shared_ptr<ProjectedRaster> in,
-			 string output_filename,
-			 string output_srs)
+			string output_filename,
+			double output_pixel_size,
+			string output_srs)
 {
 	shared_ptr<Projection> in_proj = shared_ptr<Projection>(in->getProjection());
 	shared_ptr<Projection> out_proj;
@@ -183,7 +184,7 @@ bool CreateOutputRaster(shared_ptr<ProjectedRaster> in,
 						     in,
 						     shared_ptr<Projection>(out_proj->copy()),
 						     in->type ,
-						     in->pixel_size);
+						     output_pixel_size);
 	return result;
 
 
