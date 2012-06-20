@@ -37,7 +37,7 @@ TEST(DriverTest, driver_output_creation) {
 		     "+proj=moll",
 		     "max",
 		     "",
-		     1);
+		     1000);
 	
 	EXPECT_EQ(0, ret);
 	

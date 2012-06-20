@@ -53,6 +53,7 @@ int driver(string input_raster,
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
 	MPI_Comm_size(MPI_COMM_WORLD, &process_count);
 
+	double begin_prologue = MPI_Wtime();
 	std::stringstream sout;
 	sout << rank;
 	if (rank != 0) {
@@ -163,6 +164,9 @@ int driver(string input_raster,
 		MPI_Abort(MPI_COMM_WORLD, 0);
 	}
 
+
+	double end_prologue = MPI_Wtime();
+
 	for (int i = first_index; i <= last_index; ++i) {
 		output_area = part_areas.at(i);
 
@@ -218,6 +222,8 @@ int driver(string input_raster,
 
 	}
 
+	double end_reprojection = MPI_Wtime();
+
 	// Now copy temporary rasters to rank 0's 
 	for (int i=1; i<process_count; ++i) {
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -241,13 +247,19 @@ int driver(string input_raster,
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
+	double end_epilogue = MPI_Wtime();
 
 	MPI_Barrier(MPI_COMM_WORLD);
-	if (rank == 0)
-		printf(" done!\n");
-
-	// Cleanup
-
+	if (rank == 0) {
+		double pro_time = end_prologue - begin_prologue;
+		double reproject_time = end_reprojection - end_prologue;
+		double epilogue_time = end_epilogue - end_reprojection;
+		double total_time = pro_time + reproject_time + epilogue_time;
+		printf("\n\n\n");
+		printf("Reprojection Complete! ***Run times** |Prologue: %f| Reprojection %f| Epilogue: %f| TOTAL %f SECONDS",
+		       pro_time, reproject_time, epilogue_time, total_time);
+		printf("\n\n\n");
+	}
 	return 0;
 }
 
