@@ -50,7 +50,6 @@ int driver(string input_raster,
 	shared_ptr<Projection> in_proj, out_proj;
 	string final_output_filename = output_filename;
 
-	output_filename = temporary_path + output_filename;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
 	MPI_Comm_size(MPI_COMM_WORLD, &process_count);
 
@@ -58,7 +57,8 @@ int driver(string input_raster,
 	std::stringstream sout;
 	sout << rank;
 	if (rank != 0) {
-		output_filename = output_filename + sout.str();
+		output_filename = temporary_path + sout.str();
+		output_filename += "asdf";
 	}
 	
 	// Open Input raster and check for errors
