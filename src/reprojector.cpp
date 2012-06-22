@@ -243,7 +243,7 @@ bool CreateSampleOutput(shared_ptr<ProjectedRaster> input,
 						    pixel_size);
 
 
-	return true;
+	return result;
 }
 
 std::vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
