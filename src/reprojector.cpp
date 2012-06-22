@@ -203,7 +203,7 @@ bool CreateSampleOutput(shared_ptr<ProjectedRaster> input,
 	
 	if (err != OGRERR_NONE) {
 		fprintf(stderr, "Error parsing projection!\n");
-		return -1;
+		return false;
 	}
 
 	long proj_code, datum_code, zone;
