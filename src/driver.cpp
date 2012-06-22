@@ -32,8 +32,6 @@
 #include "rasterchunk.hh"
 #include "reprojector.hh"
 #include "sharedptr.hh"
-
-
 			 
 
 int driver(string input_raster, 
@@ -49,6 +47,8 @@ int driver(string input_raster,
 	shared_ptr<ProjectedRaster> in, out;
 	shared_ptr<Projection> in_proj, out_proj;
 	string final_output_filename = output_filename;
+	temporary_path = temporary_path + "/prbXXXXXXX";
+	char *output_template = strdup(temporary_path.c_str());
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
 	MPI_Comm_size(MPI_COMM_WORLD, &process_count);
@@ -57,8 +57,9 @@ int driver(string input_raster,
 	std::stringstream sout;
 	sout << rank;
 	if (rank != 0) {
-		output_filename = temporary_path + sout.str();
-		output_filename += "asdf";
+		int fd = mkstemp(output_template);
+		close(fd);
+		output_filename = output_template;
 	}
 	
 	// Open Input raster and check for errors
@@ -84,20 +85,15 @@ int driver(string input_raster,
 	} else {
 		printf("done\n");
 	}
-	printf("Syncing nodes...");
-	MPI_Barrier(MPI_COMM_WORLD);
-	printf("done\n");
-	
-	
 	
 	// Now we re-open the output raster on each node.
 	if (rank == 0) {
-		printf("Opening new output raster...");
+		printf("Rank %d: Opening new output raster...", rank);
 		fflush(stdout);
 	}
 	out = shared_ptr<ProjectedRaster>(new ProjectedRaster(output_filename));
 	if (out == 0) {
-		fprintf(stderr, "Output allocation failed, something is very wrong!\n");
+		fprintf(stderr, "Rank %d, Output allocation failed, something is very wrong!\n", rank);
 		return 1;
 
 	}
@@ -225,6 +221,7 @@ int driver(string input_raster,
 
 	double end_reprojection = MPI_Wtime();
 
+
 	// Now copy temporary rasters to rank 0's 
 	for (int i=1; i<process_count; ++i) {
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -247,6 +244,7 @@ int driver(string input_raster,
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
+
 
 	double end_epilogue = MPI_Wtime();
 
