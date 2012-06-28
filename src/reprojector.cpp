@@ -24,6 +24,8 @@
 #include <string>
 #include <vector>
 
+#include <stdint.h>
+
 #include <ogr_api.h>
 #include <ogr_spatialref.h>
 #include <gdal.h>
@@ -103,8 +105,8 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 	value.ul = temp1;
 	value.lr = temp1;
 
-	temp1.x = ((double)source.x * source_pixel_size_) + source_ul_.x;
-	temp1.y = ((double)source.y * source_pixel_size_) - source_ul_.y;
+	temp1.x = (static_cast<double>(source.x) * source_pixel_size_) + source_ul_.x;
+	temp1.y = (static_cast<double>(source.y) * source_pixel_size_) - source_ul_.y;
 
 	src_proj->inverse(temp1.x, temp1.y, &temp2.x, &temp2.y);
 	src_proj->forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
@@ -115,8 +117,8 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 		return value;
 	}
 
-	temp1.x = ((double)source.x * source_pixel_size_) + source_ul_.x;
-	temp1.y = ((double)source.y * source_pixel_size_) - source_ul_.y;
+	temp1.x = (static_cast<double>(source.x) * source_pixel_size_) + source_ul_.x;
+	temp1.y = (static_cast<double>(source.y) * source_pixel_size_) - source_ul_.y;
 	temp2 = temp1;
 
 	// Now we are going to assign temp1 as the UL of our pixel and
@@ -168,7 +170,7 @@ bool CreateOutputRaster(shared_ptr<ProjectedRaster> in,
 		
 	srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
 		
-	out_proj = shared_ptr<Projection>(Transformer::convertProjection((ProjCode)proj_code));
+	out_proj = shared_ptr<Projection>(Transformer::convertProjection(static_cast<ProjCode>(proj_code)));
 	
 	if (!out_proj) {
 		return false;
@@ -211,7 +213,7 @@ bool CreateSampleOutput(shared_ptr<ProjectedRaster> input,
 		
 	srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
 		
-	out_proj = shared_ptr<Projection>(Transformer::convertProjection((ProjCode)proj_code));
+	out_proj = shared_ptr<Projection>(Transformer::convertProjection(static_cast<ProjCode>(proj_code)));
 	
 	if (!out_proj) {
 		return false;
@@ -250,8 +252,8 @@ std::vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
 				   int partition_count)
 {
 	Area noval(-1, -1, -1, -1);
-	size_t area_size = source->getColCount() * source->getRowCount();
-	size_t partition_area = area_size / partition_count;
+	int64_t area_size = static_cast<int64_t>(source->getColCount()) * static_cast<int64_t>(source->getRowCount());
+	int64_t partition_area = area_size / partition_count;
 	
 	QuadTree tree(source->getRowCount(), source->getColCount(), partition_area);
 
@@ -269,8 +271,8 @@ void SearchAndUpdate(Area input_area,
 	Coordinate input_coord;
 	Coordinate temp;
 
-	for (long x = input_area.ul.x; x <= input_area.lr.x; ++x) {
-		for (long y = input_area.ul.y; y >= input_area.lr.y; --y) {
+	for (int64_t x = input_area.ul.x; x <= input_area.lr.x; ++x) {
+		for (int64_t y = input_area.ul.y; y >= input_area.lr.y; --y) {
 			input_coord.x = x * input_pixel_size + input_ulx;
 			input_coord.y = input_uly - (y * input_pixel_size);
 			
@@ -457,18 +459,18 @@ bool ReprojectChunk(RasterChunk::RasterChunk *source, RasterChunk::RasterChunk *
 	case GDT_Byte:
 		switch (resampler){
 		case MIN:
-			return ReprojectChunkType<unsigned char>(source, destination, (unsigned char)fvalue, &(Resampler::Min<unsigned char>));
+			return ReprojectChunkType<unsigned char>(source, destination, static_cast<uint8_t>(fvalue), &(Resampler::Min<unsigned char>));
 			break;
 		case MAX:
-			return ReprojectChunkType<unsigned char>(source, destination, (unsigned char)fvalue, &(Resampler::Max<unsigned char>));
+			return ReprojectChunkType<unsigned char>(source, destination, static_cast<uint8_t>(fvalue), &(Resampler::Max<unsigned char>));
 		case NEAREST:
 		default:
-			return ReprojectChunkType<unsigned char>(source, destination, (unsigned char)fvalue, NULL);
+			return ReprojectChunkType<unsigned char>(source, destination, static_cast<uint8_t>(fvalue), NULL);
 			
 		}
 		break;
 	case GDT_UInt16:
-		return ReprojectChunkType<unsigned short>(source, destination, (unsigned short)fvalue, &(Resampler::Max<unsigned short>));
+		return ReprojectChunkType<unsigned short>(source, destination, static_cast<uint16_t>(fvalue), &(Resampler::Max<unsigned short>));
 		break;
 	default:
 		fprintf(stderr, "Invalid type in ReprojectChunk!\n");
@@ -511,9 +513,9 @@ Area FindRasterArea(shared_ptr<ProjectedRaster> source_raster,
 		for (int col = 0; col < source_raster->getColCount(); ++col) {
 			temp.x = col;
 			temp.y = row;
-			try {
-				temp_area = trans.Transform(temp);
-			} catch(std::string) {
+
+			temp_area = trans.Transform(temp);
+			if (temp_area.ul.x == -1.0) {
 				continue;
 			}
 			
