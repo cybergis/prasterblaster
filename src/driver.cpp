@@ -1,3 +1,4 @@
+
 /*!
  * @file
  * @author David Matthew Mattli <dmattli@usgs.gov>
@@ -78,11 +79,15 @@ int driver(string input_raster,
         }
 
 	// Create an output raster for each process
+	if (rank == 0) {
+		printf("Creating output raster...");
+		fflush(stdout);
+	}
 	bool result = CreateOutputRaster(in, output_filename, in->pixel_size, output_srs);
 	if (result == false) {
 		fprintf(stderr, "Failed to create output raster!\n");
 		MPI_Abort(MPI_COMM_WORLD, -1);
-	} else {
+	} else if (rank == 0) {
 		printf("done\n");
 	}
 	
@@ -161,7 +166,6 @@ int driver(string input_raster,
 		MPI_Abort(MPI_COMM_WORLD, 0);
 	}
 
-
 	double end_prologue = MPI_Wtime();
 
 	for (int i = first_index; i <= last_index; ++i) {
@@ -171,10 +175,11 @@ int driver(string input_raster,
 		output_area.ul.y = out->getRowCount() - output_area.ul.y - 1;
 		output_area.lr.y = out->getRowCount() - output_area.lr.y - 1;
 		part_areas.at(i) = output_area;
+
 		if (output_area.ul.x == -1) {
 			continue;
 		}
-		
+
 		input_area = RasterMinbox(out, in, output_area);
 		out_chunk = out->createAllocatedRasterChunk(output_area);
 		in_chunk = in->createRasterChunk(input_area);
