@@ -108,6 +108,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	if (temporary_path == "") {
+	  fprintf(stderr, "Please set a temporary path with -t <path>\n");
+	  return 1;
+	}
+
 	if (driver(argv[argc-2], argv[argc-1], temporary_path, output_srs, resampler, fillvalue, partition_count) != 0) {
 		MPI_Abort(MPI_COMM_WORLD, 1);
 		return 1;
