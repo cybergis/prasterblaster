@@ -178,7 +178,7 @@ bool CreateOutputRaster(shared_ptr<ProjectedRaster> in,
 
 	out_proj->setUnits(in_proj->units());
 	out_proj->setDatum(in_proj->datum());
-	out_proj->setParams(in_proj->params());
+	out_proj->setParams(params);
 
 	OGRFree(params);
 
@@ -221,7 +221,7 @@ bool CreateSampleOutput(shared_ptr<ProjectedRaster> input,
 
 	out_proj->setUnits(in_proj->units());
 	out_proj->setDatum(in_proj->datum());
-	out_proj->setParams(in_proj->params());
+	out_proj->setParams(params);
 
 	OGRFree(params);
 	
