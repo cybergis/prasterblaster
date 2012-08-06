@@ -212,9 +212,29 @@ public:
  */
 	bool writeRaster(int firstRow, int numRows, void* data);
 
-
+  //! A normal member function taking one argument
+  /*!
+   * @param area This represents the rectangle in raster coordinates
+   * to be represented by the RasterChunk 
+   * \returns A pointer to a
+   *          RasterChunk, where the pixels are read from the ProjectedRaster
+   */
 	RasterChunk::RasterChunk* createRasterChunk(Area area);
+  //! A normal member function taking one argument
+  /*!
+   * @param area This represents the rectangle in raster coordinates to be represented by the RasterChunk
+   * \returns A pointer to a RasterChunk, where the pixels are not read, 
+   *          but memory of a sufficient size is allocated
+   */
+
 	RasterChunk::RasterChunk* createAllocatedRasterChunk(Area area);
+  //! A normal member function taking one argument
+  /*!
+   * @param area This represents the rectangle in raster coordinates to be represented by the RasterChunk
+   * \returns A pointer to a RasterChunk, where the pixels are not read, 
+   *          and no memory is allocated.
+   */
+
 	RasterChunk::RasterChunk* createEmptyRasterChunk(Area area);
 	bool writeRasterChunk(RasterChunk::RasterChunk *chunk);
 
