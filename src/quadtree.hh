@@ -10,6 +10,54 @@
 
 using std::vector;
 
+
+struct QuadNode
+{
+	QuadNode() {
+		northWest = NULL;
+		northEast = NULL;
+		southWest = NULL;
+		southEast = NULL;
+		return;
+	}
+	
+	QuadNode(Area _boundry) {
+		northWest = NULL;
+		northEast = NULL;
+		southWest = NULL;
+		southEast = NULL;
+
+		boundry = _boundry;
+		return;
+	}
+
+	~QuadNode() {
+		if (northWest != NULL) {
+			delete northWest;
+		}
+
+		if (northEast != NULL) {
+			delete northEast;
+		}
+		
+		if (southWest != NULL) {
+			delete southWest;
+		}
+		
+		if (southEast != NULL) {
+			delete southEast;
+		}
+		
+	}
+	
+	Area boundry;
+
+	QuadNode *northWest;
+	QuadNode *northEast;
+	QuadNode *southWest;
+	QuadNode *southEast;
+};
+
 class QuadTree 
 {
 public:
@@ -21,13 +69,9 @@ public:
 
 	vector<Area> collectLeaves();
 
-	QuadTree *northWest;
-	QuadTree *northEast;
-	QuadTree *southWest;
-	QuadTree *southEast;
+	QuadNode *rootNode;
 
 	size_t max_partition;
-	Area boundry;
 };
 
 
