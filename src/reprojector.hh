@@ -50,6 +50,12 @@ enum RESAMPLER {
 	BILINEAR
 };
 
+
+enum PRB_ERROR {
+	NO_ERROR,
+	FILE_ERROR,
+	PROJ_ERROR
+};
 //! Raster Coordinate transformation class */
 /*!
   This class implements the transformation of raster coordinates between two raster spaces with different projections and scales.
@@ -130,7 +136,7 @@ private:
  * @param output_srs The Proj.4 specification of  projection and projection parameters.
  *
  */
-bool CreateOutputRaster(shared_ptr<ProjectedRaster> in,
+PRB_ERROR CreateOutputRaster(shared_ptr<ProjectedRaster> in,
 			string output_filename,
 			double output_pixel_size,
 			string output_srs);
@@ -146,7 +152,7 @@ bool CreateOutputRaster(shared_ptr<ProjectedRaster> in,
  * @param Maximum pixel count of one dimension of new raster, eg 100 means raster will be maximum of 100x100
  *
  */
-bool CreateSampleOutput(shared_ptr<ProjectedRaster> input,
+PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
 			string output_filename,
 			string output_srs, 
 			int output_size);

@@ -149,7 +149,7 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 	return value;
 }
 
-bool CreateOutputRaster(shared_ptr<ProjectedRaster> in,
+PRB_ERROR CreateOutputRaster(shared_ptr<ProjectedRaster> in,
 			string output_filename,
 			double output_pixel_size,
 			string output_srs)
@@ -162,7 +162,7 @@ bool CreateOutputRaster(shared_ptr<ProjectedRaster> in,
 	
 	if (err != OGRERR_NONE) {
 		fprintf(stderr, "Error parsing projection!\n");
-		return false;
+		return PROJ_ERROR;
 	}
 
 	long proj_code, datum_code, zone;
@@ -173,7 +173,7 @@ bool CreateOutputRaster(shared_ptr<ProjectedRaster> in,
 	out_proj = shared_ptr<Projection>(Transformer::convertProjection(static_cast<ProjCode>(proj_code)));
 	
 	if (!out_proj) {
-		return false;
+		return PROJ_ERROR;
 	}
 
 	out_proj->setUnits(in_proj->units());
@@ -187,12 +187,16 @@ bool CreateOutputRaster(shared_ptr<ProjectedRaster> in,
 						     shared_ptr<Projection>(out_proj->copy()),
 						     in->type ,
 						     output_pixel_size);
-	return result;
+	if (result) {
+		return NO_ERROR;
+	} else {
+		return FILE_ERROR;
+	}
 
 
 }
 
-bool CreateSampleOutput(shared_ptr<ProjectedRaster> input,
+PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
 			string output_filename,
 			string output_srs, 
 			int output_size)
@@ -205,7 +209,7 @@ bool CreateSampleOutput(shared_ptr<ProjectedRaster> input,
 	
 	if (err != OGRERR_NONE) {
 		fprintf(stderr, "Error parsing projection!\n");
-		return false;
+		return PROJ_ERROR;
 	}
 
 	long proj_code, datum_code, zone;
@@ -216,7 +220,7 @@ bool CreateSampleOutput(shared_ptr<ProjectedRaster> input,
 	out_proj = shared_ptr<Projection>(Transformer::convertProjection(static_cast<ProjCode>(proj_code)));
 	
 	if (!out_proj) {
-		return false;
+		return PROJ_ERROR;
 	}
 
 	out_proj->setUnits(in_proj->units());
@@ -245,7 +249,11 @@ bool CreateSampleOutput(shared_ptr<ProjectedRaster> input,
 						    pixel_size);
 
 
-	return result;
+	if (result) {
+		return NO_ERROR;
+	} else {
+		return FILE_ERROR;
+	}
 }
 
 std::vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
