@@ -112,6 +112,7 @@ Area RasterCoordTransformer::Transform(Coordinate source)
 	src_proj->forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
 
 	if (fabs(temp1.x - temp2.x) > 0.01) {
+		// Point is outside defined projection area, return no-value
 		value.ul.x = -1.0;
 		value.lr.x = -1.0;
 		return value;
@@ -263,6 +264,10 @@ std::vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
 	int64_t area_size = static_cast<int64_t>(source->getColCount()) * static_cast<int64_t>(source->getRowCount());
 	int64_t partition_area = area_size / partition_count;
 	
+	if (partition_area == 0) {
+		partition_area = 1;
+	}
+
 	QuadTree tree(source->getRowCount(), source->getColCount(), partition_area);
 
 	return tree.collectLeaves();
@@ -397,7 +402,7 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
 			c.y = y;
 
 			temp = rt.Transform(c);
-
+		
 			if (temp.ul.x == -1) {
 				continue;
 			}

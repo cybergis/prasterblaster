@@ -56,6 +56,7 @@ enum PRB_ERROR {
 	FILE_ERROR,
 	PROJ_ERROR
 };
+
 //! Raster Coordinate transformation class */
 /*!
   This class implements the transformation of raster coordinates between two raster spaces with different projections and scales.

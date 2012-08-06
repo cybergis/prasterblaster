@@ -83,8 +83,8 @@ int driver(string input_raster,
 		printf("Creating output raster...");
 		fflush(stdout);
 	}
-	bool result = CreateOutputRaster(in, output_filename, in->pixel_size, output_srs);
-	if (result == false) {
+	PRB_ERROR result = CreateOutputRaster(in, output_filename, in->pixel_size, output_srs);
+	if (result != NO_ERROR) {
 		fprintf(stderr, "Failed to create output raster!\n");
 		MPI_Abort(MPI_COMM_WORLD, -1);
 	} else if (rank == 0) {
@@ -185,6 +185,7 @@ int driver(string input_raster,
 		in_chunk = in->createRasterChunk(input_area);
 
 		if (in_chunk == NULL) { // break 
+			// If we get this error it's probably a bug in RasterMinbox
 			fprintf(stderr, "Rank: %d: Input RasterChunk allocation error!\n", rank);
 			fprintf(stderr, "      %f %f %f %f\n", input_area.ul.x, input_area.ul.y,
 				input_area.lr.x, input_area.lr.y);
