@@ -24,3 +24,13 @@ TEST(QUADTREE, quadtree_init)
 
 	return;
 }
+
+TEST(QUADTREE, quadtree_big)
+{
+
+	QuadTree tree(161190, 104424, 50*50);
+
+	vector<Area> leaves = tree.collectLeaves();
+	printf("%zd leaves \n", leaves.size());
+	return;
+}
