@@ -22,6 +22,8 @@
 #include <unistd.h>
 
 #include <mpi.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <gdal_priv.h>
 #include <ogr_spatialref.h>
@@ -34,7 +36,6 @@
 #include "reprojector.hh"
 #include "sharedptr.hh"
 			 
-
 int driver(string input_raster, 
 	   string output_filename, 
 	   string temporary_path,
@@ -48,29 +49,36 @@ int driver(string input_raster,
 	shared_ptr<ProjectedRaster> in, out;
 	shared_ptr<Projection> in_proj, out_proj;
 	string final_output_filename = output_filename;
-	temporary_path = temporary_path + "/prbXXXXXXX";
 	char *output_template = strdup(temporary_path.c_str());
+	std::vector<string> chunk_names;
+	PRB_ERROR result;
+
+	long out_projcode, out_datumcode;
+	long out_datum;
+	double *out_params;
+
+	std::vector<std::string> temp_output_files;
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
 	MPI_Comm_size(MPI_COMM_WORLD, &process_count);
 
 	double begin_prologue = MPI_Wtime();
+
 	std::stringstream sout;
 	sout << rank;
-	if (rank != 0) {
-		int fd = mkstemp(output_template);
-		close(fd);
-		output_filename = output_template;
-	}
+	// Create directory for this processor's temp files
+	temporary_path = temporary_path + string("/") + sout.str();
+	mkdir(temporary_path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	
 	
 	// Open Input raster and check for errors
 	if (rank == 0) {
-	  printf("Opening input raster...");
-	  fflush(stdout);
+		printf("Opening input raster...");
+		fflush(stdout);
 	}
         in = shared_ptr<ProjectedRaster>(new ProjectedRaster(input_raster));
 	if (rank == 0) 
-	  printf("done\n");
+		printf("done\n");
 
         if (in->isReady() == false) {
                 fprintf(stderr, "Error opening input raster\n");
@@ -78,46 +86,28 @@ int driver(string input_raster,
                 return 1;
         }
 
-	// Create an output raster for each process
+	// Create an output raster for rank 0
 	if (rank == 0) {
 		printf("Creating output raster...");
 		fflush(stdout);
+		result = CreateOutputRaster(in, output_filename, in->pixel_size, output_srs);
 	}
-	PRB_ERROR result = CreateOutputRaster(in, output_filename, in->pixel_size, output_srs);
+
 	if (result != NO_ERROR) {
 		fprintf(stderr, "Failed to create output raster!\n");
 		MPI_Abort(MPI_COMM_WORLD, -1);
-	} else if (rank == 0) {
+	} else {
+		out.reset(new ProjectedRaster(output_filename));
+		out_proj = out->getProjection();
 		printf("done\n");
 	}
-	
-	// Now we re-open the output raster on each node.
-	if (rank == 0) {
-		printf("Rank %d: Opening new output raster...", rank);
-		fflush(stdout);
-	}
-	out = shared_ptr<ProjectedRaster>(new ProjectedRaster(output_filename));
-	if (out == 0) {
-		fprintf(stderr, "Rank %d, Output allocation failed, something is very wrong!\n", rank);
-		return 1;
 
-	}
-	
 	if (!in->isReady()) {
 		fprintf(stderr, "Error opening input raster, not ready!\n");
 		return 1;
-
 	}
 
-	if (!out->isReady()) {
-		fprintf(stderr, "Error opening output raster, not ready!\n");
-		return 1;
-
-	}
-	if (rank == 0) 
-		printf("done\n");
-
-	// Now preform actual reprojection
+	// Now perform actual reprojection
 	if (rank == 0) {
 		printf("Reprojecting...");
 		fflush(stdout);
@@ -127,10 +117,12 @@ int driver(string input_raster,
 		printf("Finding partitions...");
 		fflush(stdout);
 	}
+
 	std::vector<Area> part_areas = PartitionByCount(out, partition_count);
 	if (rank == 0) {
 		printf("done!\n");
 	}
+
 	RasterChunk::RasterChunk *out_chunk, *in_chunk;
 	Area output_area, input_area;
 	int first_index, last_index;
@@ -144,33 +136,19 @@ int driver(string input_raster,
 		last_index = part_areas.size() - 1;
 	}
 
-
-	int analyze_partitions = 0;
-	if (analyze_partitions == 1) {
-		for (int i = 0; i < partition_count; ++i) {
-			input_area = RasterMinbox(out, in, part_areas.at(i));
-			Area part = part_areas.at(i);
-			out_chunk = out->createEmptyRasterChunk(part_areas.at(i));
-			in_chunk = in->createEmptyRasterChunk(input_area);
-			printf("\n-------------------------------------------------------------------------------\n");
-			printf("PARTITION #%d\n", i);
-			printf("OUTPUT AREA: UL: %f %f LR: %f %f \n", part.ul.x, part.ul.y, part.lr.x, part.lr.y);
-			printf("             --- %d rows %d columns\n", out_chunk->row_count_, out_chunk->column_count_);
-			printf("INPUT AREA: UL: %f %f LR: %f %f \n", input_area.ul.x, input_area.ul.y, input_area.lr.x, input_area.lr.y);
-			printf("             --- %d rows %d columns\n", in_chunk->row_count_, in_chunk->column_count_);
-			printf("\n-------------------------------------------------------------------------------\n");
-			delete out_chunk;
-			delete in_chunk;
-			       
-		}
-		MPI_Abort(MPI_COMM_WORLD, 0);
-	}
-
 	double end_prologue = MPI_Wtime();
 
 	for (int i = first_index; i <= last_index; ++i) {
-		output_area = part_areas.at(i);
+		
+		// Create temporary file for output chunk
+		string out_path = temporary_path + "/prbXXXXXXXX";
+		char *tempfilename = strdup(out_path.c_str());
+		int fd = mkstemp(tempfilename);
+		out_path = tempfilename;
+		temp_output_files.push_back(out_path);
 
+		output_area = part_areas.at(i);
+		
 		// Swap y dimension
 		output_area.ul.y = out->getRowCount() - output_area.ul.y - 1;
 		output_area.lr.y = out->getRowCount() - output_area.lr.y - 1;
@@ -211,7 +189,7 @@ int driver(string input_raster,
 		}
 
 		// Now write RasterChunk to output
-		if (out->writeRasterChunk(out_chunk) == false) {
+		if (WriteRasterChunk(out_path, out_chunk) != NO_ERROR) {
 			fprintf(stderr, "Rank %d, Error writing chunk!\n", rank);
 		} 
 

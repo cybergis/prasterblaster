@@ -158,6 +158,9 @@ PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
 			string output_srs, 
 			int output_size);
 
+PRB_ERROR WriteRasterChunk(string output_filename,
+			   RasterChunk::RasterChunk *chunk);
+
 /**
  * This function partitions the _area_ of the specified ProjectedRaster into approximately partition_count pieces.
  * 

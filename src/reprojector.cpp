@@ -257,6 +257,34 @@ PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
 	}
 }
 
+PRB_ERROR WriteRasterChunk(string output_filename,
+			   RasterChunk::RasterChunk *chunk)
+{
+	Coordinate t;
+	t.x = chunk->raster_location_.x;
+	t.y = chunk->raster_location_.y;
+	/*
+	ProjectedRaster::CreateRaster(output_filename,
+				      chunk->row_count_,
+				      chunk->column_count_,
+				      chunk->pixel_type_,
+				      chunk->pixel_size_,
+				      chunk->band_count_);
+
+	*/
+	chunk->raster_location_.x = 0;
+	chunk->raster_location_.y = 0;
+	ProjectedRaster *out = new ProjectedRaster(output_filename);
+	out->writeRasterChunk(chunk);
+	chunk->raster_location_.x = t.x;
+	chunk->raster_location_.y = t.y;
+	
+
+	
+
+	return NO_ERROR;
+}
+
 std::vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
 				   int partition_count)
 {
