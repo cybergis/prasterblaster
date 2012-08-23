@@ -8,6 +8,7 @@ QuadTree::QuadTree(Area _boundry, size_t  maximum_partition_size)
 
 	rootNode = new QuadNode();
 	rootNode->boundry = _boundry;
+	rootNode->depth = 0;
 
 	subdivide();
 
@@ -20,7 +21,8 @@ QuadTree::QuadTree(size_t rows, size_t columns, size_t maximum_partition_size)
 
 	rootNode = new QuadNode();
 	rootNode->boundry = Area(0, rows - 1, columns - 1, 0);
-	
+	rootNode->depth = 0;
+
 	subdivide();
 	return;
 }
@@ -86,28 +88,28 @@ void QuadTree::subdivide()
 								 south_end,
 								 west_end,
 								 south_begin));
-				if (west_begin > west_end) printf("SW aaaaah\n");
+				n->southWest->depth = n->depth + 1;
 				n->southEast = new QuadNode(Area(east_begin,
 								 south_end,
 								 east_end,
 								 south_begin));
-				if (east_begin > east_end) printf("SW aaaaah\n");
+				n->southEast->depth = n->depth + 1;
 
 				stack.push_back(n->southWest);
 				stack.push_back(n->southEast);
 			}
 
 			if (getHeight(n) > 1) {
-				n->northWest = new QuadNode(Area(east_begin,
-								 south_end,
-								 east_end,
-								 south_begin));
-				if (east_begin > east_end) printf("NW aaaaah\n");
+				n->northWest = new QuadNode(Area(west_begin,
+								 north_end,
+								 west_end,
+								 north_begin));
+				n->northWest->depth = n->depth + 1;
 				n->northEast = new QuadNode(Area(east_begin,
 								 north_end,
 								 east_end,
 								 north_begin));
-				if (east_begin > east_end) printf("NE aaaaah\n");
+				n->northEast->depth = n->depth + 1;
 				stack.push_back(n->northWest);
 				stack.push_back(n->northEast);
 

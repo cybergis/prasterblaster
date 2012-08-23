@@ -56,6 +56,8 @@ struct QuadNode
 	QuadNode *northEast;
 	QuadNode *southWest;
 	QuadNode *southEast;
+
+	size_t depth;
 };
 
 class QuadTree 
