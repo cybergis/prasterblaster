@@ -18,7 +18,7 @@
 
 #include "quadtree.h"
 
-using std:vector;
+using std::vector;
 
 namespace librasterblaster {
 QuadTree::QuadTree(Area _boundry, size_t  maximum_partition_size) {

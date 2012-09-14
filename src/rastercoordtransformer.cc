@@ -28,21 +28,23 @@
 #include "gctp_cpp/transformer.h"
 #include "gctp_cpp/coordinate.h"
 
-#include "reprojector.hh"
-#include "resampler.hh"
-#include "sharedptr.hh"
-#include "quadtree.hh"
+#include "projectedraster.h"
+#include "reprojection_tools.h"
+#include "resampler.h"
+#include "sharedptr.h"
+#include "quadtree.h"
 
+namespace librasterblaster {
 
 RasterCoordTransformer::
 RasterCoordTransformer(shared_ptr<ProjectedRaster> source,
                        shared_ptr<ProjectedRaster> _dest) {
-  src_proj = shared_ptr<Projection>(source->getProjection());
-  source_pixel_size_ = source->getPixelSize();
-  source_ul_ = Coordinate(source->ul_x, source->ul_y, UNDEF);
-  dest_proj = shared_ptr<Projection>(_dest->getProjection());
-  destination_pixel_size_ = _dest->getPixelSize();
-  destination_ul_ = Coordinate(_dest->ul_x, _dest->ul_y, UNDEF);
+  src_proj = shared_ptr<Projection>(source->projection());
+  source_pixel_size_ = source->pixel_size();
+  source_ul_ = Coordinate(source->ul_x(), source->ul_y(), UNDEF);
+  dest_proj = shared_ptr<Projection>(_dest->projection());
+  destination_pixel_size_ = _dest->pixel_size();
+  destination_ul_ = Coordinate(_dest->ul_x(), _dest->ul_y(), UNDEF);
   return;
 }
 
@@ -53,11 +55,11 @@ RasterCoordTransformer(shared_ptr<ProjectedRaster> source,
                        double destination_pixel_size) {
   destination_pixel_size_ = destination_pixel_size;
   destination_ul_ = destination_ul;
-  source_ul_ = Coordinate(source->ul_x, source->ul_y, UNDEF);
-  source_pixel_size_ = source->getPixelSize();
+  source_ul_ = Coordinate(source->ul_x(), source->ul_y(), UNDEF);
+  source_pixel_size_ = source->pixel_size();
 
   dest_proj = destination_projection;
-  src_proj =  shared_ptr<Projection>(source->getProjection());
+  src_proj =  shared_ptr<Projection>(source->projection());
 
   return;
 }
@@ -133,4 +135,5 @@ Transform(Coordinate source) {
   value.lr = temp2;
 
   return value;
+}
 }

@@ -22,6 +22,11 @@
 #ifndef SRC_RASTERCOORDTRANSFORMER_H_
 #define SRC_RASTERCOORDTRANSFORMER_H_
 
+#include "sharedptr.h"
+
+#include "utils.h"
+
+
 
 // ! Raster Coordinate transformation class
 /*
@@ -29,6 +34,7 @@
  */
 
 namespace librasterblaster {
+class ProjectedRaster;
 class RasterCoordTransformer {
  public:
   // ! A constructor

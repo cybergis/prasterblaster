@@ -28,20 +28,13 @@
 #include "gctp_cpp/transformer.h"
 
 #include "rasterchunk.h"
+#include "reprojection_tools.h"
 #include "sharedptr.h"
+#include "utils.h"
 
 using std::string;
 
 namespace librasterblaster  {
-struct Area {
-  Area() {}
-  Area(double ulx, double uly, double lrx, double lry) : ul(ulx, uly, UNDEF), lr(lrx, lry, UNDEF) {}
-		
-  Coordinate ul;
-  Coordinate lr;
-  ProjUnit units;
-	
-};
 
 /*! ProjectedRaster class.
  *

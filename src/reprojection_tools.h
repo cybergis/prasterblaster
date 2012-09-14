@@ -23,19 +23,12 @@
 #include "projectedraster.h"
 #include "rastercoordtransformer.h"
 #include "sharedptr.h"
+#include "utils.h"
 
 using std::string;
 class Projection;
 
 namespace librasterblaster {
-class Area;
-
-enum PRB_ERROR {
-  PRB_NOERROR,
-  PRB_IOERROR,
-  PRB_BADARG,
-};
-        
 /**
  * This function creates a new raster file at the path
  * output_filename, with projection specified by output_srs. The

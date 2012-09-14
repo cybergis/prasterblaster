@@ -20,7 +20,7 @@
 #include <cstddef>
 #include <vector>
 
-#include "projectedraster.hh"
+#include "projectedraster.h"
 
 using std::vector;
 
