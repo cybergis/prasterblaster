@@ -2,12 +2,14 @@ SUBDIRS = gctp_cpp gtest
 
 
 noinst_LIBRARIES = librasterblaster.a
-librasterblaster_a_SOURCES = projectedraster.cpp \
-	         reprojector.cpp \
-		 resampler.cpp \
-                 rasterchunk.cpp \
-                 quadtree.cpp \
-		 driver.cpp 
+librasterblaster_a_SOURCES = projectedraster.cc \
+                             configuration.cc \
+                             driver.cc \
+                             projectedraster.cc \
+                             quadtree.cc \
+                             rastercoordtransformer.cc \
+                             reprojection_tools.cc \
+                             resampler.cc 
 #librasterblaster_a_LDFLAGS = $(all_libraries)  -Lgctp_cpp
 librasterblaster_a_LIBADD =  gctp_cpp/libgctp_cpp.a
 

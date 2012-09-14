@@ -6,8 +6,8 @@
 // See the LICENSE file for more information.
 //
 
-#ifndef _SHAREDPTR_HH_
-#define _SHAREDPTR_HH_
+#ifndef SRC_SHAREDPTR_H_
+#define SRC_SHAREDPTR_H_
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -27,7 +27,4 @@ using boost::shared_ptr;
 using boost::dynamic_pointer_cast;
 #endif
 
-class WinLayouter;
-typedef shared_ptr<WinLayouter> WLayouter;
-
-#endif // _SHAREDPTR_HH_
+#endif //  SRC_SHAREDPTR_H_

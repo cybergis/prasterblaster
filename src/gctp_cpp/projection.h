@@ -58,7 +58,7 @@ class Projection
 	void inverse ( double x, double y, double* lon = NULL, double* lat = NULL );
 
 	//! Get the WKT describing this projection
-	virtual std::string wkt ();
+	std::string wkt ();
 
 	//! Get the x coordinate from the most recent forward() call.
 	double x () {return m_x_coord;}

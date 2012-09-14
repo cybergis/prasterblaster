@@ -31,10 +31,10 @@
 #include "gctp_cpp/projection.h"
 #include "gctp_cpp/transformer.h"
 #include "gctp_cpp/mollweide.h"
-#include "projectedraster.hh"
-#include "rasterchunk.hh"
-#include "reprojector.hh"
-#include "sharedptr.hh"
+#include "projectedraster.h"
+#include "rasterchunk.h"
+#include "reprojection_tools.h"
+#include "sharedptr.h"
 			 
 int driver(string input_raster, 
 	   string output_filename, 

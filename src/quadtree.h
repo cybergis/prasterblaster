@@ -1,7 +1,21 @@
+//
+// Copyright 0000 <Nobody>
+// @file
+// @author David Matthew Mattli <dmattli@usgs.gov>
+//
+// @section LICENSE
+//
+// This software is in the public domain, furnished "as is", without
+// technical support, and with no warranty, express or implied, as to
+// its usefulness for any purpose.
+//
+// @section DESCRIPTION
+//
+//
+//
 
-
-#ifndef QUADTREE_HH
-#define QUADTREE_HH
+#ifndef SRC_QUADTREE_H_
+#define SRC_QUADTREE_H_
 
 #include <cstddef>
 #include <vector>
@@ -10,71 +24,68 @@
 
 using std::vector;
 
+namespace librasterblaster {
+struct QuadNode {
+  QuadNode() {
+    northWest = NULL;
+    northEast = NULL;
+    southWest = NULL;
+    southEast = NULL;
+    return;
+  }
 
-struct QuadNode
-{
-	QuadNode() {
-		northWest = NULL;
-		northEast = NULL;
-		southWest = NULL;
-		southEast = NULL;
-		return;
-	}
-	
-	QuadNode(Area _boundry) {
-		northWest = NULL;
-		northEast = NULL;
-		southWest = NULL;
-		southEast = NULL;
+  explicit QuadNode(Area _boundry) {
+    northWest = NULL;
+    northEast = NULL;
+    southWest = NULL;
+    southEast = NULL;
 
-		boundry = _boundry;
-		return;
-	}
+    boundry = _boundry;
+    return;
+  }
 
-	~QuadNode() {
-		if (northWest != NULL) {
-			delete northWest;
-		}
+  ~QuadNode() {
+    if (northWest != NULL) {
+      delete northWest;
+    }
 
-		if (northEast != NULL) {
-			delete northEast;
-		}
-		
-		if (southWest != NULL) {
-			delete southWest;
-		}
-		
-		if (southEast != NULL) {
-			delete southEast;
-		}
-		
-	}
-	
-	Area boundry;
+    if (northEast != NULL) {
+      delete northEast;
+    }
 
-	QuadNode *northWest;
-	QuadNode *northEast;
-	QuadNode *southWest;
-	QuadNode *southEast;
+    if (southWest != NULL) {
+      delete southWest;
+    }
 
-	size_t depth;
+    if (southEast != NULL) {
+      delete southEast;
+    }
+  }
+
+  Area boundry;
+
+  QuadNode *northWest;
+  QuadNode *northEast;
+  QuadNode *southWest;
+  QuadNode *southEast;
+
+  size_t depth;
 };
 
-class QuadTree 
-{
-public:
-	QuadTree(Area boundry, size_t maximum_partition_size);
-	QuadTree(size_t rows, size_t columns, size_t maximum_partition_size);
-	~QuadTree();
+class QuadTree {
+ public:
+  QuadTree(Area boundry, size_t maximum_partition_size);
+  QuadTree(size_t rows, size_t columns, size_t maximum_partition_size);
+  ~QuadTree();
 
-	void subdivide();
+  void subdivide();
 
-	vector<Area> collectLeaves();
+  vector<Area> collectLeaves();
 
-	QuadNode *rootNode;
+  QuadNode *rootNode;
 
-	size_t max_partition;
+  size_t max_partition;
 };
+}
 
-
-#endif // QUADTREE_HH
+#endif  // SRC_QUADTREE_H_

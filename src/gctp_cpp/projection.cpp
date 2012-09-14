@@ -5,6 +5,8 @@
 #include "projection.h"
 #include "transformer.h"
 
+#include <ogr_spatialref.h>
+
 Projection::Projection(): 
 m_errorCode(0),m_datum(NOT_SET),m_longitude(0.0), m_latitude(0.0), m_x_coord(0.0), m_y_coord(0.0), 
 m_falseEasting(0.0),m_falseNorthing(0.0), m_rMajor(0.0), m_rMinor(0.0), m_radius(0.0),
@@ -232,7 +234,17 @@ void Projection::init()
 
 std::string Projection::wkt()
 {
-  return std::string("");
+         OGRSpatialReference srs;
+         std::string output_srs = "";
+         char *temp;
+
+         srs.importFromUSGS(number(), 0, params(), datum());
+         srs.exportToPrettyWkt(&temp);
+         
+         output_srs = temp;
+         OGRFree(temp);
+         
+         return output_srs;
 }
 
 

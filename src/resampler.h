@@ -15,112 +15,110 @@
  */
 
 
-#ifndef RESAMPLER_HH
-#define RESAMPLER_HH
+#ifndef SRC_RESAMPLER_H_
+#define SRC_RESAMPLER_H_
 
 #include <gdal.h>
 
-#include "rasterchunk.hh"
+#include "rasterchunk.h"
 
-namespace Resampler
-{	
-	template <typename T>
-	T Max(Coordinate input_ul,
-	      Coordinate input_lr,
-	      int input_column_count,
-	      T* input_pixels)
-	{
-		T temp = input_pixels[(int)input_ul.y * input_column_count + (int)input_ul.x];
-		T temp2 = 0;
-		for (int x = input_ul.x; x <= input_lr.x; ++x) {
-			for (int y = input_ul.y; y <= input_lr.y; ++y) {
-				temp2 = input_pixels[y * input_column_count + x];
+namespace librasterblaster {
+
+enum RESAMPLER {
+  NEAREST,
+  MIN,
+  MAX,
+  MEAN,
+};
+
+template <typename T>
+T Max(Coordinate input_ul,
+      Coordinate input_lr,
+      int input_column_count,
+      T* input_pixels) {
+  T temp = input_pixels[(int)input_ul.y * input_column_count + (int)input_ul.x];
+  T temp2 = 0;
+  for (int x = input_ul.x; x <= input_lr.x; ++x) {
+    for (int y = input_ul.y; y <= input_lr.y; ++y) {
+      temp2 = input_pixels[y * input_column_count + x];
 				
-				if (temp2 > temp) {
-					temp = temp2;
-				}
-			}
-		}
+      if (temp2 > temp) {
+        temp = temp2;
+      }
+    }
+  }
 		
-		return temp;
-	}
+  return temp;
+}
 
-	template <typename T>
-	T Min(Coordinate input_ul,
-	      Coordinate input_lr,
-	      int input_column_count,
-	      T* input_pixels)
-	{
-		T temp = input_pixels[(int)input_ul.y * input_column_count + (int)input_ul.x];
-		T temp2 = 0;
-		for (int x = input_ul.x; x <= input_lr.x; ++x) {
-			for (int y = input_ul.y; y <= input_lr.y; ++y) {
-				temp2 = input_pixels[y * input_column_count + x];
+template <typename T>
+T Min(Coordinate input_ul,
+      Coordinate input_lr,
+      int input_column_count,
+      T* input_pixels) {
+  T temp = input_pixels[(int)input_ul.y * input_column_count + (int)input_ul.x];
+  T temp2 = 0;
+  for (int x = input_ul.x; x <= input_lr.x; ++x) {
+    for (int y = input_ul.y; y <= input_lr.y; ++y) {
+      temp2 = input_pixels[y * input_column_count + x];
 				
-				if (temp2 < temp) {
-					temp = temp2;
-				}
-			}
-		}
+      if (temp2 < temp) {
+        temp = temp2;
+      }
+    }
+  }
 
-		return temp;
-	}
+  return temp;
+}
 
-	template <typename T>
-	T Mean(Coordinate input_ul,
-	       Coordinate input_lr,
-	       int input_column_count,
-	       T* input_pixels)
-	{
-		T temp = 0;
+template <typename T>
+T Mean(Coordinate input_ul,
+       Coordinate input_lr,
+       int input_column_count,
+       T* input_pixels) {
+  T temp = 0;
 		
-		for (int x = input_ul.x; x <= input_lr.x; ++x) {
-			for (int y = input_ul.y; y <= input_lr.y; ++y) {
-				temp += input_pixels[y * input_column_count + x];
-			}
-		}
+  for (int x = input_ul.x; x <= input_lr.x; ++x) {
+    for (int y = input_ul.y; y <= input_lr.y; ++y) {
+      temp += input_pixels[y * input_column_count + x];
+    }
+  }
 
-		temp /= (input_lr.x - input_ul.x) * (input_lr.y - input_ul.y);
+  temp /= (input_lr.x - input_ul.x) * (input_lr.y - input_ul.y);
 
-		return temp;
-	}
+  return temp;
+}
 
-	template <typename T>
-	T Median(Coordinate input_ul,
-		 Coordinate input_lr,
-		 int input_column_count,
-		 T* input_pixels)
-	{
+template <typename T>
+T Median(Coordinate input_ul,
+         Coordinate input_lr,
+         int input_column_count,
+         T* input_pixels) {
 		
-	}
+}
 	
-	template <typename T>
-	T Mode(Coordinate input_ul,
-	       Coordinate input_lr,
-	       int input_column_count,
-	       T* input_pixels)
-	{
+template <typename T>
+T Mode(Coordinate input_ul,
+       Coordinate input_lr,
+       int input_column_count,
+       T* input_pixels) {
 		
-	}
+}
 
-	template <typename T>
-	T Sum(Coordinate input_ul,
-		   Coordinate input_lr,
-		   int input_column_count,
-		   T* input_pixels)
-	{
-		
-	}
+template <typename T>
+T Sum(Coordinate input_ul,
+      Coordinate input_lr,
+      int input_column_count,
+      T* input_pixels) {
+}
 
 
-	template <typename T>
-	T Bilinear(Coordinate input_ul,
-		   Coordinate input_lr,
-		   int input_column_count,
-		   T* input_pixels)
-	{
-		
-	}
+template <typename T>
+T Bilinear(Coordinate input_ul,
+           Coordinate input_lr,
+           int input_column_count,
+           T* input_pixels) {
+}
 } // namespace resampler
 
-#endif // RESAMPLER_HH
+#endif //  SRC_RESAMPLER_H_
