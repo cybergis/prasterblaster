@@ -224,6 +224,14 @@ double ProjectedRaster::pixel_size() {
   return pixel_size_;
 }
 
+double ProjectedRaster::ul_x() {
+  return ul_x_;
+}
+
+double ProjectedRaster::ul_y() {
+  return ul_y_;
+}
+
 int ProjectedRaster::zone_number() {
   /*
     shared_ptr<UTM> utm_projection(projection);

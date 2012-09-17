@@ -27,7 +27,7 @@
 using std::string;
 
 namespace librasterblaster {
-class Configuration {
+struct Configuration {
   Configuration();
   Configuration(int argc, char *argv[]);
 

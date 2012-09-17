@@ -35,7 +35,7 @@ Configuration::Configuration() {
 }
 
 Configuration::Configuration(int argc, char *argv[]) {
-  char c = 0;
+  signed char c = 0;
   std::string arg = "";
   while ((c = getopt_long(argc, argv, "p:r:f:n:t:", longopts, NULL)) != -1) {
     switch (c) {

@@ -2,17 +2,15 @@
 # Author: David Mattli <dmattli@usgs.gov>
 # License: PUBLIC DOMAIN
 
-lib_LIBRARY = gctp_cpp
-
-noinst_LIBRARIES = libgctp_cpp.a
+noinst_LTLIBRARIES = libgctp_cpp.la
 
 AM_CXXFLAGS = -W -Wall -Wextra -Wcast-align \
                 -Wpointer-arith -Wsign-compare -g\
                 -Wformat=2 -Wno-format-y2k  -Wmissing-braces -Wparentheses \
                 -Wtrigraphs -Wstrict-aliasing=2
 
-libgctp_cpp_CXXFLAGS = -fPIC
-libgctp_cpp_a_SOURCES = alaskaconformal.cpp \
+libgctp_cpp_la_CXXFLAGS = -fPIC
+libgctp_cpp_la_SOURCES = alaskaconformal.cpp \
            albersConEqArea.cpp \
            azequidistant.cpp \
            constants.cpp \

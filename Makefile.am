@@ -5,7 +5,7 @@
 
 
 
-SUBDIRS = src . tests
+SUBDIRS = src . 
 dist_doc_DATA=README.org
 docdir = ${datadir}/doc/${PACKAGE} 
 

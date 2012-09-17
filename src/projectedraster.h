@@ -88,7 +88,6 @@ class ProjectedRaster {
    */
   ~ProjectedRaster();
 
-
   //! A normal member taking no arguments.
   /*!
    * \return A copy of the ProjectedRaster's projection object. It's the

@@ -29,7 +29,7 @@
 #include "gctp_cpp/transformer.h"
 #include "gctp_cpp/coordinate.h"
 
-#include "rastercoordtransformer.h"o
+#include "rastercoordtransformer.h"
 #include "projectedraster.h"
 #include "quadtree.h"
 #include "resampler.h"

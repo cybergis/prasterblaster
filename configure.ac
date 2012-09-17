@@ -9,6 +9,8 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_PROG_LIBTOOL
 AC_CONFIG_MACRO_DIR([m4])
 
+LT_INIT
+
 # Check for programs
 AC_PROG_CXX([mpiCC mpiCXX mpic++])
 AC_PROG_CPP
@@ -91,6 +93,7 @@ AC_CONFIG_FILES([
   Makefile  
   src/Makefile
   src/gctp_cpp/Makefile
+  src/demos/Makefile
   src/gtest/Makefile
   tests/Makefile
 ])  
