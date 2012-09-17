@@ -68,8 +68,8 @@ Configuration::Configuration(int argc, char *argv[]) {
     }
 
     if (argc > 2) {
-      output_filename = argv[argc-2];
-      input_filename = argv[argc-1];
+      output_filename = argv[argc-1];
+      input_filename = argv[argc-2];
     }
 
     if (argc > 2 && temporary_path == "") {
