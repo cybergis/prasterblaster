@@ -70,10 +70,10 @@ PRB_ERROR CreateOutputRaster(shared_ptr<ProjectedRaster> in,
 
   OGRFree(params);
 
+  
   bool result  = ProjectedRaster::CreateRaster(output_filename,
                                                in,
-                                               shared_ptr<Projection>(out_proj->copy()),
-                                               in->pixel_type() ,
+                                               out_proj,
                                                output_pixel_size);
   if (result) {
     return PRB_NOERROR;
@@ -138,7 +138,6 @@ PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
   bool result = ProjectedRaster::CreateRaster(output_filename,
                                               input,
                                               out_proj,
-                                              input->pixel_type(),
                                               pixel_size);
 
 
@@ -152,13 +151,22 @@ PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
 Projection* ProjectionFactory(string output_srs) {
   Projection *out_proj; 
   OGRSpatialReference srs; 
+  char *wkt = NULL;
+  char *tmp = NULL;
 	
   OGRErr err = srs.importFromProj4(output_srs.c_str());
-
   if (err != OGRERR_NONE) {
-    fprintf(stderr, "Error parsing projection!\n");
-    return NULL;
+    wkt = strdup(output_srs.c_str());
+    tmp = wkt;
+    err = srs.importFromWkt(&tmp);
+    free(wkt);
+    if (err != OGRERR_NONE) {
+      fprintf(stderr, "Error parsing projection!\n");
+      return NULL;   
+    }
   }
+
+
   long proj_code, datum_code, zone;
   double *params = NULL;
 		
@@ -172,6 +180,7 @@ Projection* ProjectionFactory(string output_srs) {
 
   out_proj->setDatum(static_cast<ProjDatum>(datum_code));
   out_proj->setParams(params);
+  out_proj->setUnits(METER);
 
   OGRFree(params);
 
@@ -414,7 +423,6 @@ PRB_ERROR CreateOutputRaster2(shared_ptr<ProjectedRaster> in,
                                                in,
                                                shared_ptr<Projection>(
                                                    out_proj->copy()),
-                                               in->pixel_type(),
                                                output_pixel_size);
   if (result) {
     return PRB_NOERROR;
