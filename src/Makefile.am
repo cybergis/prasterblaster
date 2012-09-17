@@ -9,6 +9,7 @@ librasterblaster_la_SOURCES = projectedraster.cc \
                              reprojection_tools.cc
 #librasterblaster_a_LDFLAGS = $(all_libraries)  -Lgctp_cpp
 librasterblaster_la_LIBADD =  gctp_cpp/libgctp_cpp.la
+librasterblaster_la_LDFLAGS = -lgdal
 
 AM_CPPFLAGS = $(all_includes) -IpRPL -Igctp_cpp
 
