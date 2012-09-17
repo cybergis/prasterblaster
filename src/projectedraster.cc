@@ -83,7 +83,6 @@ bool ProjectedRaster::CreateRaster(string _filename,
 bool ProjectedRaster::CreateRaster(string _filename,
 				   shared_ptr<ProjectedRaster> input,
 				   shared_ptr<Projection> output_proj,
-				   GDALDataType pixel_type,
 				   double _pixel_size) {
   bool status = false;
   double ulx, uly;
@@ -112,7 +111,7 @@ bool ProjectedRaster::CreateRaster(string _filename,
                       input->band_count_,
                       ulx,
                       uly,
-                      pixel_type,
+                       input->pixel_type(),
                       output_proj,
                       _pixel_size);
 
@@ -554,7 +553,7 @@ string ProjectedRaster::srs() {
   char *temp;
 
   srs.importFromUSGS(projection_->number(), 0, projection_->params(), projection_->datum());
-  srs.exportToPrettyWkt(&temp);
+  srs.exportToProj4(&temp);
 
   output_srs = temp;
   OGRFree(temp);

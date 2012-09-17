@@ -80,7 +80,6 @@ class ProjectedRaster {
   static bool CreateRaster(string filename,
                            shared_ptr<ProjectedRaster> input,
                            shared_ptr<Projection> output_proj,
-                           GDALDataType pixel_type,
                            double pixel_size);
 	
   /*!
