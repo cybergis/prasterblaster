@@ -154,7 +154,7 @@ Projection* ProjectionFactory(string output_srs) {
   OGRSpatialReference srs; 
 	
   OGRErr err = srs.importFromProj4(output_srs.c_str());
-	
+
   if (err != OGRERR_NONE) {
     fprintf(stderr, "Error parsing projection!\n");
     return NULL;
@@ -241,7 +241,7 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
   shared_ptr<Projection> output_projection(ProjectionFactory(output_srs));
   const int buffer = 2;
   
-  if (input_proj.get() == NULL || output_projection.get()) {
+  if (input_proj.get() == NULL || output_projection.get() == NULL) {
     return Area(-1, -1, -1, -1);
   }
 
