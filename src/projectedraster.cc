@@ -504,10 +504,9 @@ bool ProjectedRaster::make_raster(string _filename,
 	  
   // Set options
   options = CSLSetNameValue( options, "INTERLEAVE", "PIXEL" );
-  options = CSLSetNameValue( options, "BIGTIFF", "IF_SAFER" );
+  options = CSLSetNameValue( options, "BIGTIFF", "YES" );
   options = CSLSetNameValue( options, "TILED", "NO" );
   options = CSLSetNameValue( options, "COMPRESS", "NONE" );
-  options = CSLSetNameValue( options, "PHOTOMETRIC", "MINISBLACK");
 
   GDALDataset *_dataset = driver->Create(_filename.c_str(), _cols, _rows, 
                                          _band_count, _type,
