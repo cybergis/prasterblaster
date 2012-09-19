@@ -40,7 +40,7 @@ struct Configuration {
   string fillvalue;
   string nodata_value;
   string temporary_path;
-  long partition_count;
+  long partition_size;
 
 };
 }

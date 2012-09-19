@@ -23,7 +23,7 @@ namespace librasterblaster {
 
 struct option longopts[] = {
   {"output-projection", required_argument, NULL, 'p'},
-  {"partition-count", required_argument, NULL, 'n'},
+  {"partition-size", required_argument, NULL, 'n'},
   {"resampler", required_argument, NULL, 'r'},
   {"fill-value", required_argument, NULL, 'f'},
   {"temporary-path", required_argument, NULL, 't'},
@@ -36,6 +36,7 @@ Configuration::Configuration() {
 
 Configuration::Configuration(int argc, char *argv[]) {
   signed char c = 0;
+  partition_size = 0;
   std::string arg = "";
   while ((c = getopt_long(argc, argv, "p:r:f:n:t:", longopts, NULL)) != -1) {
     switch (c) {
@@ -45,7 +46,7 @@ Configuration::Configuration(int argc, char *argv[]) {
         output_srs = optarg;
         break;
       case 'n':
-        partition_count = strtol(optarg, NULL, 10);
+        partition_size = strtol(optarg, NULL, 10);
         break;
       case 'r':
       arg = optarg;
