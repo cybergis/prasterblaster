@@ -38,3 +38,6 @@ stamp-h1
 
 # test data
 tests/testdata/*
+
+# clang static analysis files
+clang_output_*
