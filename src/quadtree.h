@@ -76,6 +76,11 @@ class QuadTree {
  public:
   QuadTree(Area boundry, size_t maximum_partition_size);
   QuadTree(size_t rows, size_t columns, size_t maximum_partition_size);
+  QuadTree(size_t rows, 
+           size_t columns, 
+           size_t maximum_partition_size, 
+           size_t maximum_height, 
+           size_t maximum_width);
   ~QuadTree();
 
   void subdivide();
@@ -85,6 +90,8 @@ class QuadTree {
   QuadNode *rootNode;
 
   size_t max_partition;
+  size_t max_height;
+  size_t max_width;
 };
 }
 
