@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (conf.partition_size == 0) {
-    conf.partition_size = 8192;
+    conf.partition_size = 50000;
   }
   
   // Open the input raster
@@ -82,13 +82,15 @@ int main(int argc, char *argv[]) {
   // Now we will partition the output raster space. We will use a
   // maximum_height of 1 because we want single row or smaller
   // partitions to work with sptw.
-  QuadTree qt(output_raster->y_size, 
-              output_raster->x_size, 
-              conf.partition_size, 
-              1, 
-              output_raster->x_size);
+  vector<Area> partitions = PartitionBySize(rank, 
+					    process_count,
+					    output_raster->y_size,
+					    output_raster->x_size,
+					    conf.partition_size,
+					    1,
+					    -1);
 
-  vector<Area> partitions = qt.collectLeaves();
+  printf("Rank: %d, Partitions: %zd\n", rank, partitions.size());
               
 
   // Clean up
