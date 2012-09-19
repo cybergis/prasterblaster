@@ -34,6 +34,7 @@ ltmain.sh
 stamp-h1
 .deps
 .libs
+.dirstamp
 
 # test data
 tests/testdata/*
