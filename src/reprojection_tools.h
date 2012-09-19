@@ -59,18 +59,14 @@ PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
                              string output_filename,
                              string output_srs, 
                              int output_size);
-/**
- * This function partitions the _area_ of the specified ProjectedRaster into approximately partition_count pieces.
- * 
- *
- * @param destination The ProjectedRaster to partition
- * @param partition_count The number of partitions to create
- * @return A std:vector of Areas. The Areas represent areas in raster coordinates. They will cover the entire
- *         raster and will not overlap. If the ul.x value of an Area is -1, the area is invalid and should be
- *         ignored. This will happen if you, for example, ask for 100 paritions from a raster with 99 pixels.  
- */
-std::vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> destination,
-                                   int partition_count);
+
+std::vector<Area> PartitionBySize(int rank,
+    int process_count,                                                                                                                                                                
+    int row_count,                                                                                                                                                                    
+    int column_count,                                                                                                                                                                 
+    int partition_size,                                                                                                                                                               
+    int maximum_height,                                                                                                                                                               
+    int maximum_width);
 
 Projection*  ProjectionFactory(string srs);
 void SearchAndUpdate(Area input_area,

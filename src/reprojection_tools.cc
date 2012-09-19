@@ -188,21 +188,52 @@ Projection* ProjectionFactory(string output_srs) {
 
 }
 
-std::vector<Area> PartitionByCount(shared_ptr<ProjectedRaster> source,
-				   int partition_count) {
-  Area noval(-1, -1, -1, -1);
-  int64_t area_size = static_cast<int64_t>(source->column_count()) * static_cast<int64_t>(source->row_count());
-  int64_t partition_area = area_size / partition_count;
-	
-  if (partition_area == 0) {
-    partition_area = 1;
+std::vector<Area> PartitionBySize(int rank,
+                                  int process_count,
+                                  int row_count,
+                                  int column_count,
+                                  int partition_size,
+                                  int maximum_height,
+                                  int maximum_width) {
+  
+  if (maximum_height == -1) {
+    maximum_height = row_count + 1;
   }
 
-  QuadTree tree(source->row_count(), source->column_count(), partition_area);
+  if (maximum_width == -1) {
+    maximum_width = column_count + 1;
+  }
 
-  return tree.collectLeaves();
+  QuadTree qt(row_count,
+              column_count,
+              partition_size,
+              maximum_height,
+              maximum_width);
+
+  vector<Area> leaves = qt.collectLeaves();
+  vector<Area> partitions;
+  size_t partition_count = leaves.size();
+  size_t partitions_per_proc = partition_count / process_count;
+  
+  if (partitions_per_proc == 0) { // process_count < partition_count
+    if (static_cast<size_t>(rank) < partition_count) {
+      partitions.push_back(leaves.at(rank));
+    }
+  } else { // process_count >= partition_count
+    size_t first_index = rank * partitions_per_proc;
+    size_t last_index = (rank+1) * partitions_per_proc - 1;
+
+    if (rank == process_count - 1) {
+      last_index = leaves.size() - 1;
+    }
+
+    for (size_t i = first_index; i <= last_index; ++i) {
+      partitions.push_back(leaves.at(i));
+    }
+  }
+  
+  return partitions;
 }
-
 
 void SearchAndUpdate(Area input_area,
                      shared_ptr<Projection> input_projection,
