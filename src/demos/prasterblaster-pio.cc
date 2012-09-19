@@ -79,9 +79,9 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  // Now we will partition the output raster space. We will use a maximum_height
-  // of 1 because we want single row or smaller partitions to will work with
-  // sptw.
+  // Now we will partition the output raster space. We will use a
+  // maximum_height of 1 because we want single row or smaller
+  // partitions to work with sptw.
   QuadTree qt(output_raster->y_size, 
               output_raster->x_size, 
               conf.partition_size, 
