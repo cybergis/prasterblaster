@@ -33,6 +33,7 @@ using namespace sptw;
 int main(int argc, char *argv[]) {
   int rank = 0;
   int process_count = 0;
+  RasterChunk *in_chunk, *out_chunk;
   
   // Give MPI_Init first run at the command-line arguments
   MPI_Init(&argc, &argv);
@@ -73,6 +74,7 @@ int main(int argc, char *argv[]) {
 
   // Open the new output raster
   PTIFF* output_raster = open_raster(conf.output_filename);
+  shared_ptr<ProjectedRaster> pr_output_raster(new ProjectedRaster(conf.output_filename));
 
   if (output_raster == NULL) {
     fprintf(stderr, "Could not open output raster\n");
@@ -90,7 +92,48 @@ int main(int argc, char *argv[]) {
 					    1,
 					    -1);
 
-  printf("Rank: %d, Partitions: %zd\n", rank, partitions.size());
+  // Now we loop through the returned partitions
+  for (size_t i = 0; i < partitions.size(); ++i) {
+    // Swap y axis
+    Area swap = partitions.at(i);
+    swap.ul.y = output_raster->y_size - partitions.at(i).ul.y - 1;
+    swap.lr.y = output_raster->y_size - partitions.at(i).lr.y - 1;
+    partitions.at(i) = swap;
+    if (partitions.at(i).ul.x > partitions.at(i).lr.x) {
+    printf("%f %f %f %f\n",partitions[i].ul.x, partitions[i].ul.y, partitions[i].lr.x,
+	      partitions[i].lr.y);
+    }
+    // Calculate the input area used by the partition
+    Area in_area = RasterMinbox(input_raster,
+                                pr_output_raster,
+                                partitions.at(i));
+
+    // Read the input area 
+    in_chunk = input_raster->create_raster_chunk(in_area);
+    if (in_chunk == NULL) {
+      fprintf(stderr, "Error reading input chunk! %f %f %f %f",
+	      in_area.ul.x, in_area.ul.y, in_area.lr.x, in_area.lr.y);
+      return 1;
+    }
+
+    // Create an allocated (not read from file) RasterChunk for the output 
+    out_chunk = pr_output_raster->create_allocated_raster_chunk(partitions.at(i));
+    if (out_chunk == NULL) {
+      fprintf(stderr, "Error allocating output chunk! %f %f %f %f'n",
+	      partitions[i].ul.x, partitions[i].ul.y, partitions[i].lr.x,
+	      partitions[i].lr.y);
+      return 1;
+    }
+
+    // Finally call ReprojectChunk
+    bool ret = ReprojectChunk(in_chunk,
+                              out_chunk,
+                              "0",
+                              "Min");
+
+    delete in_chunk;
+    delete out_chunk;
+  }
               
 
   // Clean up
