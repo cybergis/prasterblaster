@@ -41,11 +41,11 @@ SPTW_ERROR create_raster(string filename,
 PTIFF* open_raster(string filename);
 SPTW_ERROR close_raster(PTIFF *ptiff);
 SPTW_ERROR write_rows(PTIFF *ptiff, 
-		      char *buffer, 
+		      void *buffer, 
 		      int64_t first_row, 
 		      int64_t last_row);
 SPTW_ERROR write_subrow(PTIFF *ptiff, 
-			char *buffer, 
+			void *buffer, 
 			int64_t row, 
 			int64_t first_column, 
 			int64_t last_column);
