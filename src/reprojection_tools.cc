@@ -188,6 +188,51 @@ Projection* ProjectionFactory(string output_srs) {
 
 }
 
+std::vector<Area> RowPartition(int rank,
+                               int process_count,
+                               int row_count,
+                               int column_count,
+                               int partition_size) {
+  int partitions_per_row = column_count / partition_size;
+
+  if (partitions_per_row < 1) {
+    partitions_per_row = 1;
+    partition_size = column_count;
+  }
+
+  int leftover_per_row = column_count % partition_size;
+  
+  vector<int> rowpart_sizes(partitions_per_row, partition_size);
+  vector<int> first_column(partitions_per_row, 0);
+
+  for (int i = 0; i < leftover_per_row; ++i) {
+    // Set the partition sizes
+    int j = i % rowpart_sizes.size();
+    rowpart_sizes.at(j) = rowpart_sizes.at(j) + 1;
+  }
+
+  // Set the column offsets
+  for (int i = 1; i < first_column.size(); ++i) {
+    first_column.at(i) = first_column.at(i-1) + rowpart_sizes.at(i-1);
+  }
+
+  int partition_count = rowpart_sizes.size() * row_count;
+  vector<Area> partitions;  
+  for (int r = rank; r < partition_count; r += process_count) {
+    int row = r / rowpart_sizes.size();
+    int partcol = r % rowpart_sizes.size();
+
+    partitions.push_back(Area(first_column.at(partcol),
+                              row,
+                              first_column.at(partcol) 
+                              + rowpart_sizes.at(partcol) - 1,
+                              row));
+  }
+  
+  return partitions;
+}
+                              
+
 std::vector<Area> PartitionBySize(int rank,
                                   int process_count,
                                   int row_count,
@@ -362,6 +407,11 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
                             c, destination->pixel_size());
   Area temp;
 
+  if (dproj->errorOccured() == true) {
+    source_area.ul.x = -1.0;
+    source_area.lr.x = -1.0;
+    return source_area;
+  }
 
   source_area.ul.x = source_area.ul.y = DBL_MAX;
   source_area.lr.y = source_area.lr.x = -DBL_MAX;
@@ -373,11 +423,11 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
       c.y = y;
 
       temp = rt.Transform(c);
-		
+      
       if (temp.ul.x == -1) {
         continue;
       }
-
+      printf("%f %f %f %f\n", temp.ul.x, temp.ul.y, temp.lr.x, temp.lr.y);
       if (temp.lr.x > source_area.lr.x) {
         source_area.lr.x = temp.lr.x;
       }
@@ -396,6 +446,14 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
     }
   }
 
+  // Check whether entire area is out of the projected space.
+  if (source_area.ul.x == DBL_MAX || source_area.ul.y == DBL_MAX
+      || source_area.lr.x == -DBL_MAX || source_area.lr.y == -DBL_MAX) {
+    source_area.ul.x = -1.0;
+    source_area.lr.x = -1.0;
+    return source_area;
+  }
+  
   if (source_area.ul.x < 0)
     source_area.ul.x = 0;
   if (source_area.ul.y < 0)

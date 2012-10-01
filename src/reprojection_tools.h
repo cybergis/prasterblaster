@@ -59,7 +59,11 @@ PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
                              string output_filename,
                              string output_srs, 
                              int output_size);
-
+std::vector<Area> RowPartition(int rank,
+                               int process_count,
+                               int row_count,
+                               int column_count,
+                               int partition_size);
 std::vector<Area> PartitionBySize(int rank,
     int process_count,                                                                                                                                                                
     int row_count,                                                                                                                                                                    
