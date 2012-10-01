@@ -68,7 +68,8 @@ int main(int argc, char *argv[]) {
                                        conf.output_srs);
 
     if (err != PRB_NOERROR) {
-      fprintf(stderr, "Error creating raster!\n");
+      fprintf(stderr, "Error creating raster!: %d\n",err);
+      return 1;
     }
   }
 
@@ -84,13 +85,11 @@ int main(int argc, char *argv[]) {
   // Now we will partition the output raster space. We will use a
   // maximum_height of 1 because we want single row or smaller
   // partitions to work with sptw.
-  vector<Area> partitions = PartitionBySize(rank, 
-					    process_count,
-					    output_raster->y_size,
-					    output_raster->x_size,
-					    conf.partition_size,
-					    1,
-					    -1);
+  vector<Area> partitions = RowPartition(rank,
+                                         process_count,
+                                         output_raster->y_size,
+                                         output_raster->x_size,
+                                         conf.partition_size);
 
   // Now we loop through the returned partitions
   for (size_t i = 0; i < partitions.size(); ++i) {
@@ -107,12 +106,19 @@ int main(int argc, char *argv[]) {
     Area in_area = RasterMinbox(input_raster,
                                 pr_output_raster,
                                 partitions.at(i));
-
+    if (in_area.ul.x == -1.0) { // chunk is outside of projected area
+      // We should write the fill value here too
+      continue;
+    }
     // Read the input area 
     in_chunk = input_raster->create_raster_chunk(in_area);
     if (in_chunk == NULL) {
-      fprintf(stderr, "Error reading input chunk! %f %f %f %f",
+      fprintf(stderr, "Error reading input chunk! %f %f %f %f\n",
 	      in_area.ul.x, in_area.ul.y, in_area.lr.x, in_area.lr.y);
+      fprintf(stderr, "output_chunk: %f %f %f %f'\n",
+	      partitions[i].ul.x, partitions[i].ul.y, partitions[i].lr.x,
+	      partitions[i].lr.y);
+      
       return 1;
     }
 
@@ -130,6 +136,21 @@ int main(int argc, char *argv[]) {
                               out_chunk,
                               "0",
                               "Min");
+
+    // Write output file
+    SPTW_ERROR err = write_subrow(output_raster, 
+                                  out_chunk->pixels_,
+                                  out_chunk->raster_location_.y,
+                                  out_chunk->raster_location_.x,
+                                  out_chunk->raster_location_.x+out_chunk->column_count_-1);
+
+    if (i % 1000 == 0 || 1) {
+      printf("Rank: %d wrote chunk #%zd of %zd, chunk_size: %d\n", rank, i, partitions.size(), 
+             out_chunk->row_count_ * out_chunk->column_count_);
+      printf("Input chunk %f %f %f %f\n", in_area.ul.x,
+             in_area.ul.y, in_area.lr.x, in_area.lr.y);
+
+    }
 
     delete in_chunk;
     delete out_chunk;
