@@ -170,7 +170,7 @@ SPTW_ERROR write_rows(PTIFF *ptiff, char *buffer, int64_t first_row, int64_t las
 SPTW_ERROR write_subrow(PTIFF *ptiff, void *buffer, int64_t row, int64_t first_column, int64_t last_column) {
   int64_t row_size = ptiff->x_size * ptiff->band_count * ptiff->band_type_size;
   int64_t subrow_size = (last_column - first_column + 1) * ptiff->band_count * ptiff->band_type_size;
-  MPI_Offset offset = ptiff->first_strip_offset + (row * row_size);
+  MPI_Offset offset = ptiff->first_strip_offset + (row * row_size) + first_column;
 
   MPI_Status status;
 
