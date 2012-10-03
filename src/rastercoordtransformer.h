@@ -15,12 +15,14 @@
 //
 //
 
-/*! \mainpage RasterCoordTransformer
+/*
  *
  *
  */
 #ifndef SRC_RASTERCOORDTRANSFORMER_H_
 #define SRC_RASTERCOORDTRANSFORMER_H_
+
+#include "ogr_spatialref.h"
 
 #include "sharedptr.h"
 
@@ -74,9 +76,13 @@ class RasterCoordTransformer {
   RasterCoordTransformer(shared_ptr<Projection> source_projection,
                          Coordinate source_ul,
                          double source_pixel_size,
+                         int source_row_count,
+                         int souce_column_count,
                          shared_ptr<Projection> destination_projection,
                          Coordinate destination_ul,
                          double destination_pixel_size);
+
+
   ~RasterCoordTransformer();
 
   // ! A normal member taking a single argument and returning an Area struct.
@@ -91,10 +97,20 @@ class RasterCoordTransformer {
 
     \param source a Coordinate struct that specifies the point in the source raster space to map to the destination raster space.
   */
-  Area Transform(Coordinate source);
+  Area Transform(Coordinate source, bool area_check = true);
 
  private:
+  void init(shared_ptr<Projection> source_projection,
+            Coordinate source_ul,
+            double source_pixel_size,
+            int source_row_count,
+            int source_column_count,
+            shared_ptr<Projection> destination_projection,
+            Coordinate destination_ul,
+            double destination_pixel_size);
   shared_ptr<Projection> src_proj, dest_proj;
+  shared_ptr<OGRCoordinateTransformation> ctrans;
+  Area maximum_geographic_area_;
   Coordinate source_ul_;
   double source_pixel_size_;
   Coordinate destination_ul_;
