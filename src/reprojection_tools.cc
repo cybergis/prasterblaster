@@ -229,6 +229,7 @@ std::vector<Area> RowPartition(int rank,
                               row));
   }
   
+  std::reverse(partitions.begin(), partitions.end());
   return partitions;
 }
                               
@@ -403,8 +404,8 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
   Area source_area;
   Coordinate c(destination->ul_x(), destination->ul_y(), UNDEF);
   shared_ptr<Projection> dproj = destination->projection();
-  RasterCoordTransformer rt(source, dproj,
-                            c, destination->pixel_size());
+  RasterCoordTransformer rt(destination, source);
+
   Area temp;
 
   if (dproj->errorOccured() == true) {
@@ -427,7 +428,7 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
       if (temp.ul.x == -1) {
         continue;
       }
-      printf("%f %f %f %f\n", temp.ul.x, temp.ul.y, temp.lr.x, temp.lr.y);
+
       if (temp.lr.x > source_area.lr.x) {
         source_area.lr.x = temp.lr.x;
       }
@@ -447,7 +448,7 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
   }
 
   // Check whether entire area is out of the projected space.
-  if (source_area.ul.x == DBL_MAX || source_area.ul.y == DBL_MAX
+  if (0&&source_area.ul.x == DBL_MAX || source_area.ul.y == DBL_MAX
       || source_area.lr.x == -DBL_MAX || source_area.lr.y == -DBL_MAX) {
     source_area.ul.x = -1.0;
     source_area.lr.x = -1.0;
@@ -464,12 +465,17 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
   source_area.lr.x = ceil(source_area.lr.x);
   source_area.lr.y = ceil(source_area.lr.y);
 
-  if (source_area.lr.x > destination->column_count() - 1) {
-    source_area.lr.x = destination->column_count() - 1;
+  if (source_area.lr.x > source->column_count() - 1) {
+    source_area.lr.x = source->column_count() - 1;
   }
 
-  if (source_area.lr.y > destination->row_count() - 1) {
-    source_area.lr.y = destination->row_count() - 1;
+  if (source_area.lr.y > source->row_count() - 1) {
+    source_area.lr.y = source->row_count() - 1;
+  }
+
+  if (source_area.lr.y < source_area.ul.y) {
+    double t = source_area.lr.y;
+    source_area.lr.y = source_area.ul.y;
   }
 
   return source_area;
@@ -565,7 +571,6 @@ bool ReprojectChunk(RasterChunk *source,
       fprintf(stderr, "Invalid type in ReprojectChunk!\n");
       return false;
       break;
-
   }
   return true;
 }

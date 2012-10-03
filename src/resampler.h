@@ -1,26 +1,27 @@
-/*!
- * @file
- * @author David Matthew Mattli <dmattli@usgs.gov>
- *
- * @section LICENSE 
- *
- * This software is in the public domain, furnished "as is", without
- * technical support, and with no warranty, express or implied, as to
- * its usefulness for any purpose.
- *
- * @section DESCRIPTION
- *
- * The resampler class implements a variety of resampling techniques.
- *
- */
-
+//
+// Copyright 0000 <Nobody>
+// @file
+// @author David Matthew Mattli <dmattli@usgs.gov>
+//
+// @section LICENSE
+//
+// This software is in the public domain, furnished "as is", without
+// technical support, and with no warranty, express or implied, as to
+// its usefulness for any purpose.
+//
+// @section DESCRIPTION
+//
+// Several resampling implementations for use with the ReprojectChunk
+//
+//
 
 #ifndef SRC_RESAMPLER_H_
 #define SRC_RESAMPLER_H_
 
 #include <gdal.h>
 
-#include "rasterchunk.h"
+#include "src/rasterchunk.h"
+#include "src/utils.h"
 
 namespace librasterblaster {
 
@@ -32,36 +33,38 @@ enum RESAMPLER {
 };
 
 template <typename T>
-T Max(Coordinate input_ul,
-      Coordinate input_lr,
-      int input_column_count,
-      T* input_pixels) {
-  T temp = input_pixels[(int)input_ul.y * input_column_count + (int)input_ul.x];
+T Max(RasterChunk *input,
+      Area pixel_area) {
+  T *pixels = static_cast<T*>(input->pixels_);
+  T temp = pixels[static_cast<int>(pixel_area.ul.y)
+                  * input->column_count_
+                  + static_cast<int>(pixel_area.ul.x)];
   T temp2 = 0;
-  for (int x = input_ul.x; x <= input_lr.x; ++x) {
-    for (int y = input_ul.y; y <= input_lr.y; ++y) {
-      temp2 = input_pixels[y * input_column_count + x];
-				
+  for (int x = pixel_area.ul.x; x <= pixel_area.lr.x; ++x) {
+    for (int y = pixel_area.ul.y; y <= pixel_area.lr.y; ++y) {
+      temp2 = pixels[y * input->column_count_  + x];
+
       if (temp2 > temp) {
         temp = temp2;
       }
     }
   }
-		
+
   return temp;
 }
 
 template <typename T>
-T Min(Coordinate input_ul,
-      Coordinate input_lr,
-      int input_column_count,
-      T* input_pixels) {
-  T temp = input_pixels[(int)input_ul.y * input_column_count + (int)input_ul.x];
+T Min(RasterChunk *input,
+      Area pixel_area) {
+  T *pixels = static_cast<T*>(input->pixels_);
+  T temp = pixels[static_cast<int>(pixel_area.ul.y)
+                  * input->column_count_
+                  + static_cast<int>(pixel_area.ul.x)];
   T temp2 = 0;
-  for (int x = input_ul.x; x <= input_lr.x; ++x) {
-    for (int y = input_ul.y; y <= input_lr.y; ++y) {
-      temp2 = input_pixels[y * input_column_count + x];
-				
+  for (int x = pixel_area.ul.x; x <= pixel_area.lr.x; ++x) {
+    for (int y = pixel_area.ul.y; y <= pixel_area.lr.y; ++y) {
+      temp2 = pixels[y * input->column_count_  + x];
+
       if (temp2 < temp) {
         temp = temp2;
       }
@@ -72,19 +75,17 @@ T Min(Coordinate input_ul,
 }
 
 template <typename T>
-T Mean(Coordinate input_ul,
-       Coordinate input_lr,
-       int input_column_count,
-       T* input_pixels) {
+T Mean(RasterChunk *input,
+       Area pixel_area) {
   T temp = 0;
-		
-  for (int x = input_ul.x; x <= input_lr.x; ++x) {
-    for (int y = input_ul.y; y <= input_lr.y; ++y) {
-      temp += input_pixels[y * input_column_count + x];
+  T *pixels = static_cast<T*>(input->pixels_);
+  for (int x = pixel_area.ul.x; x <= pixel_area.lr.x; ++x) {
+    for (int y = pixel_area.ul.y; y <= pixel_area.lr.y; ++y) {
+      temp += pixels[y * input->column_count_ + x];
     }
   }
 
-  temp /= (input_lr.x - input_ul.x) * (input_lr.y - input_ul.y);
+  temp /= (pixel_area.lr.x - pixel_area.ul.x) * (pixel_area.lr.y - pixel_area.ul.y);
 
   return temp;
 }
@@ -94,15 +95,15 @@ T Median(Coordinate input_ul,
          Coordinate input_lr,
          int input_column_count,
          T* input_pixels) {
-		
+
 }
-	
+
 template <typename T>
 T Mode(Coordinate input_ul,
        Coordinate input_lr,
        int input_column_count,
        T* input_pixels) {
-		
+
 }
 
 template <typename T>
@@ -119,6 +120,8 @@ T Bilinear(Coordinate input_ul,
            int input_column_count,
            T* input_pixels) {
 }
-} // namespace resampler
+}
 
-#endif //  SRC_RESAMPLER_H_
+
+#endif  // SRC_RESAMPLER_H_
+

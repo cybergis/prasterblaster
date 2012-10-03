@@ -100,23 +100,22 @@ template <class pixelType>
 bool ReprojectChunkType(RasterChunk *source, 
                         RasterChunk *destination, 
                         pixelType fillvalue, 
-                        pixelType (*resampler)(Coordinate, 
-                                               Coordinate,
-                                               int,
-                                               pixelType*)) {
-  
+                        pixelType (*resampler)(RasterChunk*, 
+                                               Area)) {
   shared_ptr<Projection> outproj, inproj;
   Coordinate temp1, temp2;
   std::vector<char> inraster, outraster;
 
   outproj = destination->projection_;
   inproj = source->projection_;
-	
+
   Area pixelArea;
 
   RasterCoordTransformer rt(destination->projection_, 
                             destination->ul_projected_corner_,
                             destination->pixel_size_,
+                            destination->row_count_,
+                            destination->column_count_,
                             source->projection_,
                             source->ul_projected_corner_,
                             source->pixel_size_);        
@@ -126,7 +125,7 @@ bool ReprojectChunkType(RasterChunk *source,
     for (int chunk_x = 0; chunk_x < destination->column_count_; ++chunk_x) {
       temp1.x = chunk_x; 
       temp1.y = chunk_y;
-			
+
       pixelArea = rt.Transform(temp1);
 
       if (pixelArea.ul.x == -1.0) {
@@ -158,19 +157,22 @@ bool ReprojectChunkType(RasterChunk *source,
       if (ul_y > (source->row_count_ - 1)) {
         ul_y = source->row_count_ - 1;
       }
-			
+
       // Perform resampling...
-      if (resampler != NULL && ((ul_x <= lr_x) || (lr_y <= ul_x))) { // ul/lr do not enclose an area, use NN
+      if ((resampler == NULL) || ((ul_x <= lr_x) || (lr_y <= ul_x))) { // ul/lr do not enclose an area, use NN
+        if (ul_x + 1 > source->column_count_ || ul_y + 1 > source->row_count_) {
+          // TODO FIX THIS
+
+        }
         reinterpret_cast<pixelType*>(destination->pixels_)[chunk_x + chunk_y * destination->column_count_] = 
             reinterpret_cast<pixelType*>(source->pixels_)[ul_x + ul_y * source->column_count_];
         continue;
       }
 
+      Area ia = Area(ul_x, ul_y, lr_x, lr_y);
       reinterpret_cast<pixelType*>(destination->pixels_)[chunk_x + chunk_y * destination->column_count_] = 
-          resampler(Coordinate(ul_x, ul_y, UNDEF), 
-                    Coordinate(lr_x, lr_y, UNDEF), 
-                    source->column_count_,
-                    reinterpret_cast<pixelType*>(source->pixels_));
+          resampler(source, ia);
+
     }
   }
 
