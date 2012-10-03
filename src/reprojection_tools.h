@@ -20,10 +20,11 @@
 
 #include <string>
 
-#include "projectedraster.h"
-#include "rastercoordtransformer.h"
-#include "sharedptr.h"
-#include "utils.h"
+#include "src/projectedraster.h"
+#include "src/rastercoordtransformer.h"
+#include "src/resampler.h"
+#include "src/sharedptr.h"
+#include "src/utils.h"
 
 using std::string;
 class Projection;
@@ -94,7 +95,7 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
 bool ReprojectChunk(RasterChunk *source, 
                     RasterChunk *destination, 
                     string fillvalue, 
-                    string resampler_name);
+                    RESAMPLER resampler);
 
 template <class pixelType>
 bool ReprojectChunkType(RasterChunk *source, 

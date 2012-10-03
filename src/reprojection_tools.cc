@@ -529,7 +529,7 @@ PRB_ERROR CreateOutputRaster2(shared_ptr<ProjectedRaster> in,
 bool ReprojectChunk(RasterChunk *source, 
                     RasterChunk *destination, 
                     string fillvalue, 
-                    string resampler_name) {
+                    RESAMPLER resampler) {
   if (source->pixel_type_ != destination->pixel_type_) {
     fprintf(stderr, "Source and destination chunks have different types!\n");
     return false;
@@ -537,18 +537,6 @@ bool ReprojectChunk(RasterChunk *source,
 
   double fvalue = strtod(fillvalue.c_str(), NULL);
 
-  std::transform(resampler_name.begin(), resampler_name.end(), resampler_name.begin(), ::tolower);
-
-  RESAMPLER resampler = MIN;
-
-  if (resampler_name == "min") {
-    resampler = MIN;
-  } else if (resampler_name == "max") {
-    resampler = MAX;
-  } else if (resampler_name == "nearest") {
-    resampler = NEAREST;
-  }
-	
   switch (source->pixel_type_) 
   {
     case GDT_Byte:
