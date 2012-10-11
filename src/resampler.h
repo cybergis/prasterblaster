@@ -85,7 +85,8 @@ T Mean(RasterChunk *input,
     }
   }
 
-  temp /= (pixel_area.lr.x - pixel_area.ul.x) * (pixel_area.lr.y - pixel_area.ul.y);
+  temp /= (pixel_area.lr.x - pixel_area.ul.x)
+      * (pixel_area.lr.y - pixel_area.ul.y);
 
   return temp;
 }
@@ -95,7 +96,6 @@ T Median(Coordinate input_ul,
          Coordinate input_lr,
          int input_column_count,
          T* input_pixels) {
-
 }
 
 template <typename T>
@@ -103,7 +103,6 @@ T Mode(Coordinate input_ul,
        Coordinate input_lr,
        int input_column_count,
        T* input_pixels) {
-
 }
 
 template <typename T>

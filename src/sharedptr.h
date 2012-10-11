@@ -27,4 +27,5 @@ using boost::shared_ptr;
 using boost::dynamic_pointer_cast;
 #endif
 
-#endif //  SRC_SHAREDPTR_H_
+
+#endif  // SRC_SHAREDPTR_H_

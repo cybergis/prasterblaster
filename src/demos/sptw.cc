@@ -1,3 +1,19 @@
+/*!
+ * Copyright 0000 <Nobody>
+ * @file
+ * @author David Matthew Mattli <dmattli@usgs.gov>
+ *
+ * @section LICENSE
+ *
+ * This software is in the public domain, furnished "as is", without
+ * technical support, and with no warranty, express or implied, as to
+ * its usefulness for any purpose.
+ *
+ * @section DESCRIPTION
+ *
+ * Implementation of the Simple Parallel Tiff Writer
+ *
+ */
 
 #include <endian.h>
 #include <fcntl.h>
@@ -10,7 +26,7 @@
 #include <tiff.h>
 #include <tiffio.h>
 
-#include "sptw.h"
+#include "src/demos/sptw.h"
 
 using std::string;
 
@@ -39,9 +55,9 @@ SPTW_ERROR create_raster(string filename,
 
   if (gtiff_driver == NULL) {
     return SP_CreateError;
-  }  
+  }
 
-  options = CSLSetNameValue( options, "BIGTIFF", "YES" );
+  options = CSLSetNameValue(options, "BIGTIFF", "YES");
 
   ds = gtiff_driver->Create(filename.c_str(),
                             x_size,
@@ -64,7 +80,7 @@ SPTW_ERROR create_raster(string filename,
   geotransform[3] = ul_y;
 
   ds->SetGeoTransform(geotransform);
-  
+
 
   // Close dataset
   GDALClose((GDALDatasetH) ds);
@@ -75,15 +91,16 @@ SPTW_ERROR create_raster(string filename,
 PTIFF* open_raster(string filename) {
   PTIFF *ptiff = new PTIFF();
   char *c_filename = strdup(filename.c_str());
-  
+
   GDALAllRegister();
-  
-  GDALDataset *ds = (GDALDataset*)GDALOpen(filename.c_str(), GA_Update);
+
+  GDALDataset *ds = static_cast<GDALDataset*>(GDALOpen(filename.c_str(),
+                                                       GA_Update));
 
   if (ds == NULL) {
     return NULL;
   }
-  
+
   ptiff->x_size = ds->GetRasterXSize();
   ptiff->y_size = ds->GetRasterYSize();
   ptiff->band_count = ds->GetRasterCount();
@@ -102,7 +119,7 @@ PTIFF* open_raster(string filename) {
 
   uint64_t *offset = NULL;
 
-  int ret = TIFFGetField(tiffds,TIFFTAG_STRIPOFFSETS, &offset);
+  int ret = TIFFGetField(tiffds, TIFFTAG_STRIPOFFSETS, &offset);
   if (ret != 1) {
     fprintf(stderr, "Error reading strip offsets!\n");
   }
@@ -112,33 +129,36 @@ PTIFF* open_raster(string filename) {
     free(c_filename);
     return NULL;
   }
-  
+
   ptiff->first_strip_offset = *offset;
 
   TIFFClose(tiffds);
 
   c_filename = strdup(filename.c_str());
   int rc = MPI_File_open(MPI_COMM_WORLD,
-			 c_filename,
+                         c_filename,
                          MPI_MODE_RDWR,
                          MPI_INFO_NULL,
                          &(ptiff->fh));
 
   if (rc != MPI_SUCCESS) {
-    char *errstr = (char*)malloc(5000);
+    char *errstr = static_cast<char*>(malloc(5000));
     int errlen = 0;
     MPI_Error_string(rc, errstr, &errlen);
-    fprintf(stderr, "MPI_File: Error opening file: %s: %s\n", c_filename, errstr);
+    fprintf(stderr,
+            "MPI_File: Error opening file: %s: %s\n",
+            c_filename,
+            errstr);
 
     return NULL;
   }
-  
+
   MPI_File_set_atomicity(ptiff->fh, 0);
 
   if (c_filename != NULL) {
     free(c_filename);
   }
-  
+
   return ptiff;
 }
 
@@ -146,10 +166,12 @@ SPTW_ERROR close_raster(PTIFF *ptiff) {
   MPI_File_close(&(ptiff->fh));
 
   return SP_None;
-} 
+}
 
-SPTW_ERROR write_rows(PTIFF *ptiff, char *buffer, int64_t first_row, int64_t last_row) {
-
+SPTW_ERROR write_rows(PTIFF *ptiff,
+                      char *buffer,
+                      int64_t first_row,
+                      int64_t last_row) {
   int64_t row_size = ptiff->x_size * ptiff->band_count * ptiff->band_type_size;
   MPI_Offset offset = ptiff->first_strip_offset + (first_row * row_size);
   int count = (last_row - first_row + 1) * row_size;
@@ -167,18 +189,25 @@ SPTW_ERROR write_rows(PTIFF *ptiff, char *buffer, int64_t first_row, int64_t las
   return SP_None;
 }
 
-SPTW_ERROR write_subrow(PTIFF *ptiff, void *buffer, int64_t row, int64_t first_column, int64_t last_column) {
+SPTW_ERROR write_subrow(PTIFF *ptiff,
+                        void *buffer,
+                        int64_t row,
+                        int64_t first_column,
+                        int64_t last_column) {
   int64_t row_size = ptiff->x_size * ptiff->band_count * ptiff->band_type_size;
-  int64_t subrow_size = (last_column - first_column + 1) * ptiff->band_count * ptiff->band_type_size;
-  MPI_Offset offset = ptiff->first_strip_offset + (row * row_size) + first_column;
+  int64_t subrow_size = (last_column - first_column + 1)
+      * ptiff->band_count * ptiff->band_type_size;
+  MPI_Offset offset = ptiff->first_strip_offset
+      + (row * row_size) + first_column;
 
   MPI_Status status;
 
   MPI_File_write_at(ptiff->fh, offset, buffer, subrow_size, MPI_BYTE, &status);
 
   if (status._count != subrow_size) {
-          fprintf(stderr, "Error writing row! Wanted to write: %lld Actually wrote %d\n",
-              subrow_size, status._count);
+          fprintf(stderr,
+                  "Error writing row! Wanted to write: %ld Actually wrote %d\n",
+                  subrow_size, status._count);
   }
 
   return SP_None;

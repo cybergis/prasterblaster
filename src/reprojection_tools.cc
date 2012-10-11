@@ -15,9 +15,9 @@
 //
 //
 
-#include <algorithm>
+#include "src/reprojection_tools.h"
+
 #include <float.h>
-#include <vector>
 #include <stdint.h>
 
 #include <ogr_api.h>
@@ -25,29 +25,32 @@
 #include <gdal.h>
 #include <gdal_priv.h>
 
+#include <algorithm>
+#include <vector>
+
 #include "gctp_cpp/projection.h"
 #include "gctp_cpp/transformer.h"
 #include "gctp_cpp/coordinate.h"
 
-#include "rastercoordtransformer.h"
-#include "projectedraster.h"
-#include "quadtree.h"
-#include "resampler.h"
-#include "sharedptr.h"
-#include "utils.h"
+#include "src/rastercoordtransformer.h"
+#include "src/projectedraster.h"
+#include "src/quadtree.h"
+#include "src/resampler.h"
+#include "src/sharedptr.h"
+#include "src/utils.h"
+
 
 namespace librasterblaster {
 PRB_ERROR CreateOutputRaster(shared_ptr<ProjectedRaster> in,
                              string output_filename,
                              double output_pixel_size,
-                             string output_srs)
-{
+                             string output_srs) {
   shared_ptr<Projection> in_proj = shared_ptr<Projection>(in->projection());
   shared_ptr<Projection> out_proj;
-  OGRSpatialReference srs; 
-	
+  OGRSpatialReference srs;
+
   OGRErr err = srs.importFromProj4(output_srs.c_str());
-	
+
   if (err != OGRERR_NONE) {
     fprintf(stderr, "Error parsing projection!\n");
     return PRB_PROJERROR;
@@ -55,11 +58,12 @@ PRB_ERROR CreateOutputRaster(shared_ptr<ProjectedRaster> in,
 
   long proj_code, datum_code, zone;
   double *params = NULL;
-		
+
   srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
-		
-  out_proj = shared_ptr<Projection>(Transformer::convertProjection(static_cast<ProjCode>(proj_code)));
-	
+
+  out_proj = shared_ptr<Projection>(
+      Transformer::convertProjection(static_cast<ProjCode>(proj_code)));
+
   if (!out_proj) {
     return PRB_PROJERROR;
   }
@@ -70,7 +74,6 @@ PRB_ERROR CreateOutputRaster(shared_ptr<ProjectedRaster> in,
 
   OGRFree(params);
 
-  
   bool result  = ProjectedRaster::CreateRaster(output_filename,
                                                in,
                                                out_proj,
@@ -80,21 +83,18 @@ PRB_ERROR CreateOutputRaster(shared_ptr<ProjectedRaster> in,
   } else {
     return PRB_IOERROR;
   }
-
-
 }
 
 PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
                              string output_filename,
-                             string output_srs, 
-                             int output_size)
-{
+                             string output_srs,
+                             int output_size) {
   shared_ptr<Projection> in_proj = input->projection();
   shared_ptr<Projection> out_proj;
-  OGRSpatialReference srs; 
-	
+  OGRSpatialReference srs;
+
   OGRErr err = srs.importFromProj4(output_srs.c_str());
-	
+
   if (err != OGRERR_NONE) {
     fprintf(stderr, "Error parsing projection!\n");
     return PRB_PROJERROR;
@@ -102,11 +102,12 @@ PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
 
   long proj_code, datum_code, zone;
   double *params = NULL;
-		
+
   srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
-		
-  out_proj = shared_ptr<Projection>(Transformer::convertProjection(static_cast<ProjCode>(proj_code)));
-	
+
+  out_proj = shared_ptr<Projection>(
+      Transformer::convertProjection(static_cast<ProjCode>(proj_code)));
+
   if (!out_proj) {
     return PRB_PROJERROR;
   }
@@ -116,7 +117,7 @@ PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
   out_proj->setParams(params);
 
   OGRFree(params);
-  
+
   Coordinate ul(input->ul_x(), input->ul_y(), UNDEF);
   Area parea = ProjectedMinbox(ul,
                                in_proj->wkt(),
@@ -149,11 +150,11 @@ PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
 }
 
 Projection* ProjectionFactory(string output_srs) {
-  Projection *out_proj; 
-  OGRSpatialReference srs; 
+  Projection *out_proj;
+  OGRSpatialReference srs;
   char *wkt = NULL;
   char *tmp = NULL;
-	
+
   OGRErr err = srs.importFromProj4(output_srs.c_str());
   if (err != OGRERR_NONE) {
     wkt = strdup(output_srs.c_str());
@@ -162,18 +163,18 @@ Projection* ProjectionFactory(string output_srs) {
     free(wkt);
     if (err != OGRERR_NONE) {
       fprintf(stderr, "Error parsing projection!\n");
-      return NULL;   
+      return NULL;
     }
   }
 
 
   long proj_code, datum_code, zone;
   double *params = NULL;
-		
+
   srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
-		
+
   out_proj = Transformer::convertProjection(static_cast<ProjCode>(proj_code));
-	
+
   if (!out_proj) {
     return NULL;
   }
@@ -185,7 +186,6 @@ Projection* ProjectionFactory(string output_srs) {
   OGRFree(params);
 
   return out_proj;
-
 }
 
 std::vector<Area> RowPartition(int rank,
@@ -201,7 +201,7 @@ std::vector<Area> RowPartition(int rank,
   }
 
   int leftover_per_row = column_count % partition_size;
-  
+
   vector<int> rowpart_sizes(partitions_per_row, partition_size);
   vector<int> first_column(partitions_per_row, 0);
 
@@ -217,22 +217,21 @@ std::vector<Area> RowPartition(int rank,
   }
 
   int partition_count = rowpart_sizes.size() * row_count;
-  vector<Area> partitions;  
+  vector<Area> partitions;
   for (int r = rank; r < partition_count; r += process_count) {
     int row = r / rowpart_sizes.size();
     int partcol = r % rowpart_sizes.size();
 
     partitions.push_back(Area(first_column.at(partcol),
                               row,
-                              first_column.at(partcol) 
+                              first_column.at(partcol)
                               + rowpart_sizes.at(partcol) - 1,
                               row));
   }
-  
+
   std::reverse(partitions.begin(), partitions.end());
   return partitions;
 }
-                              
 
 std::vector<Area> PartitionBySize(int rank,
                                   int process_count,
@@ -241,7 +240,6 @@ std::vector<Area> PartitionBySize(int rank,
                                   int partition_size,
                                   int maximum_height,
                                   int maximum_width) {
-  
   if (maximum_height == -1) {
     maximum_height = row_count + 1;
   }
@@ -252,20 +250,20 @@ std::vector<Area> PartitionBySize(int rank,
 
   QuadTree qt(row_count,
               column_count,
-              partition_size,
-              maximum_height,
-              maximum_width);
+              partition_size);
 
   vector<Area> leaves = qt.collectLeaves();
   vector<Area> partitions;
   size_t partition_count = leaves.size();
   size_t partitions_per_proc = partition_count / process_count;
-  
-  if (partitions_per_proc == 0) { // process_count < partition_count
+
+  if (partitions_per_proc == 0) {
+    // process_count < partition_count
     if (static_cast<size_t>(rank) < partition_count) {
       partitions.push_back(leaves.at(rank));
     }
-  } else { // process_count >= partition_count
+  } else {
+    // process_count >= partition_count
     size_t first_index = rank * partitions_per_proc;
     size_t last_index = (rank+1) * partitions_per_proc - 1;
 
@@ -277,7 +275,7 @@ std::vector<Area> PartitionBySize(int rank,
       partitions.push_back(leaves.at(i));
     }
   }
-  
+
   return partitions;
 }
 
@@ -287,8 +285,7 @@ void SearchAndUpdate(Area input_area,
                      double input_ulx,
                      double input_uly,
                      double input_pixel_size,
-                     Area *output_area)
-{
+                     Area *output_area) {
   Coordinate input_coord;
   Coordinate temp;
 
@@ -296,16 +293,16 @@ void SearchAndUpdate(Area input_area,
     for (int64_t y = input_area.ul.y; y >= input_area.lr.y; --y) {
       input_coord.x = x * input_pixel_size + input_ulx;
       input_coord.y = input_uly - (y * input_pixel_size);
-			
-      input_projection->inverse(input_coord.x, 
+
+      input_projection->inverse(input_coord.x,
                                 input_coord.y, &temp.x, &temp.y);
       output_projection->forward(temp.x, temp.y, &temp.x, &temp.y);
-			
-      if (temp.x  < output_area->ul.x) 
+
+      if (temp.x  < output_area->ul.x)
         output_area->ul.x = temp.x;
       if (temp.y > output_area->ul.y)
         output_area->ul.y = temp.y;
-      if (temp.x > output_area->lr.x) 
+      if (temp.x > output_area->lr.x)
         output_area->lr.x = temp.x;
       if (temp.y < output_area->lr.y)
         output_area->lr.y = temp.y;
@@ -321,25 +318,27 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
                      int input_row_count,
                      int input_column_count,
                      string output_srs) {
-  Area ia; // Input area, projected coorsdinates
-  Area output_area; // Projected Area
+  // Input area, projected coordinates
+  Area ia;
+  // Projected Area
+  Area output_area;
   shared_ptr<Projection> input_proj(ProjectionFactory(input_srs));
   shared_ptr<Projection> output_projection(ProjectionFactory(output_srs));
   const int buffer = 2;
-  
+
   if (input_proj.get() == NULL || output_projection.get() == NULL) {
     return Area(-1, -1, -1, -1);
   }
 
   output_area.ul.x = output_area.lr.y = DBL_MAX;
   output_area.ul.y = output_area.lr.x = -DBL_MAX;
-  
+
   // Check the top of the raster
   ia.ul.x = 0;
   ia.lr.x = input_column_count - 1;
   ia.ul.y = input_row_count - 1;
   ia.lr.y = input_row_count - 1 - buffer;
-  
+
   SearchAndUpdate(ia,
                   input_proj,
                   output_projection,
@@ -376,14 +375,12 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
                   input_pixel_size,
                   &output_area);
 
-
-
   // Check right
   ia.ul.x = input_column_count - 1;
   ia.lr.x = input_column_count - 1;
   ia.ul.y = input_row_count - 1;
   ia.lr.y = 0;
-	
+
   SearchAndUpdate(ia,
                   input_proj,
                   output_projection,
@@ -397,10 +394,8 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
 
 
 Area RasterMinbox(shared_ptr<ProjectedRaster> source,
-		  shared_ptr<ProjectedRaster> destination,
-		  Area destination_raster_area)
-{
-	
+                  shared_ptr<ProjectedRaster> destination,
+                  Area destination_raster_area) {
   Area source_area;
   Coordinate c(destination->ul_x(), destination->ul_y(), UNDEF);
   shared_ptr<Projection> dproj = destination->projection();
@@ -416,15 +411,16 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
 
   source_area.ul.x = source_area.ul.y = DBL_MAX;
   source_area.lr.y = source_area.lr.x = -DBL_MAX;
-	
-  for (int x = destination_raster_area.ul.x; x <= destination_raster_area.lr.x; ++x) {
-    for (int y = destination_raster_area.ul.y; y <= destination_raster_area.lr.y; ++y) {
 
+  for (int x = destination_raster_area.ul.x;
+       x <= destination_raster_area.lr.x; ++x) {
+    for (int y = destination_raster_area.ul.y;
+         y <= destination_raster_area.lr.y; ++y) {
       c.x = x;
       c.y = y;
 
       temp = rt.Transform(c);
-      
+
       if (temp.ul.x == -1) {
         continue;
       }
@@ -432,7 +428,7 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
       if (temp.lr.x > source_area.lr.x) {
         source_area.lr.x = temp.lr.x;
       }
-			
+
       if (temp.ul.x < source_area.ul.x) {
         source_area.ul.x = temp.ul.x;
       }
@@ -454,12 +450,12 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
     source_area.lr.x = -1.0;
     return source_area;
   }
-  
+
   if (source_area.ul.x < 0)
     source_area.ul.x = 0;
   if (source_area.ul.y < 0)
     source_area.ul.y = 0;
-	
+
   source_area.ul.x = floor(source_area.ul.x);
   source_area.ul.y = floor(source_area.ul.y);
   source_area.lr.x = ceil(source_area.lr.x);
@@ -526,9 +522,19 @@ PRB_ERROR CreateOutputRaster2(shared_ptr<ProjectedRaster> in,
   }
 }
 
-bool ReprojectChunk(RasterChunk *source, 
-                    RasterChunk *destination, 
-                    string fillvalue, 
+/**
+ * \brief This function takes two RasterChunk pointers and performs
+ *        reprojection and resampling
+ * \param source Pointer to the RasterChunk to reproject from
+ * \param destination Pointer to the RasterChunk to reproject to
+ * \param fillvalue std::string with the fillvalue
+ * \param resampler The resampler that should be used
+ *
+ * @return Returns a bool indicating success or failure.
+ */
+bool ReprojectChunk(RasterChunk *source,
+                    RasterChunk *destination,
+                    string fillvalue,
                     RESAMPLER resampler) {
   if (source->pixel_type_ != destination->pixel_type_) {
     fprintf(stderr, "Source and destination chunks have different types!\n");
@@ -537,23 +543,33 @@ bool ReprojectChunk(RasterChunk *source,
 
   double fvalue = strtod(fillvalue.c_str(), NULL);
 
-  switch (source->pixel_type_) 
-  {
+  switch (source->pixel_type_) {
     case GDT_Byte:
-      switch (resampler){
+      switch (resampler) {
         case MIN:
-          return ReprojectChunkType<unsigned char>(source, destination, static_cast<uint8_t>(fvalue), &(Min<unsigned char>));
+          return ReprojectChunkType<unsigned char>(source,
+                                                   destination,
+                                                   static_cast<uint8_t>(fvalue),
+                                                   &(Min<unsigned char>));
           break;
         case MAX:
-          return ReprojectChunkType<unsigned char>(source, destination, static_cast<uint8_t>(fvalue), &(Max<unsigned char>));
-        case NEAREST:
-        default:
-          return ReprojectChunkType<unsigned char>(source, destination, static_cast<uint8_t>(fvalue), NULL);
-			
+          return ReprojectChunkType<unsigned char>(source,
+                                                   destination,
+                                                   static_cast<uint8_t>(fvalue),
+                                                   &(Max<uint8_t>));
+    case NEAREST:
+    default:
+          return ReprojectChunkType<unsigned char>(source,
+                                                   destination,
+                                                   static_cast<uint8_t>(fvalue),
+                                                   NULL);
       }
       break;
     case GDT_UInt16:
-      return ReprojectChunkType<unsigned short>(source, destination, static_cast<uint16_t>(fvalue), &(Max<unsigned short>));
+      return ReprojectChunkType<uint16_t>(source,
+                                                destination,
+                                                static_cast<uint16_t>(fvalue),
+                                                &(Max<uint16_t>));
       break;
     default:
       fprintf(stderr, "Invalid type in ReprojectChunk!\n");

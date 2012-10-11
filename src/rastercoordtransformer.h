@@ -22,15 +22,14 @@
 #ifndef SRC_RASTERCOORDTRANSFORMER_H_
 #define SRC_RASTERCOORDTRANSFORMER_H_
 
-#include "ogr_spatialref.h"
+#include <ogr_spatialref.h>
 
-#include "sharedptr.h"
-
-#include "utils.h"
-
+#include "src/sharedptr.h"
+#include "src/utils.h"
 
 
-// ! Raster Coordinate transformation class
+
+/// Raster Coordinate transformation class
 /*
   This class implements the transformation of raster coordinates between two raster spaces with different projections and scales.
  */

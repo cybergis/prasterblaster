@@ -6,7 +6,7 @@
 
 
 SUBDIRS = src . 
-dist_doc_DATA=README.org
+dist_doc_DATA=README.md
 docdir = ${datadir}/doc/${PACKAGE} 
 
 ACLOCAL_AMFLAGS=-I m4

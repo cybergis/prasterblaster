@@ -22,10 +22,11 @@
 namespace librasterblaster {
 
 struct option longopts[] = {
-  {"output-projection", required_argument, NULL, 'p'},
+  {"t_srs", required_argument, NULL, 'p'},
+  {"s_srs", required_argument, NULL, 's'},
   {"partition-size", required_argument, NULL, 'n'},
   {"resampler", required_argument, NULL, 'r'},
-  {"fill-value", required_argument, NULL, 'f'},
+  {"dstnodata", required_argument, NULL, 'f'},
   {"temporary-path", required_argument, NULL, 't'},
   {0, 0, 0, 0}
 };
@@ -44,6 +45,9 @@ Configuration::Configuration(int argc, char *argv[]) {
         // getopt_long() set a variable, just keep going
       case 'p':
         output_srs = optarg;
+        break;
+      case 's':
+        source_srs = optarg;
         break;
       case 'n':
         partition_size = strtol(optarg, NULL, 10);

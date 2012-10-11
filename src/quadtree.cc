@@ -14,17 +14,15 @@
 //
 //
 
-#include <vector>
+#include "src/quadtree.h"
 
-#include "quadtree.h"
+#include <vector>
 
 using std::vector;
 
 namespace librasterblaster {
 QuadTree::QuadTree(Area _boundry, size_t  maximum_partition_size) {
   max_partition = maximum_partition_size;
-  max_height = _boundry.ul.y - _boundry.lr.y + 1;
-  max_width = _boundry.lr.x - _boundry.ul.x + 1;
 
   rootNode = new QuadNode();
   rootNode->boundry = _boundry;
@@ -37,30 +35,11 @@ QuadTree::QuadTree(Area _boundry, size_t  maximum_partition_size) {
 
 QuadTree::QuadTree(size_t rows, size_t columns, size_t maximum_partition_size) {
   max_partition = maximum_partition_size;
-  max_height = columns + 1;
-  max_width = rows + 1;
 
   rootNode = new QuadNode();
   rootNode->boundry = Area(0, rows - 1, columns - 1, 0);
   rootNode->depth = 0;
 
-  subdivide();
-  return;
-}
-
-QuadTree::QuadTree(size_t rows, 
-         size_t columns, 
-         size_t maximum_partition_size, 
-         size_t maximum_height, 
-         size_t maximum_width) {
-  max_partition = maximum_partition_size;
-  max_height = maximum_height;
-  max_width = maximum_width;
-  
-  rootNode = new QuadNode();
-  rootNode->boundry = Area(0, rows - 1, columns - 1, 0);
-  rootNode->depth = 0;
-  
   subdivide();
   return;
 }
@@ -115,8 +94,7 @@ void QuadTree::subdivide() {
     south_end = boundry.lr.y + middle_height;
 
     size_t area_size = getWidth(n) * getHeight(n);
-    if (area_size > max_partition 
-        || getWidth(n) > max_width) {
+    if (area_size > max_partition) {
       if (getWidth(n) > 1) {
         n->southWest = new QuadNode(Area(west_begin,
                                          south_end,
@@ -132,10 +110,7 @@ void QuadTree::subdivide() {
         stack.push_back(n->southWest);
         stack.push_back(n->southEast);
       }
-    }
-    
-    if (area_size > max_partition
-        || getHeight(n) > max_height) {
+
       if (getHeight(n) > 1) {
         n->northWest = new QuadNode(Area(west_begin,
                                          north_end,

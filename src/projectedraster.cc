@@ -1,27 +1,21 @@
-/*!
- * @file
- * @author David Matthew Mattli <dmattli@usgs.gov>
- *
- * @section LICENSE 
- *
- * This software is in the public domain, furnished "as is", without
- * technical support, and with no warranty, express or implied, as to
- * its usefulness for any purpose.
- *
- * @section DESCRIPTION
- *
- * The ProjectedRaster class represents a raster with a location and a projection.
- *
- */
+//
+// Copyright 0000 <Nobody>
+// @file
+// @author David Matthew Mattli <dmattli@usgs.gov>
+//
+// @section LICENSE
+//
+// This software is in the public domain, furnished "as is", without
+// technical support, and with no warranty, express or implied, as to
+// its usefulness for any purpose.
+//
+// @section DESCRIPTION
+//
+// The ProjectedRaster class represents a raster with a location and a
+// projection.
+//
 
-#include <string>
-#include <sstream>
-#include <cmath>
-#include <cstring>
-#include <cstdlib>
-#include <iostream>
-#include <fstream>
-#include <cstdio>
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -32,15 +26,22 @@
 #include <gdal_priv.h>
 #include <ogr_spatialref.h>
 
-#include "gctp_cpp/transformer.h"
-#include "gctp_cpp/mercator.h"
-#include "gctp_cpp/constants.h"
-#include "gctp_cpp/utm.h"
-#include "reprojection_tools.h"
-#include "rasterchunk.h"
-#include "sharedptr.h"
+#include <cstdio>
+#include <string>
+#include <sstream>
+#include <cmath>
+#include <cstring>
+#include <cstdlib>
 
-#include "projectedraster.h"
+
+#include "src/gctp_cpp/transformer.h"
+#include "src/gctp_cpp/mercator.h"
+#include "src/gctp_cpp/constants.h"
+#include "src/gctp_cpp/utm.h"
+#include "src/reprojection_tools.h"
+#include "src/rasterchunk.h"
+#include "src/sharedptr.h"
+#include "src/projectedraster.h"
 
 using std::string;
 
@@ -59,31 +60,28 @@ ProjectedRaster::ProjectedRaster(string _filename) {
   return;
 }
 
-bool ProjectedRaster::CreateRaster(string _filename, 
-				   int num_rows, int num_cols, 
-				   GDALDataType pixel_type, double _pixel_size,
-				   int _band_count,
-				   shared_ptr<Projection> proj,
-				   double ulx, double uly) {
+bool ProjectedRaster::CreateRaster(string _filename,
+                                   int num_rows, int num_cols,
+                                   GDALDataType pixel_type, double _pixel_size,
+                                   int _band_count,
+                                   shared_ptr<Projection> proj,
+                                   double ulx, double uly) {
   bool status = make_raster(_filename,
-                           num_cols,
-                           num_rows,
-                           _band_count,
-                           ulx,
-                           uly,
-                           pixel_type,
-                           proj,
-                           _pixel_size);
-			   
+                            num_cols,
+                            num_rows,
+                            _band_count,
+                            ulx,
+                            uly,
+                            pixel_type,
+                            proj,
+                            _pixel_size);
   return status;
 }
 
-
-
 bool ProjectedRaster::CreateRaster(string _filename,
-				   shared_ptr<ProjectedRaster> input,
-				   shared_ptr<Projection> output_proj,
-				   double _pixel_size) {
+                                   shared_ptr<ProjectedRaster> input,
+                                   shared_ptr<Projection> output_proj,
+                                   double _pixel_size) {
   bool status = false;
   double ulx, uly;
   int num_cols, num_rows;
@@ -98,15 +96,17 @@ bool ProjectedRaster::CreateRaster(string _filename,
                                    input->row_count(),
                                    input->column_count(),
                                    output_proj->wkt());
-				
+
   ulx = out_area.ul.x;
   uly = out_area.ul.y;
 
-  num_rows = (int)(ceil(out_area.ul.y - out_area.lr.y) / _pixel_size);
-  num_cols = (int)(ceil(out_area.lr.x - out_area.ul.x) / _pixel_size);
+  num_rows = static_cast<int>(ceil(out_area.ul.y - out_area.lr.y)
+                              / _pixel_size);
+  num_cols = static_cast<int>(ceil(out_area.lr.x - out_area.ul.x)
+                              / _pixel_size);
 
   status = make_raster(_filename,
-                      num_cols, 
+                      num_cols,
                       num_rows,
                       input->band_count_,
                       ulx,
@@ -114,27 +114,19 @@ bool ProjectedRaster::CreateRaster(string _filename,
                        input->pixel_type(),
                       output_proj,
                       _pixel_size);
-
-
-
   return status;
 }
 
-
-
-
 ProjectedRaster::~ProjectedRaster() {
   if (0 != dataset_) {
-    GDALClose( (GDALDatasetH) dataset_);
+    GDALClose(static_cast<GDALDatasetH>(dataset_));
     dataset_ = 0;
   }
-
-
   return;
 }
 
 bool ProjectedRaster::ready() {
-  if (projection_.get() != 0 && 
+  if (projection_.get() != 0 &&
       (projection_->error() == 0) && ready_) {
     return true;
   }  else {
@@ -157,13 +149,13 @@ int ProjectedRaster::column_count() {
 
 void ProjectedRaster::clamp_geo_coordinate(Coordinate *c) {
   if (c == 0) {
-    return; 
+    return;
   }
 
   if (c->x < -180.0) {
     c->x = -179.999999;
   }
-	
+
   if (c->x > 180.0) {
     c->x = 179.9999999;
   }
@@ -172,7 +164,6 @@ void ProjectedRaster::clamp_geo_coordinate(Coordinate *c) {
     c->y = -89.9999999;
   }
 
-
   if (c->y > 90.0) {
     c->y = 89.99999999;
   }
@@ -180,13 +171,12 @@ void ProjectedRaster::clamp_geo_coordinate(Coordinate *c) {
   return;
 }
 
-
 GDALDataType ProjectedRaster::pixel_type() {
   return pixel_type_;
 }
 
 int ProjectedRaster::bits_per_pixel()  {
-  switch(pixel_type()) {
+  switch (pixel_type()) {
     case GDT_Byte:
       return 8;
     case GDT_Int16:
@@ -200,12 +190,8 @@ int ProjectedRaster::bits_per_pixel()  {
       return 64;
     default:
       return -1;
-
   }
-
-
   return -1;
-		
 }
 
 int ProjectedRaster::band_count() {
@@ -214,9 +200,8 @@ int ProjectedRaster::band_count() {
   } else {
     return dataset_->GetRasterCount();
   }
-	
+
   return -1;
-	
 }
 
 double ProjectedRaster::pixel_size() {
@@ -258,34 +243,31 @@ double* ProjectedRaster::gctp_parameters() {
 
 bool ProjectedRaster::read_raster(int firstRow, int numRows, void *data) {
   bool success = false;
-	
 
   if ((firstRow + numRows) > row_count()) {
     printf("Brrrrrangn\n\n\n");
     return false;
   }
 
-  if (ready() && dataset_ != 0) { // GTiff
-    if( dataset_->RasterIO(GF_Read, 0, firstRow,
+  if (ready() && dataset_ != 0) {  // GTiff
+    if (dataset_->RasterIO(GF_Read, 0, firstRow,
                           column_count_, numRows,
                           data, column_count_, numRows,
                           pixel_type_, band_count(),
                           NULL, 0, 0, 0) == CE_None) {
-      success = true; 
+      success = true;
     }
-		
   }
-	
   return success;
 }
 
-bool ProjectedRaster::write_raster(int firstRow, int numRows, void *data) {	
+bool ProjectedRaster::write_raster(int firstRow, int numRows, void *data) {
   bool success = false;
 
   if (firstRow < 0 || numRows +firstRow > row_count_ || data == 0) {
-    fprintf(stderr,"Write Boink #1 %d %d\n", numRows +firstRow, row_count_);
+    fprintf(stderr, "Write Boink #1 %d %d\n", numRows + firstRow, row_count_);
     fflush(stderr);
-			
+
     return false;
   }
 
@@ -303,11 +285,9 @@ bool ProjectedRaster::write_raster(int firstRow, int numRows, void *data) {
            dataset_->GetRasterYSize());
     return false;
   }
-	
-	
-  // TODO: Verify parameters!
-  if (ready() && dataset_ != 0) { // GTiff
-    if( dataset_->RasterIO(GF_Write, 0, firstRow,
+  // TODO(dmattli) Verify parameters!
+  if (ready() && dataset_ != 0) {  // GTiff
+    if (dataset_->RasterIO(GF_Write, 0, firstRow,
                           column_count_, numRows,
                           data, column_count_, numRows,
                           pixel_type_, band_count(),
@@ -315,9 +295,7 @@ bool ProjectedRaster::write_raster(int firstRow, int numRows, void *data) {
       success = true;
       dataset_->FlushCache();
     }
-		
   }
-	
   return success;
 }
 
@@ -342,15 +320,12 @@ RasterChunk *temp = create_allocated_raster_chunk(area);
                           temp->pixel_type_,
                           band_count(),
                           NULL,
-                          0,0,0) != CE_None)
-    {
+                          0, 0, 0) != CE_None) {
       // Cleanup and return error
       delete temp;
       return NULL;
     }
-                                      
-
-  } else{ 
+  } else {
     delete temp;
     return NULL;
   }
@@ -359,30 +334,28 @@ RasterChunk *temp = create_allocated_raster_chunk(area);
 }
 
 RasterChunk* ProjectedRaster::create_allocated_raster_chunk(Area area) {
-  RasterChunk *temp = create_empty_raster_chunk(area);	
+  RasterChunk *temp = create_empty_raster_chunk(area);
   size_t buffer_size = (temp->row_count_ * temp->column_count_);
-  unsigned char *pixels = (unsigned char*)calloc(buffer_size, GDALGetDataTypeSize(pixel_type())/8);
+  temp->pixels_ = static_cast<unsigned char*>
+      (calloc(buffer_size, GDALGetDataTypeSize(pixel_type())/8));
 
-  if (pixels == NULL) {
+  if (temp->pixels_ == NULL) {
     fprintf(stderr, "Allocation error!\n");
     delete temp;
     return NULL;
   }
 
-  temp->pixels_ = pixels;
-
   return temp;
-	
-
 }
 
 RasterChunk* ProjectedRaster::create_empty_raster_chunk(Area area) {
   RasterChunk *temp = new RasterChunk;
-  
+
   temp->projection_ = shared_ptr<Projection>(projection());
   temp->raster_location_ = area.ul;
-  temp->ul_projected_corner_ = Coordinate(ul_x_+(area.ul.x*pixel_size()), 
-                                          ul_y_-(area.ul.y*pixel_size()), UNDEF);
+  temp->ul_projected_corner_ = Coordinate(ul_x_+(area.ul.x*pixel_size()),
+                                          ul_y_-(area.ul.y*pixel_size()),
+                                          UNDEF);
   temp->pixel_size_ = pixel_size();
   temp->row_count_ = area.lr.y - area.ul.y + 1;
   temp->column_count_ = area.lr.x - area.ul.x + 1;
@@ -394,7 +367,7 @@ RasterChunk* ProjectedRaster::create_empty_raster_chunk(Area area) {
 }
 
 bool ProjectedRaster::write_raster_chunk(RasterChunk *chunk) {
-  // TODO: Add some more checks
+  // TODO(dmattli) Add some more checks
 
   if (dataset_->RasterIO(GF_Write,
                         chunk->raster_location_.x,
@@ -410,10 +383,9 @@ bool ProjectedRaster::write_raster_chunk(RasterChunk *chunk) {
     // Error!
     fprintf(stderr, "Error writing RasterChunk %p\n", chunk->pixels_);
     return false;
-
   }
+
   dataset_->FlushCache();
-			      
 
   return true;
 }
@@ -426,21 +398,19 @@ bool ProjectedRaster::load_raster(string filename) {
   double params[18] = {0.0};
   double *p;
   OGRSpatialReference sr;
-	
 
-  GDALAllRegister();	
-	
-  dataset_ = (GDALDataset*)GDALOpen( filename.c_str(), GA_Update );
-	
+  GDALAllRegister();
+
+  dataset_ = static_cast<GDALDataset*>(GDALOpen(filename.c_str(), GA_Update));
+
   if (dataset_ == 0) {
     fprintf(stderr, "Error opening GDAL dataset\n");
     return false;
-  } 
-	
+  }
+
   column_count_ = dataset_->GetRasterXSize();
   row_count_ = dataset_->GetRasterYSize();
-	
-	
+
   ref = strdup(dataset_->GetProjectionRef());
   if (ref == 0) {
     fprintf(stderr, "Error reading projection ref\n");
@@ -463,7 +433,9 @@ bool ProjectedRaster::load_raster(string filename) {
 
   p = &(params[0]);
   sr.exportToUSGS(&projsys, &zone, &p, &datum);
-  projection_ = shared_ptr<Projection>(Transformer::convertProjection((ProjCode)projsys));
+  projection_ = shared_ptr<Projection>(
+      Transformer::convertProjection(static_cast<ProjCode>(projsys)));
+
   if (projection_ == 0) {
     fprintf(stderr, "Error building projection, num %ld...\n", projsys);
     return false;
@@ -476,39 +448,39 @@ bool ProjectedRaster::load_raster(string filename) {
 
   projection_->setUnits(METER);
   ready_ = true;
-	
+
   return true;
 }
 
 bool ProjectedRaster::make_raster(string _filename,
-				 int _cols,
-				 int _rows,
-				 int _band_count,
-				 double _ul_x,
-				 double _ul_y,
-				 GDALDataType _type,
-				 shared_ptr<Projection> _projection,
-				 double _pixel_size) {
+                                  int _cols,
+                                  int _rows,
+                                  int _band_count,
+                                  double _ul_x,
+                                  double _ul_y,
+                                  GDALDataType _type,
+                                  shared_ptr<Projection> _projection,
+                                  double _pixel_size) {
   const char *format = "GTiff";
   GDALDriver *driver;
-  char **options = 0; 
+  char **options = 0;
   double geotransform[6] = { 444720, 30, 0, 3751320, 0, -30 };
 
   GDALAllRegister();
 
   driver = GetGDALDriverManager()->GetDriverByName(format);
 
-  if( driver == NULL ) {
+  if (driver == NULL) {
     return false;
   }
-	  
-  // Set options
-  options = CSLSetNameValue( options, "INTERLEAVE", "PIXEL" );
-  options = CSLSetNameValue( options, "BIGTIFF", "YES" );
-  options = CSLSetNameValue( options, "TILED", "NO" );
-  options = CSLSetNameValue( options, "COMPRESS", "NONE" );
 
-  GDALDataset *_dataset = driver->Create(_filename.c_str(), _cols, _rows, 
+  // Set options
+  options = CSLSetNameValue(options, "INTERLEAVE", "PIXEL");
+  options = CSLSetNameValue(options, "BIGTIFF", "YES");
+  options = CSLSetNameValue(options, "TILED", "NO");
+  options = CSLSetNameValue(options, "COMPRESS", "NONE");
+
+  GDALDataset *_dataset = driver->Create(_filename.c_str(), _cols, _rows,
                                          _band_count, _type,
                                          options);
 
@@ -526,7 +498,10 @@ bool ProjectedRaster::make_raster(string _filename,
   geotransform[5] = -_pixel_size;
   _dataset->SetGeoTransform(geotransform);
 
-  srs.importFromUSGS(_projection->number(), 0, _projection->params(), _projection->datum());
+  srs.importFromUSGS(_projection->number(),
+                     0,
+                     _projection->params(),
+                     _projection->datum());
 
   char *wkt = NULL;
   srs.exportToWkt(&wkt);
@@ -534,7 +509,9 @@ bool ProjectedRaster::make_raster(string _filename,
     _dataset->SetProjection(wkt);
     OGRFree(wkt);
   } else {
-    fprintf(stderr, "\nERROR: Unsupported projection: %s\n", _projection->name().c_str());
+    fprintf(stderr,
+            "\nERROR: Unsupported projection: %s\n",
+            _projection->name().c_str());
   }
 
   GDALClose(_dataset);
@@ -543,7 +520,6 @@ bool ProjectedRaster::make_raster(string _filename,
     CSLDestroy(options);
 
   return true;
-
 }
 
 string ProjectedRaster::srs() {
@@ -551,7 +527,9 @@ string ProjectedRaster::srs() {
   string output_srs = "";
   char *temp;
 
-  srs.importFromUSGS(projection_->number(), 0, projection_->params(), projection_->datum());
+  srs.importFromUSGS(projection_->number(),
+                     0, projection_->params(),
+                     projection_->datum());
   srs.exportToProj4(&temp);
 
   output_srs = temp;
@@ -559,5 +537,4 @@ string ProjectedRaster::srs() {
 
   return output_srs;
 }
-} 
-
+}
