@@ -70,6 +70,7 @@ std::vector<Area> RowPartition(int rank,
                                int row_count,
                                int column_count,
                                int partition_size);
+
 std::vector<Area> PartitionBySize(int rank,
                                   int process_count,
                                   int row_count,
@@ -96,6 +97,16 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
 
 Area RasterMinbox(shared_ptr<ProjectedRaster> source,
                   shared_ptr<ProjectedRaster> destination,
+                  Area destination_raster_area);
+
+Area RasterMinbox(shared_ptr<Projection> source_projection,
+                  Coordinate source_ul,
+                  double source_pixel_size,
+                  int source_row_count,
+                  int source_column_count,
+                  shared_ptr<Projection> destination_projection,
+                  Coordinate destination_ul,
+                  double destination_pixel_size,
                   Area destination_raster_area);
 /**
  * \brief This function takes two RasterChunk pointers and performs

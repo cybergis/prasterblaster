@@ -396,11 +396,45 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
 Area RasterMinbox(shared_ptr<ProjectedRaster> source,
                   shared_ptr<ProjectedRaster> destination,
                   Area destination_raster_area) {
-  Area source_area;
-  Coordinate c(destination->ul_x(), destination->ul_y(), UNDEF);
-  shared_ptr<Projection> dproj = destination->projection();
-  RasterCoordTransformer rt(destination, source);
+  Coordinate s_ul(source->ul_x(),
+                  source->ul_y(),
+                  UNDEF);
 
+  Coordinate d_ul(destination->ul_x(),
+                  destination->ul_y(),
+                  UNDEF);
+  shared_ptr<Projection> s_proj = source->projection();
+  shared_ptr<Projection> d_proj = destination->projection();
+  return RasterMinbox(s_proj,
+                      s_ul,
+                      source->pixel_size(),
+                      source->row_count(),
+                      source->column_count(),
+                      d_proj,
+                      d_ul,
+                      destination->pixel_size(),
+                      destination_raster_area);
+}
+Area RasterMinbox(shared_ptr<Projection> source_projection,
+                  Coordinate source_ul,
+                  double source_pixel_size,
+                  int source_row_count,
+                  int source_column_count,
+                  shared_ptr<Projection> destination_projection,
+                  Coordinate destination_ul,
+                  double destination_pixel_size,
+                  Area destination_raster_area) {
+  Area source_area;
+  Coordinate c;
+  shared_ptr<Projection> dproj = destination_projection;
+  RasterCoordTransformer rt(source_projection,
+                            source_ul,
+                            source_pixel_size,
+                            source_row_count,
+                            source_column_count,
+                            destination_projection,
+                            destination_ul,
+                            destination_pixel_size);
   Area temp;
 
   if (dproj->errorOccured() == true) {
@@ -461,12 +495,12 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
   source_area.lr.x = ceil(source_area.lr.x);
   source_area.lr.y = ceil(source_area.lr.y);
 
-  if (source_area.lr.x > source->column_count() - 1) {
-    source_area.lr.x = source->column_count() - 1;
+  if (source_area.lr.x > source_column_count - 1) {
+    source_area.lr.x = source_column_count - 1;
   }
 
-  if (source_area.lr.y > source->row_count() - 1) {
-    source_area.lr.y = source->row_count() - 1;
+  if (source_area.lr.y > source_row_count - 1) {
+    source_area.lr.y = source_row_count - 1;
   }
 
   if (source_area.lr.y < source_area.ul.y) {

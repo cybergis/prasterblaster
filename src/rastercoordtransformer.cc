@@ -111,7 +111,6 @@ void RasterCoordTransformer::init(shared_ptr<Projection> source_projection,
   char *dest_wkt = strdup(destination_projection->wkt().c_str());
   source_sr.importFromWkt(&source_wkt);
   dest_sr.importFromWkt(&dest_wkt);
-
   OGRCoordinateTransformation *t = OGRCreateCoordinateTransformation(&source_sr,
                                                                      &dest_sr);
 
@@ -167,13 +166,13 @@ Transform(Coordinate source, bool area_check) {
   temp2.x += source_pixel_size_/2;
   temp2.y -= source_pixel_size_/2;
 
-  src_proj->inverse(temp1.x, temp1.y, &temp1.x, &temp1.y);
-  dest_proj->forward(temp1.x, temp1.y, &temp1.x, &temp1.y);
-//  ctrans->Transform(1, &temp1.x, &temp1.y);
+//  src_proj->inverse(temp1.x, temp1.y, &temp1.x, &temp1.y);
+//  dest_proj->forward(temp1.x, temp1.y, &temp1.x, &temp1.y);
+  ctrans->Transform(1, &temp1.x, &temp1.y);
 
-  src_proj->inverse(temp2.x, temp2.y, &temp2.x, &temp2.y);
-  dest_proj->forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
-//  ctrans->Transform(1, &temp2.x, &temp2.y);
+//  src_proj->inverse(temp2.x, temp2.y, &temp2.x, &temp2.y);
+//  dest_proj->forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
+  ctrans->Transform(1, &temp2.x, &temp2.y);
 
   // temp1/temp2 now contain coords to input projection
   // Now convert to points in the raster coordinate space.
