@@ -10,7 +10,7 @@
 #define SRC_SHAREDPTR_H_
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../config.h"
 #endif
 
 #ifdef HAVE_STD_SHARED_PTR
