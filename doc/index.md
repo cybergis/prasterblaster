@@ -5,6 +5,25 @@ libRasterBlaster - Parallel map reprojection library            {#mainpage}
     allow further research into I/O, partitioning, load balancing and
     other HPC concerns with regard to map reprojection.
 
+    Compiling
+    ---------
+
+    Run "./configure" in the librasterblaster source tree. If the
+    configure script doesn't exist, run "autoreconf -iv". You may have
+    to use the "--with-gdal-incdir" and "--with-gdal-libdir" options
+    to tell autoconf where it can find GDAL. 
+
+    Next, run "make". If everything compiles correctly you should have
+    a \link prasterblasterpio \endlink binary.
+
+    To build the documentation run "doxygen" in the source tree. You
+    will need a doxygen version >= 1.8.0 for everything to
+    work. Doxygen will create "html" and "latex" directories with the
+    generated documentation.
+
+    libRasterBlaster 
+    ----------------
+
     librasterblaster is made up of components that implement different
     parts of a parallel reprojection program. The components are
     designed so that they can be easily replaced with a user-provided
