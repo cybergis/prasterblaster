@@ -204,10 +204,12 @@ SPTW_ERROR write_subrow(PTIFF *ptiff,
 
   MPI_File_write_at(ptiff->fh, offset, buffer, subrow_size, MPI_BYTE, &status);
 
-  if (status._count != subrow_size) {
+  int count = 0;
+  MPI_Get_count(&status, MPI_BYTE, &count);
+  if (count != subrow_size) {
           fprintf(stderr,
                   "Error writing row! Wanted to write: %ld Actually wrote %d\n",
-                  subrow_size, status._count);
+                  subrow_size, count);
   }
 
   return SP_None;
