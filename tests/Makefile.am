@@ -9,6 +9,6 @@ tests_CXXFLAGS  = -I../src/ -lgctp_cpp -lgtest
 tests_LDFLAGS = $(all_libraries) -lgctp_cpp -lgtest -lgtest_main -L../src/ -L../src/gctp_cpp/ -L../src/gtest/
 tests_CPPFLAGS = -I ../src/gtest/include
 tests_LDADD = -lmpi ../src/librasterblaster.la ../src/gctp_cpp/libgctp_cpp.la
-tests_SOURCES = check-reprojection_tools.cc
+tests_SOURCES = check-reprojection_tools.cc check-rastercoordtransformer.cc
 
 
