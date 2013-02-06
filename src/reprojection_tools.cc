@@ -52,7 +52,7 @@ PRB_ERROR CreateOutputRaster(shared_ptr<ProjectedRaster> in,
   OGRErr err = srs.importFromProj4(output_srs.c_str());
 
   if (err != OGRERR_NONE) {
-    fprintf(stderr, "Error parsing projection!\n");
+    fprintf(stderr, "Error parsing projection: %s\n", output_srs.c_str());
     return PRB_PROJERROR;
   }
 
@@ -192,16 +192,43 @@ std::vector<Area> RowPartition(int rank,
                                int process_count,
                                int row_count,
                                int column_count,
-                               int partition_size) {
+                               long partition_size) {
+  int rows_per_partition = partition_size / column_count;
   int partitions_per_row = column_count / partition_size;
+  int leftover_per_row = column_count % partition_size;
+  int partition_count = 1;
+
+  if (rows_per_partition > 0) {
+    partition_count = row_count / rows_per_partition;
+  }
+  vector<Area> partitions;
 
   if (partitions_per_row < 1) {
-    partitions_per_row = 1;
-    partition_size = column_count;
+    partitions_per_row = 0;
+    partition_size = partition_size / column_count;
+    leftover_per_row = 0;
+
+    if (rows_per_partition > row_count) {
+      rows_per_partition = 1;
+    }
   }
 
-  int leftover_per_row = column_count % partition_size;
-
+  if (rows_per_partition > 0) {
+    for (int i=0; i<partition_count-1; ++i) {
+      partitions.push_back(Area(0,
+                                i*rows_per_partition,
+                                column_count-1,
+                                (i+1)*rows_per_partition-1));
+    }
+    // Final partition, may have > rows_per_partition
+    partitions.push_back(Area(0,
+                              partition_count * rows_per_partition,
+                              column_count-1,
+                              row_count-1));
+    return partitions;
+    
+  }
+  
   vector<int> rowpart_sizes(partitions_per_row, partition_size);
   vector<int> first_column(partitions_per_row, 0);
 
@@ -216,8 +243,8 @@ std::vector<Area> RowPartition(int rank,
     first_column.at(i) = first_column.at(i-1) + rowpart_sizes.at(i-1);
   }
 
-  int partition_count = rowpart_sizes.size() * row_count;
-  vector<Area> partitions;
+  partition_count = rowpart_sizes.size() * row_count;
+
   for (int r = rank; r < partition_count; r += process_count) {
     int row = r / rowpart_sizes.size();
     int partcol = r % rowpart_sizes.size();
@@ -288,20 +315,43 @@ void SearchAndUpdate(Area input_area,
                      Area *output_area) {
   Coordinate input_coord;
   Coordinate temp;
+  OGRSpatialReference input_sr, output_sr;
+  char *input_wkt = strdup(input_projection->wkt().c_str());
+  char *output_wkt = strdup(output_projection->wkt().c_str());
+  char *intemp = input_wkt;
+  char *outtemp = output_wkt;
+  input_sr.importFromWkt(&intemp);
+  output_sr.importFromWkt(&outtemp);
+  OGRCoordinateTransformation *t = OGRCreateCoordinateTransformation(&input_sr,
+                                                                     &output_sr);
+
+  if (t == NULL) {
+          output_area->ul.x = -1.0;
+          output_area->ul.y = -1.0;
+          return;
+  }
 
   for (int64_t x = input_area.ul.x; x <= input_area.lr.x; ++x) {
     for (int64_t y = input_area.ul.y; y >= input_area.lr.y; --y) {
       input_coord.x = x * input_pixel_size + input_ulx;
       input_coord.y = input_uly - (y * input_pixel_size);
 
+      /*
       input_projection->inverse(input_coord.x,
                                 input_coord.y, &temp.x, &temp.y);
       output_projection->forward(temp.x, temp.y, &temp.x, &temp.y);
+      */
+      t->Transform(1, &input_coord.x, &input_coord.y);
+      temp = input_coord;
 
-      if (temp.x  < output_area->ul.x)
+      if (temp.x  < output_area->ul.x) {
         output_area->ul.x = temp.x;
-      if (temp.y > output_area->ul.y)
+      }
+      if (temp.y > output_area->ul.y) {
         output_area->ul.y = temp.y;
+        //printf("New UL_Y: %f %f, %f %f\n", temp.x, temp.y, x * input_pixel_size + input_ulx, input_uly - (y * input_pixel_size));
+
+      }
       if (temp.x > output_area->lr.x)
         output_area->lr.x = temp.x;
       if (temp.y < output_area->lr.y)
@@ -309,6 +359,17 @@ void SearchAndUpdate(Area input_area,
     }
   }
 
+  if (input_wkt != NULL) {
+    free(input_wkt);
+  }
+
+
+  if (output_wkt != NULL) {
+    free(output_wkt);
+  }
+
+  OCTDestroyCoordinateTransformation(t);
+     
   return;
 }
 
@@ -336,8 +397,8 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
   // Check the top of the raster
   ia.ul.x = 0;
   ia.lr.x = input_column_count - 1;
-  ia.ul.y = input_row_count - 1;
-  ia.lr.y = input_row_count - 1 - buffer;
+  ia.ul.y = buffer;
+  ia.lr.y = 0;
 
   SearchAndUpdate(ia,
                   input_proj,
@@ -350,8 +411,8 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
   // Check the bottom of the raster
   ia.ul.x = 0;
   ia.lr.x = input_column_count - 1;
-  ia.ul.y = buffer;
-  ia.lr.y = 0;
+  ia.ul.y = input_row_count - 1;
+  ia.lr.y = input_row_count - 1 - buffer;
 
   SearchAndUpdate(ia,
                   input_proj,
@@ -376,7 +437,7 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
                   &output_area);
 
   // Check right
-  ia.ul.x = input_column_count - 1;
+  ia.ul.x = input_column_count - buffer - 1;
   ia.lr.x = input_column_count - 1;
   ia.ul.y = input_row_count - 1;
   ia.lr.y = 0;
@@ -413,6 +474,8 @@ Area RasterMinbox(shared_ptr<ProjectedRaster> source,
                       d_proj,
                       d_ul,
                       destination->pixel_size(),
+                      destination->row_count(),
+                      destination->column_count(),
                       destination_raster_area);
 }
 Area RasterMinbox(shared_ptr<Projection> source_projection,
@@ -423,6 +486,8 @@ Area RasterMinbox(shared_ptr<Projection> source_projection,
                   shared_ptr<Projection> destination_projection,
                   Coordinate destination_ul,
                   double destination_pixel_size,
+                  int destination_row_count,
+                  int destination_column_count,
                   Area destination_raster_area) {
   Area source_area;
   Coordinate c;
@@ -436,8 +501,10 @@ Area RasterMinbox(shared_ptr<Projection> source_projection,
                             destination_ul,
                             destination_pixel_size);
   Area temp;
+  int buffer = 5;
 
   if (dproj->errorOccured() == true) {
+    fprintf(stderr, "Error with destination projection in RasterMinbox\n");
     source_area.ul.x = -1.0;
     source_area.lr.x = -1.0;
     return source_area;
@@ -446,25 +513,53 @@ Area RasterMinbox(shared_ptr<Projection> source_projection,
   source_area.ul.x = source_area.ul.y = DBL_MAX;
   source_area.lr.y = source_area.lr.x = -DBL_MAX;
 
+  int step = 1;
+
   for (int x = destination_raster_area.ul.x;
-       x <= destination_raster_area.lr.x; ++x) {
+       x <= destination_raster_area.lr.x; x+=step) {
     for (int y = destination_raster_area.ul.y;
          y <= destination_raster_area.lr.y; ++y) {
       c.x = x;
       c.y = y;
+      if (x == 321 && y == 80) {
+        printf("Critical\n");
+      }
 
       temp = rt.Transform(c);
-
+//      printf("\t Source point: %d %d\n", x, y);
+//      printf("\t\t Calculated point: %f %f %f %f\n", temp.ul.x, temp.ul.y, temp.lr.x, temp.lr.y);
       if (temp.ul.x == -1) {
         continue;
+      }
+      
+      if (x == 321 && y == 80) {
+        printf("LR: %f %f\n", temp.lr.x, temp.lr.y);
+
+      }
+
+      // Check that calculated minbox in within destination raster space.
+      if ((temp.ul.x < 0.0) || (temp.ul.x > destination_column_count)
+          || (temp.ul.y < 0.0) || (temp.ul.y > destination_row_count)
+          || (temp.lr.x > destination_column_count - 1) || (temp.lr.x < 0.0)
+          || (temp.lr.y > destination_row_count -1) || (temp.lr.y < 0.0)) {
+        continue;
+        
       }
 
       if (temp.lr.x > source_area.lr.x) {
         source_area.lr.x = temp.lr.x;
       }
 
+      if (temp.ul.x > source_area.lr.x) {
+        source_area.lr.x = temp.ul.x;
+      }
+
       if (temp.ul.x < source_area.ul.x) {
         source_area.ul.x = temp.ul.x;
+      }
+
+      if (temp.lr.x < source_area.ul.x) {
+        source_area.ul.x = temp.lr.x;
       }
 
       if (temp.ul.y < source_area.ul.y) {
@@ -478,17 +573,15 @@ Area RasterMinbox(shared_ptr<Projection> source_projection,
   }
 
   // Check whether entire area is out of the projected space.
-  if (0&&source_area.ul.x == DBL_MAX || source_area.ul.y == DBL_MAX
-      || source_area.lr.x == -DBL_MAX || source_area.lr.y == -DBL_MAX) {
+  if ((source_area.ul.x == DBL_MAX) || (source_area.ul.y == DBL_MAX)
+      || (source_area.lr.x == -DBL_MAX) || (source_area.lr.y == -DBL_MAX)) {
     source_area.ul.x = -1.0;
     source_area.lr.x = -1.0;
+    source_area.ul.y = -1.0;
+    source_area.lr.y = -1.0;
     return source_area;
   }
 
-  if (source_area.ul.x < 0)
-    source_area.ul.x = 0;
-  if (source_area.ul.y < 0)
-    source_area.ul.y = 0;
 
   source_area.ul.x = floor(source_area.ul.x);
   source_area.ul.y = floor(source_area.ul.y);
