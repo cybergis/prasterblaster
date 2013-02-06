@@ -69,7 +69,7 @@ std::vector<Area> RowPartition(int rank,
                                int process_count,
                                int row_count,
                                int column_count,
-                               int partition_size);
+                               long partition_size);
 
 std::vector<Area> PartitionBySize(int rank,
                                   int process_count,
@@ -107,6 +107,8 @@ Area RasterMinbox(shared_ptr<Projection> source_projection,
                   shared_ptr<Projection> destination_projection,
                   Coordinate destination_ul,
                   double destination_pixel_size,
+                  int destination_row_count,
+                  int destination_column_count,
                   Area destination_raster_area);
 /**
  * \brief This function takes two RasterChunk pointers and performs
@@ -156,7 +158,7 @@ bool ReprojectChunkType(RasterChunk *source,
 
       pixelArea = rt.Transform(temp1);
 
-      if (pixelArea.ul.x == -1.0) {
+      if (pixelArea.ul.x == -1.0 || (pixelArea.ul.x > source->column_count_)) {
         // The pixel is outside of the projected area
         reinterpret_cast<pixelType*>(destination->pixels_)
             [chunk_x + chunk_y * destination->column_count_] = fillvalue;
