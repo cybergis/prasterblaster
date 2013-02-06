@@ -37,6 +37,7 @@ using librasterblaster::PRB_NOERROR;
 
 using sptw::PTIFF;
 using sptw::write_subrow;
+using sptw::write_rows;
 using sptw::open_raster;
 using sptw::SPTW_ERROR;
 
@@ -104,7 +105,6 @@ int main(int argc, char *argv[]) {
                                        conf.output_filename,
                                        input_raster->pixel_size(),
                                        conf.output_srs);
-
     if (err != PRB_NOERROR) {
       fprintf(stderr, "Error creating raster!: %d\n", err);
       return 1;
@@ -112,6 +112,9 @@ int main(int argc, char *argv[]) {
 
     printf("Output raster created...\n");
   }
+
+  // Wait for rank 0 to finish creating the file
+  MPI_Barrier(MPI_COMM_WORLD);
 
   // Open the new output raster
   PTIFF* output_raster = open_raster(conf.output_filename);
@@ -136,21 +139,25 @@ int main(int argc, char *argv[]) {
   for (size_t i = 0; i < partitions.size(); ++i) {
     // Swap y axis
     Area swap = partitions.at(i);
+
     swap.ul.y = output_raster->y_size - partitions.at(i).ul.y - 1;
     swap.lr.y = output_raster->y_size - partitions.at(i).lr.y - 1;
-    partitions.at(i) = swap;
-
+    //    partitions.at(i) = swap;
+//    if (partitions.at(i).ul.x > 0) continue;
+//    if (partitions.at(i).ul.y < 30) continue;
+//    if (partitions.at(i).ul.y > 40) continue;
     // Calculate the input area used by the partition
-    Area in_area = RasterMinbox(input_raster,
-                                pr_output_raster,
+    Area in_area = RasterMinbox(pr_output_raster,
+                                input_raster,
                                 partitions.at(i));
+
     if (in_area.ul.x == -1.0) {  // chunk is outside of projected area
       // We should write the fill value here too
-      printf("Chunk outside\n");
-      //      continue;
+      continue;
     }
     // Read the input area
     in_chunk = input_raster->create_raster_chunk(in_area);
+
     if (in_chunk == NULL) {
       fprintf(stderr, "Error reading input chunk! %f %f %f %f\n",
               in_area.ul.x, in_area.ul.y, in_area.lr.x, in_area.lr.y);
@@ -172,23 +179,37 @@ int main(int argc, char *argv[]) {
               partitions[i].lr.y);
       return 1;
     }
-
+    printf("Reprojecting %f %f (%d %d) to %f %f (%d %d)\n",
+        in_chunk->raster_location_.x, in_chunk->raster_location_.y,
+        in_chunk->row_count_, in_chunk->column_count_,
+        out_chunk->raster_location_.x, out_chunk->raster_location_.y,
+        out_chunk->row_count_, out_chunk->column_count_);
+       
     // Finally call ReprojectChunk
     bool ret = ReprojectChunk(in_chunk,
                               out_chunk,
                               conf.fillvalue,
                               conf.resampler);
-
-    // Write output file
-    SPTW_ERROR err = write_subrow(output_raster,
-                                  out_chunk->pixels_,
-                                  out_chunk->raster_location_.y,
-                                  out_chunk->raster_location_.x,
-                                  out_chunk->raster_location_.x
-                                  +out_chunk->column_count_-1);
+    SPTW_ERROR err;
+    if (out_chunk->row_count_ > 1) {
+      err = write_rows(output_raster,
+                       out_chunk->pixels_,
+                       out_chunk->raster_location_.y,
+                       out_chunk->raster_location_.y
+                       +out_chunk->row_count_);
+    } else {
+      // Write output file
+      err = write_subrow(output_raster,
+                         out_chunk->pixels_,
+                         out_chunk->raster_location_.y,
+                         out_chunk->raster_location_.x,
+                         out_chunk->raster_location_.x
+                         +out_chunk->column_count_-1);
+      
+    }
 
     if (i % 1000 == 0) {
-      printf("Rank: %d wrote chunk at %f %f, %d rows, %d columns\n", rank,
+      printf("Rank: %d wrote chunk at %f %f, %d rows, %d columns\n\n", rank,
              out_chunk->raster_location_.x, out_chunk->raster_location_.y,
              out_chunk->row_count_, out_chunk->column_count_);
     }
