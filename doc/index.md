@@ -1,9 +1,12 @@
 libRasterBlaster - Parallel map reprojection library            {#mainpage}
 ============
+
     librasterblaster is a library designed to allow the quick creation
     of parallel raster reprojection programs. Hopefully this will
     allow further research into I/O, partitioning, load balancing and
     other HPC concerns with regard to map reprojection.
+
+    For a detailed description of librasterblaster read the \link overview \endlink .
 
     Compiling
     ---------
