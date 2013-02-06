@@ -164,12 +164,12 @@ PTIFF* open_raster(string filename) {
 
 SPTW_ERROR close_raster(PTIFF *ptiff) {
   MPI_File_close(&(ptiff->fh));
-
+  delete ptiff;
   return SP_None;
 }
 
 SPTW_ERROR write_rows(PTIFF *ptiff,
-                      char *buffer,
+                      void *buffer,
                       int64_t first_row,
                       int64_t last_row) {
   int64_t row_size = ptiff->x_size * ptiff->band_count * ptiff->band_type_size;
