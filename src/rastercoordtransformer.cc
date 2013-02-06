@@ -18,6 +18,7 @@
  *
  *
  */
+#include <math.h>
 
 #include <ogr_api.h>
 #include <ogr_spatialref.h>
@@ -109,10 +110,15 @@ void RasterCoordTransformer::init(shared_ptr<Projection> source_projection,
   OGRSpatialReference source_sr, dest_sr;
   char *source_wkt = strdup(source_projection->wkt().c_str());
   char *dest_wkt = strdup(destination_projection->wkt().c_str());
-  source_sr.importFromWkt(&source_wkt);
-  dest_sr.importFromWkt(&dest_wkt);
+  char *srctemp = source_wkt;
+  char *desttmp = dest_wkt;
+  source_sr.importFromWkt(&srctemp);
+  dest_sr.importFromWkt(&desttmp);
   OGRCoordinateTransformation *t = OGRCreateCoordinateTransformation(&source_sr,
                                                                      &dest_sr);
+
+  free(source_wkt);
+  free(dest_wkt);
 
   if (t != NULL) {
     ctrans.reset(t);
@@ -145,7 +151,7 @@ Transform(Coordinate source, bool area_check) {
   value.lr = temp1;
 
   temp1.x = (static_cast<double>(source.x) * source_pixel_size_) + source_ul_.x;
-  temp1.y = (static_cast<double>(source.y) * source_pixel_size_) - source_ul_.y;
+  temp1.y = source_ul_.y - (static_cast<double>(source.y) * source_pixel_size_);
 
   src_proj->inverse(temp1.x, temp1.y, &temp2.x, &temp2.y);
   src_proj->forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
@@ -158,18 +164,18 @@ Transform(Coordinate source, bool area_check) {
   }
 
   temp1.x = (static_cast<double>(source.x) * source_pixel_size_) + source_ul_.x;
-  temp1.y = (static_cast<double>(source.y) * source_pixel_size_) - source_ul_.y;
+  temp1.y = source_ul_.y - (static_cast<double>(source.y) * source_pixel_size_);
   temp2 = temp1;
 
   // Now we are going to assign temp1 as the UL of our pixel and
   // temp2 as LR
-  temp2.x += source_pixel_size_/2;
-  temp2.y -= source_pixel_size_/2;
+  temp2.x += sqrt(2 * source_pixel_size_ * source_pixel_size_);
+  temp2.y -= sqrt(2 * source_pixel_size_ * source_pixel_size_);
 
 //  src_proj->inverse(temp1.x, temp1.y, &temp1.x, &temp1.y);
 //  dest_proj->forward(temp1.x, temp1.y, &temp1.x, &temp1.y);
-  ctrans->Transform(1, &temp1.x, &temp1.y);
 
+  ctrans->Transform(1, &temp1.x, &temp1.y);
 //  src_proj->inverse(temp2.x, temp2.y, &temp2.x, &temp2.y);
 //  dest_proj->forward(temp2.x, temp2.y, &temp2.x, &temp2.y);
   ctrans->Transform(1, &temp2.x, &temp2.y);
@@ -177,11 +183,11 @@ Transform(Coordinate source, bool area_check) {
   // temp1/temp2 now contain coords to input projection
   // Now convert to points in the raster coordinate space.
   temp1.x -= destination_ul_.x;
-  temp1.y += destination_ul_.y;
+  temp1.y = destination_ul_.y - temp1.y;
   temp1.x /= destination_pixel_size_;
   temp1.y /= destination_pixel_size_;
   temp2.x -= destination_ul_.x;
-  temp2.y += destination_ul_.y;
+  temp2.y = destination_ul_.y - temp2.y;
   temp2.x /= destination_pixel_size_;
   temp2.y /= destination_pixel_size_;
 
