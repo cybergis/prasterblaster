@@ -40,12 +40,12 @@ AC_ARG_WITH(mpi-cxx-wrapper,
 AC_ARG_WITH(tiff-incdir,
   AS_HELP_STRING( [--with-tiff-incdir=path],
   [Specify the path to the tiff includes]),
-  [GDAL_CPPFLAGS="-I$withval"], [])
+  [TIFF_CPPFLAGS="-I$withval"], [])
 
 AC_SUBST(GDAL_CPPFLAGS)
 AC_SUBST(GDAL_CFLAGS)
-CPPFLAGS="${CPPFLAGS} ${GDAL_CPPFLAGS}"
-CXXFLAGS="$CXXFLAGS $GDAL_CXXFLAGS"
+CPPFLAGS="${CPPFLAGS} ${GDAL_CPPFLAGS} ${TIFF_CPPFLAGS}"
+CXXFLAGS="${CXXFLAGS} ${GDAL_CXXFLAGS}"
 
 LIBS="$LIBS -lm"
 
