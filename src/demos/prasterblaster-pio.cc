@@ -179,11 +179,6 @@ int main(int argc, char *argv[]) {
               partitions[i].lr.y);
       return 1;
     }
-    printf("Reprojecting %f %f (%d %d) to %f %f (%d %d)\n",
-        in_chunk->raster_location_.x, in_chunk->raster_location_.y,
-        in_chunk->row_count_, in_chunk->column_count_,
-        out_chunk->raster_location_.x, out_chunk->raster_location_.y,
-        out_chunk->row_count_, out_chunk->column_count_);
        
     // Finally call ReprojectChunk
     bool ret = ReprojectChunk(in_chunk,

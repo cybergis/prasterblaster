@@ -521,9 +521,6 @@ Area RasterMinbox(shared_ptr<Projection> source_projection,
          y <= destination_raster_area.lr.y; ++y) {
       c.x = x;
       c.y = y;
-      if (x == 321 && y == 80) {
-        printf("Critical\n");
-      }
 
       temp = rt.Transform(c);
 //      printf("\t Source point: %d %d\n", x, y);
@@ -532,11 +529,6 @@ Area RasterMinbox(shared_ptr<Projection> source_projection,
         continue;
       }
       
-      if (x == 321 && y == 80) {
-        printf("LR: %f %f\n", temp.lr.x, temp.lr.y);
-
-      }
-
       // Check that calculated minbox in within destination raster space.
       if ((temp.ul.x < 0.0) || (temp.ul.x > destination_column_count)
           || (temp.ul.y < 0.0) || (temp.ul.y > destination_row_count)
