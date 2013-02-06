@@ -37,6 +37,11 @@ AC_ARG_WITH(mpi-cxx-wrapper,
   [Specify the path to the mpi c++ compiler wrapper]),
   [CXX=$withval], [])
 
+AC_ARG_WITH(tiff-incdir,
+  AS_HELP_STRING( [--with-tiff-incdir=path],
+  [Specify the path to the tiff includes]),
+  [GDAL_CPPFLAGS="-I$withval"], [])
+
 AC_SUBST(GDAL_CPPFLAGS)
 AC_SUBST(GDAL_CFLAGS)
 CPPFLAGS="${CPPFLAGS} ${GDAL_CPPFLAGS}"
@@ -88,6 +93,9 @@ AC_COMPILE_IFELSE(
 # Check for GDAL library and headers
 AC_CHECK_HEADER(gdal.h, [], [echo 'gdal.h not found! Set --with-gdal-incdir=path'; exit])
 AC_SEARCH_LIBS([GDALAllRegister], [gdal], [], [AC_MSG_ERROR(['libgdal not found! Set --with-gdal-libdir=path'])], [])
+
+# Check for tiff headers
+AC_CHECK_HEADER(tiff.h, [], [echo 'tiff.h not found! Set --with-tiff-incdir=path'; exit])
 
 AC_CONFIG_HEADERS([config.h]) 
 AC_CONFIG_FILES([  
