@@ -91,11 +91,11 @@ AC_COMPILE_IFELSE(
 
 
 # Check for GDAL library and headers
-AC_CHECK_HEADER(gdal.h, [], [echo 'gdal.h not found! Set --with-gdal-incdir=path'; exit])
+AC_CHECK_HEADER([gdal.h], [], [echo 'gdal.h not found! Set --with-gdal-incdir=path'; exit])
 AC_SEARCH_LIBS([GDALAllRegister], [gdal], [], [AC_MSG_ERROR(['libgdal not found! Set --with-gdal-libdir=path'])], [])
 
 # Check for tiff headers
-AC_CHECK_HEADER(tiff.h, [], [echo 'tiff.h not found! Set --with-tiff-incdir=path'; exit])
+AC_CHECK_HEADER([tiff.h], [], [echo 'tiff.h not found! Set --with-tiff-incdir=path'; exit])
 
 AC_CONFIG_HEADERS([config.h]) 
 AC_CONFIG_FILES([  
