@@ -39,6 +39,7 @@ Configuration::Configuration(int argc, char *argv[]) {
   signed char c = 0;
   partition_size = 0;
   std::string arg = "";
+  resampler = NEAREST;
   while ((c = getopt_long(argc, argv, "p:r:f:n:t:", longopts, NULL)) != -1) {
     switch (c) {
       case 0:
