@@ -28,15 +28,6 @@ AC_ARG_WITH(gdal-libdir,
   [Specify the path to the GDAL library]),
   [GDAL_CXXFLAGS="-L$withval -Wl,-R$withval"], [])
 
-AC_ARG_WITH(mpi-c-wrapper,  
-  AS_HELP_STRING( [--with-mpi-c-wrapper=path],
-  [Specify the path to the mpi c compiler wrapper]),
-  [CC=$withval], [])
-AC_ARG_WITH(mpi-cxx-wrapper,
-  AS_HELP_STRING( [--with-mpi-cxx-wrapper=path],
-  [Specify the path to the mpi c++ compiler wrapper]),
-  [CXX=$withval], [])
-
 AC_ARG_WITH(tiff-incdir,
   AS_HELP_STRING( [--with-tiff-incdir=path],
   [Specify the path to the tiff includes]),
