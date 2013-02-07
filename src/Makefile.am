@@ -1,7 +1,7 @@
 
 
 
-noinst_LTLIBRARIES = librasterblaster.la
+lib_LTLIBRARIES = librasterblaster.la
 librasterblaster_la_SOURCES = projectedraster.cc \
                              configuration.cc \
                              quadtree.cc \
