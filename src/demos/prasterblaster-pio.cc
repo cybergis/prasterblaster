@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &process_count);
 
-  // Initialize Configuration object
+  // Initialize Configuration object 
   Configuration conf(argc, argv);
 
   if (conf.input_filename == "" || conf.output_filename == "") {
@@ -86,11 +86,10 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  if (conf.partition_size == 0) {
-    conf.partition_size = 50000;
-  }
-
   // Open the input raster
+  // 
+  // The input raster is only read so we can use the serial i/o provided by the
+  // ProjectedRaster object to read the input file.
   shared_ptr<ProjectedRaster> input_raster(
       new ProjectedRaster(conf.input_filename));
   if (input_raster->ready() == false) {
@@ -98,6 +97,8 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
+  // If we are the process with rank 0 we are responsible for the creation of
+  // the output raster. 
   if (rank == 0) {
     // Now we have to create the output raster
     printf("Creating output raster...\n");
@@ -116,7 +117,9 @@ int main(int argc, char *argv[]) {
   // Wait for rank 0 to finish creating the file
   MPI_Barrier(MPI_COMM_WORLD);
 
-  // Open the new output raster
+  // Now open the new output file as a ProjectedRaster object. This object will
+  // only be used to read metadata. It will _not_ be used to write to the output
+  // file.
   PTIFF* output_raster = open_raster(conf.output_filename);
   shared_ptr<ProjectedRaster> pr_output_raster(
       new ProjectedRaster(conf.output_filename));
@@ -137,16 +140,8 @@ int main(int argc, char *argv[]) {
 
   // Now we loop through the returned partitions
   for (size_t i = 0; i < partitions.size(); ++i) {
-    // Swap y axis
-    Area swap = partitions.at(i);
-
-    swap.ul.y = output_raster->y_size - partitions.at(i).ul.y - 1;
-    swap.lr.y = output_raster->y_size - partitions.at(i).lr.y - 1;
-    //    partitions.at(i) = swap;
-//    if (partitions.at(i).ul.x > 0) continue;
-//    if (partitions.at(i).ul.y < 30) continue;
-//    if (partitions.at(i).ul.y > 40) continue;
-    // Calculate the input area used by the partition
+    // The RasterMinbox function calculates what part of the input raster
+    // matches the given output partition.
     Area in_area = RasterMinbox(pr_output_raster,
                                 input_raster,
                                 partitions.at(i));
@@ -155,7 +150,9 @@ int main(int argc, char *argv[]) {
       // We should write the fill value here too
       continue;
     }
-    // Read the input area
+
+    // Now we use the ProjectedRaster object we created for the input file to
+    // create a RasterChunk that has the pixel values read into it.
     in_chunk = input_raster->create_raster_chunk(in_area);
 
     if (in_chunk == NULL) {
@@ -168,7 +165,9 @@ int main(int argc, char *argv[]) {
       return 1;
     }
 
-    // Create an allocated (not read from file) RasterChunk for the output
+    // We want a RasterChunk for the output area but we area going to generate
+    // the pixel values not read them from the file so we use
+    // create_allocated_raster_chunk.
     out_chunk = pr_output_raster->create_allocated_raster_chunk(
         partitions.at(i));
     if (out_chunk == NULL) {
@@ -180,20 +179,23 @@ int main(int argc, char *argv[]) {
       return 1;
     }
        
-    // Finally call ReprojectChunk
+    // Now we call ReprojectChunk with the RasterChunk pair and the desired
+    // resampler. ReprojectChunk performs the reprojection/resampling and fills
+    // the output RasterChunk with the new values.
     bool ret = ReprojectChunk(in_chunk,
                               out_chunk,
                               conf.fillvalue,
                               conf.resampler);
     SPTW_ERROR err;
     if (out_chunk->row_count_ > 1) {
+      // If the number of rows in the output chunk is greater than one, use the sptw::write_rows
       err = write_rows(output_raster,
                        out_chunk->pixels_,
                        out_chunk->raster_location_.y,
                        out_chunk->raster_location_.y
                        +out_chunk->row_count_);
     } else {
-      // Write output file
+      // otherwise use sptw::write_subrow
       err = write_subrow(output_raster,
                          out_chunk->pixels_,
                          out_chunk->raster_location_.y,

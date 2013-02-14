@@ -12,6 +12,11 @@ Contents
 * librasterblaster structures
 * librasterblaster API
 
+Background information and terminology
+--------------------------------------
+
+### Coordinate spaces
+
 Most of the functionality in librasterblaster is concerned with the
 manipulation of three distinct coordinate spaces that I call: raster,
 projected, and geographic.
@@ -32,10 +37,7 @@ Geographic coordinates are the spheroidal longitude and latitude used
 to describe locations on the earth. Converting projected coordinates
 to geographic requires the use of map projection equations.
 
-Background information and terminology
---------------------------------------
 
-### Coordinate spaces
 
 #### Projected
 
@@ -114,29 +116,90 @@ Finding the geographic coordinate requires a more complicated transformation, so
 librasterblaster algorithm
 --------------------------
 
-The first task is to determine the extent of the projected output
-space, this combined with the size of the pixels tells us the size of
-the output raster in raster coordinates.
+The librasterblaster uses a raster reprojection technique called
+inverse reprojection. The output file is first created and then the
+value of each output pixel is calculated.
 
-To find the output projected space we perform a minbox operation. 
+### Serial Algorithm
 
-The output raster coordinate space is then partitioned. This is just a
-logical partitioning, no pixel data has been read yet.
+#### 1. Calculate the size of the output raster in projected coordinates
 
-For each output raster partition we now perform another minbox
-operation, to find the corresponding partition in the input raster
-space.
+First we iterate around the edges of the input raster, transforming
+the coordinates of each pixel to the projection of the output
+raster. A minbox is calculated as the smalled box in the projected
+coordinates that would contain all of the calculated output points.
 
-We now have pairs of partitions, each pair has an output chunk and the
-corresponding output chunk, both in the respective raster spaces.
+#### 2. Calculate the size of the output raster in raster coordinates
 
-For each partition pair we read the input, resample to the output
-partition, and then write the output partition. This last operation is
-performed in parallel on multiple processors. 
+Using the size of the output pixels we then calculate the number of
+rows and columns in the output raster like this:
 
+columns = (lr_x - ul_x) / pixel_size
+rows    = (ul_y - lr_y) / pixel_size
+
+#### 3. Now create the output raster file
+
+Create the output raster file with the user-provided projection and
+the calculated raster size.
+
+#### 4. Resample each output pixel
+
+For each output pixel calculate the corresponding area in the input
+raster and use the input raster values to calculate a new output pixel
+value.
+
+Write the calculated pixel value to the output file.
+
+### Parallel Algorithm
+
+The parallel algorithm is very similar to the serial algorithm except
+now we resample the output raster in independent parts the can be
+calculated in parallel.
+
+#### 1. Calculate the size of the output raster in projected coordinates
+
+First we iterate around the edges of the input raster, transforming
+the coordinates of each pixel to the projection of the output
+raster. A minbox is calculated as the smalled box in the projected
+coordinates that would contain all of the calculated output points.
+
+The librasterblaster function that performs this operation is called
+librasterblaster::ProjectedMinbox.
+
+#### 2. Calculate the size of the output raster in raster coordinates
+
+Using the size of the output pixels we then calculate the number of
+rows and columns in the output raster like this:
+
+    columns = (lr_x - ul_x) / pixel_size
+    rows    = (ul_y - lr_y) / pixel_size
+
+#### 3. Now create the output raster file
+
+Create the output raster file with the user-provided projection and
+the calculated raster size.
+
+Rasters can be created with the
+librasterblaster::ProjectedRaster::CreateOutput function or with the
+sptw::create_raster function.
+
+#### 4. Partition the Output raster
+
+Partition the output raster into n continuous parts. For each output
+partition we then calculate the minbox of the corresponding input
+area. 
+
+The librasterblaster::RowPartition function can be used to partition
+the output raster. Though many other partition techniques can be
+applied.
+
+To find the matching input raster area the function
+librasterblaster::RasterMinbox applied with the output partition.
 
 librasterblaster structures
 ---------------------------
+
+### librasterblaster::RasterChunk
 
 The main structure used throughout librasterblaster is
 librasterblaster::RasterChunk. This structure represents a
@@ -148,6 +211,29 @@ RasterChunks are normally created by the
 librasterblaster::ProjectedRaster class. The user specifies the
 desired area and the ProjectedRaster object returns the initialized
 RasterChunk.
+
+
+### librasterblaster::ProjectedRaster
+
+Represents a raster with a projection and location. Used to read
+metadata, create RasterChunks, and perform serial I/O.
+
+#### librasterblaster::ProjectedRaster::create_empty_raster_chunk
+
+Raster chunks can be created by librasterblaster::ProjectedRaster in
+three ways. The first member generates a RasterChunk with metadata but
+no I/O or memory is allocated for the pixel values.
+
+#### librasterblaster::ProjectedRaster::create_allocated_raster_chunk
+
+This function creates a RasterChunk with the correct metadata and
+memory allocated for the pixel values but no I/O is performed.
+
+#### librasterblaster::ProjectedRaster::create_raster_chunk
+
+This function creates a raster chunk with pixel values read from the
+raster.
+
 
 librasterblaster API
 --------------------
