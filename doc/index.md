@@ -16,6 +16,11 @@ libRasterBlaster - Parallel map reprojection library            {#mainpage}
     to use the "--with-gdal-incdir" and "--with-gdal-libdir" options
     to tell autoconf where it can find GDAL. 
 
+    Set the compiler wrapper by setting CXX when you call configure,
+    like this:
+
+    ./configure CXX=mpiCC
+
     Next, run "make". If everything compiles correctly you should have
     a \link prasterblasterpio \endlink binary.
 
