@@ -15,7 +15,7 @@
 .#*
 
 # program binary
-prasterblaster*
+prasterblaster-pio
 tests/tests
 
 # autotools stuff
