@@ -1,5 +1,10 @@
 #!/bin/bash
 
+OLDDIR= $(pwd)
+DATADIR= $(dirname $0)
+
+cd $DATADIR
+
 if [ -e veg_geographic_1deg.tif ]
 then 
     echo "Found veg_geographic_1deg.tif"
@@ -30,4 +35,4 @@ else
     bunzip2 nlcd2006_landcover_4-20-11_se5.tif.bz2
 fi
 
-
+cd $OLDDIR
