@@ -33,10 +33,14 @@ AC_ARG_WITH(tiff-incdir,
   [Specify the path to the tiff includes]),
   [TIFF_CPPFLAGS="-I$withval"], [])
 
+AC_ARG_WITH(tiff-libdir,
+  AS_HELP_STRING( [--with-tiff-libdir=path],
+  [Specify the path to the tiff shared library file]),
+  [TIFF_CXXFLAGS="-L$withval -Wl,-R$withval"], [])
 AC_SUBST(GDAL_CPPFLAGS)
 AC_SUBST(GDAL_CFLAGS)
 CPPFLAGS="${CPPFLAGS} ${GDAL_CPPFLAGS} ${TIFF_CPPFLAGS}"
-CXXFLAGS="${CXXFLAGS} ${GDAL_CXXFLAGS}"
+CXXFLAGS="${CXXFLAGS} ${GDAL_CXXFLAGS} ${TIFF_CXXFLAGS}"
 
 LIBS="$LIBS -lm"
 
@@ -87,7 +91,7 @@ AC_SEARCH_LIBS([GDALAllRegister], [gdal], [], [AC_MSG_ERROR(['libgdal not found!
 
 # Check for tiff headers
 AC_CHECK_HEADER([tiff.h], [], [echo 'tiff.h not found! Set --with-tiff-incdir=path'; exit])
-
+AC_SEARCH_LIBS([TIFFOpen], [tiff], [], [AC_MSG_ERROR(['libtiff not found! Set --with-tiff-libdir=path'])], [])
 AC_CONFIG_HEADERS([config.h]) 
 AC_CONFIG_FILES([  
   Makefile  
