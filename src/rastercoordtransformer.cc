@@ -18,7 +18,7 @@
  *
  *
  */
-#include <math.h>
+#include <cmath>
 
 #include <ogr_api.h>
 #include <ogr_spatialref.h>
@@ -193,6 +193,28 @@ Transform(Coordinate source, bool area_check) {
 
   value.ul = temp1;
   value.lr = temp2;
+
+  // Now validate and round pixel values
+  // Truncate values
+  value.ul.x = floor(fabs(value.ul.x));
+  value.ul.y = floor(fabs(value.ul.y));
+  value.lr.x = floor(fabs(value.lr.x));
+  value.lr.y = floor(fabs(value.lr.y));
+
+  // Check that entries are valid
+  if (value.ul.x < 0.0 ||
+      value.lr.x < 0.0) {
+    value.ul.x = -1.0;
+    value.lr.x = -1.0;
+  }
+
+  if (value.ul.x > value.lr.x) {
+    value.lr.x = value.ul.x;
+  }
+
+  if (value.ul.y > value.lr.y) {
+    value.lr.y = value.ul.y;
+  }
 
   return value;
 }

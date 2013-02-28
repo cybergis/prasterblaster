@@ -530,11 +530,14 @@ Area RasterMinbox(shared_ptr<Projection> source_projection,
       }
       
       // Check that calculated minbox in within destination raster space.
-      if ((temp.ul.x < 0.0) || (temp.ul.x > destination_column_count)
+      if ((temp.ul.x < -0.01) || (temp.ul.x > destination_column_count)
           || (temp.ul.y < 0.0) || (temp.ul.y > destination_row_count)
           || (temp.lr.x > destination_column_count - 1) || (temp.lr.x < 0.0)
           || (temp.lr.y > destination_row_count -1) || (temp.lr.y < 0.0)) {
-        continue;
+        printf("Source raster size, rows: %f, columns %f\n", destination_raster_area.lr.x, destination_raster_area.lr.y);
+        printf("Source: %f %f\n", x, y);
+        printf("Outside rasterspace: %f %f %f %f\n", temp.ul.x, temp.ul.y, temp.lr.x, temp.lr.y);
+
         
       }
 
@@ -580,17 +583,21 @@ Area RasterMinbox(shared_ptr<Projection> source_projection,
   source_area.lr.x = ceil(source_area.lr.x);
   source_area.lr.y = ceil(source_area.lr.y);
 
-  if (source_area.lr.x > source_column_count - 1) {
-    source_area.lr.x = source_column_count - 1;
+  if (source_area.lr.x > destination_column_count - 1) {
+    source_area.lr.x = destination_column_count - 1;
   }
 
-  if (source_area.lr.y > source_row_count - 1) {
-    source_area.lr.y = source_row_count - 1;
+  if (source_area.lr.y > destination_row_count - 1) {
+    source_area.lr.y = destination_row_count - 1;
   }
 
   if (source_area.lr.y < source_area.ul.y) {
     double t = source_area.lr.y;
     source_area.lr.y = source_area.ul.y;
+  }
+
+  if (source_area.lr.x < source_area.ul.x) {
+    source_area.lr.x = source_area.ul.x;
   }
 
   return source_area;
