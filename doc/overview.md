@@ -6,11 +6,55 @@ libRasterBlaster {#overview}
 
 Contents
 --------
-
+* libRasterBlaster setup and installation
 * Background information and terminology
 * librasterblaster algorithm
 * librasterblaster structures
 * librasterblaster API
+
+libRasterBlaster Setup and Installation
+---------------------------------------
+
+### Pre-install steps
+
+libRasterBlaster depends on GDAL so go to http://gdal.org and sources
+or binaries for your system. Alternatively you can use your system's
+package manager to install libgdal. Whatever method you use ensure
+that libgdal is compiled with bigtiff support.
+
+### Compiling and Testing
+
+Next check out the latest librasterblaster sources from the subversion
+repository:
+
+    svn co https://svn2.cigi.uiuc.edu:8443/usgs/prasterblaster/trunk prasterblaster
+
+Then change to the prasterblaster directory and generate the configure
+script and makefile. The MPI wrapper script can be specified by
+supplying a CXX value, otherwise the script searches for common
+names.:
+
+    cd prasterblaster
+    autoreconf -iv
+    ./configure CXX=mpiCC
+
+If you installed GDAL to a location the script can't find you can
+specify the header and library locations with the configure script,
+like this:
+
+    ./configure CXX=mpiCC --with-gdal-incdir=/usr/local/include/gdal/ --with-gdal-libdir=/usr/local/lib/
+
+After successfully running configure you can build librasterblaster
+and the demo program by calling make. libRasterBlaster now comes with
+system level tests which demonstrate the proper functioning of the
+library. To use these we first have to fetch the test rasters by
+running the tests/testdata/getdata.sh script. The tests rasters are
+fairly large so this may take a few minutes. The getdata.sh only has
+to be run one time.
+
+    make
+    bash tests/testdata/getdata.sh
+    tests/systemtest
 
 Background information and terminology
 --------------------------------------
