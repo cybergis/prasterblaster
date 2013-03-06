@@ -57,7 +57,6 @@ PRB_ERROR CreateOutputRaster(shared_ptr<ProjectedRaster> in,
  * @param output_filename File path that the new raster will be created at
  * @param output_pixel_size Size in meters of the pixels in the output raster
  * @param output_srs Projection specification string
- * @param Maximum pixel count of one dimension of new raster, eg 100 means raster will be maximum of 100x100
  *
  */
 PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
@@ -65,19 +64,11 @@ PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
                              string output_srs,
                              int output_size);
 
-std::vector<Area> RowPartition(int rank,
-                               int process_count,
-                               int row_count,
-                               int column_count,
-                               long partition_size);
-
 std::vector<Area> PartitionBySize(int rank,
                                   int process_count,
                                   int row_count,
                                   int column_count,
-                                  int partition_size,
-                                  int maximum_height,
-                                  int maximum_width);
+                                  int maximum_partition_size);
 
 Projection*  ProjectionFactory(string srs);
 void SearchAndUpdate(Area input_area,

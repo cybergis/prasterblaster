@@ -188,96 +188,14 @@ Projection* ProjectionFactory(string output_srs) {
   return out_proj;
 }
 
-std::vector<Area> RowPartition(int rank,
-                               int process_count,
-                               int row_count,
-                               int column_count,
-                               long partition_size) {
-  int rows_per_partition = partition_size / column_count;
-  int partitions_per_row = column_count / partition_size;
-  int leftover_per_row = column_count % partition_size;
-  int partition_count = 1;
-
-  if (rows_per_partition > 0) {
-    partition_count = row_count / rows_per_partition;
-  }
-  vector<Area> partitions;
-
-  if (partitions_per_row < 1) {
-    partitions_per_row = 0;
-    partition_size = partition_size / column_count;
-    leftover_per_row = 0;
-
-    if (rows_per_partition > row_count) {
-      rows_per_partition = 1;
-    }
-  }
-
-  if (rows_per_partition > 0) {
-    for (int i=0; i<partition_count-1; ++i) {
-      partitions.push_back(Area(0,
-                                i*rows_per_partition,
-                                column_count-1,
-                                (i+1)*rows_per_partition-1));
-    }
-    // Final partition, may have > rows_per_partition
-    partitions.push_back(Area(0,
-                              partition_count * rows_per_partition,
-                              column_count-1,
-                              row_count-1));
-    return partitions;
-    
-  }
-  
-  vector<int> rowpart_sizes(partitions_per_row, partition_size);
-  vector<int> first_column(partitions_per_row, 0);
-
-  for (int i = 0; i < leftover_per_row; ++i) {
-    // Set the partition sizes
-    int j = i % rowpart_sizes.size();
-    rowpart_sizes.at(j) = rowpart_sizes.at(j) + 1;
-  }
-
-  // Set the column offsets
-  for (int i = 1; i < first_column.size(); ++i) {
-    first_column.at(i) = first_column.at(i-1) + rowpart_sizes.at(i-1);
-  }
-
-  partition_count = rowpart_sizes.size() * row_count;
-
-  for (int r = rank; r < partition_count; r += process_count) {
-    int row = r / rowpart_sizes.size();
-    int partcol = r % rowpart_sizes.size();
-
-    partitions.push_back(Area(first_column.at(partcol),
-                              row,
-                              first_column.at(partcol)
-                              + rowpart_sizes.at(partcol) - 1,
-                              row));
-  }
-
-  std::reverse(partitions.begin(), partitions.end());
-  return partitions;
-}
-
 std::vector<Area> PartitionBySize(int rank,
                                   int process_count,
                                   int row_count,
                                   int column_count,
-                                  int partition_size,
-                                  int maximum_height,
-                                  int maximum_width) {
-  if (maximum_height == -1) {
-    maximum_height = row_count + 1;
-  }
-
-  if (maximum_width == -1) {
-    maximum_width = column_count + 1;
-  }
-
+                                  int maximum_partition_size) {
   QuadTree qt(row_count,
               column_count,
-              partition_size);
+              maximum_partition_size);
 
   vector<Area> leaves = qt.collectLeaves();
   vector<Area> partitions;
