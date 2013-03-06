@@ -535,7 +535,7 @@ Area RasterMinbox(shared_ptr<Projection> source_projection,
           || (temp.lr.x > destination_column_count - 1) || (temp.lr.x < 0.0)
           || (temp.lr.y > destination_row_count -1) || (temp.lr.y < 0.0)) {
         printf("Source raster size, rows: %f, columns %f\n", destination_raster_area.lr.x, destination_raster_area.lr.y);
-        printf("Source: %f %f\n", x, y);
+        printf("Source: %d %d\n", x, y);
         printf("Outside rasterspace: %f %f %f %f\n", temp.ul.x, temp.ul.y, temp.lr.x, temp.lr.y);
 
         
