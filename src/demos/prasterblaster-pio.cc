@@ -41,6 +41,9 @@ using sptw::write_rows;
 using sptw::open_raster;
 using sptw::SPTW_ERROR;
 
+void MyErrorHandler(CPLErr eErrClass, int err_no, const char *msg) {
+        return;
+}
 /*! \page prasterblasterpio
 
 \htmlonly
@@ -69,6 +72,9 @@ prasterblaster-pio.cc.
 /** Main function for the prasterblasterpio program */
 int prasterblaster_main(Configuration conf, int rank, int process_count) {
   RasterChunk *in_chunk, *out_chunk;
+
+  // Replace CPLErrorHandler
+  CPLPushErrorHandler(MyErrorHandler);
 
   if (conf.input_filename == "" || conf.output_filename == "") {
     fprintf(stderr, "Specify an input and output filename\n");
