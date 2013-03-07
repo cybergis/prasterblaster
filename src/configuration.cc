@@ -33,6 +33,7 @@ struct option longopts[] = {
 
 Configuration::Configuration() {
   resampler = NEAREST;
+  partition_size = -1;
 }
 
 Configuration::Configuration(int argc, char *argv[]) {
