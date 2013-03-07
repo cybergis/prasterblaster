@@ -15,8 +15,9 @@
 .#*
 
 # program binary
-prasterblaster-pio
+prasterblasterpio
 tests/tests
+tests/systemtest
 
 # autotools stuff
 configure
@@ -41,3 +42,8 @@ tests/testdata/*
 
 # clang static analysis files
 clang_output_*
+
+# Generated documentation
+html/
+latex/
+
