@@ -47,33 +47,23 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
                              string output_srs) {
   OGRSpatialReference in_srs;
   OGRSpatialReference out_srs;
-  char *srs_str = NULL;
-  char *wkt = NULL;
-  char *tmp;
+  OGRErr err;
 
-  srs_str = strdup(in->GetProjectionRef());
-  in_srs.importFromWkt(&srs_str);
-
-  OGRErr err = out_srs.importFromProj4(output_srs.c_str());
+  err = in_srs.SetFromUserInput(in->GetProjectionRef());
   if (err != OGRERR_NONE) {
-    wkt = strdup(output_srs.c_str());
-    tmp = wkt;
-    err = out_srs.importFromWkt(&tmp);
-    free(wkt);
-    if (err != OGRERR_NONE) {
-      fprintf(stderr, "Error parsing projection!\n");
-      return PRB_PROJERROR;
-    }
-  }
-  if (err != OGRERR_NONE) {
-    fprintf(stderr, "Error parsing projection: %s\n", output_srs.c_str());
-    return PRB_PROJERROR;
+    return PRB_BADARG;
   }
 
+  out_srs.SetFromUserInput(output_srs.c_str());
+  if (err != OGRERR_NONE) {
+    return PRB_BADARG;
+  }
+  
   // Determine output raster size by calculating the projected coordinate minbox
   double in_transform[6];
   in->GetGeoTransform(in_transform);
   Coordinate ul(in_transform[0], in_transform[3], UNDEF);
+  char *srs_str = NULL;
   in_srs.exportToProj4(&srs_str);
   Area out_area = ProjectedMinbox(ul,
                                   srs_str,
@@ -126,13 +116,14 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
 
   output->SetGeoTransform(out_t);
   OGRSpatialReference out_sr;
-  wkt = NULL;
-  out_sr.importFromProj4(output_srs.c_str());
+  char *wkt = NULL;
+  out_sr.SetFromUserInput(output_srs.c_str());
   out_sr.exportToWkt(&wkt);
   printf("Setting projection to: %s\n",
          wkt);
   output->SetProjection(wkt);
 
+  OGRFree(wkt);
   CSLDestroy(options);
   GDALClose(output);
 

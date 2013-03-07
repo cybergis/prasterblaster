@@ -37,26 +37,6 @@
 #include "src/quadtree.h"
 
 namespace librasterblaster {
-
-OGRSpatialReference* srs_to_ogrspatialreference(string projection_string) {
-  char *srs_str = NULL;
-  char *wkt = NULL;
-  char *tmp;
-  OGRSpatialReference *sr = new OGRSpatialReference();
-
-  OGRErr err = sr->importFromProj4(projection_string.c_str());
-  if (err != OGRERR_NONE) {
-    wkt = strdup(projection_string.c_str());
-    tmp = wkt;
-    err = sr->importFromWkt(&tmp);
-    free(wkt);
-    if (err != OGRERR_NONE) {
-      return NULL;
-    }
-  }
-  return sr;
-}
-
 shared_ptr<Projection> srs_to_projection(string projection_string) {
   OGRSpatialReference srs;
   shared_ptr<Projection> out_proj;
@@ -137,20 +117,17 @@ void RasterCoordTransformer::init(string source_projection,
   destination_ul_ = destination_ul;
   destination_pixel_size_ = destination_pixel_size;
 
-  OGRSpatialReference *source_sr, *dest_sr;
+  OGRSpatialReference source_sr, dest_sr;
   char *source_wkt = strdup(source_projection.c_str());
   char *dest_wkt = strdup(destination_projection.c_str());
   char *srs_str = NULL;
   char *wkt = NULL;
 
-  source_sr = srs_to_ogrspatialreference(source_projection);
-  dest_sr = srs_to_ogrspatialreference(destination_projection);
+  source_sr.SetFromUserInput(source_projection.c_str());
+  dest_sr.SetFromUserInput(destination_projection.c_str());
 
-  OGRCoordinateTransformation *t = OGRCreateCoordinateTransformation(source_sr,
-                                                                     dest_sr);
-
-  free(source_sr);
-  free(dest_sr);
+  OGRCoordinateTransformation *t = OGRCreateCoordinateTransformation(&source_sr,
+                                                                     &dest_sr);
   free(source_wkt);
   free(dest_wkt);
 
