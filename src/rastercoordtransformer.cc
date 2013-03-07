@@ -18,12 +18,13 @@
  *
  *
  */
-#include <cmath>
 
 #include <ogr_api.h>
 #include <ogr_spatialref.h>
 #include <gdal.h>
 #include <gdal_priv.h>
+
+#include <cmath>
 
 #include "src/gctp_cpp/projection.h"
 #include "src/gctp_cpp/transformer.h"
@@ -71,11 +72,12 @@ shared_ptr<Projection> srs_to_projection(string projection_string) {
   }
 
   if (err != OGRERR_NONE) {
-    fprintf(stderr, "Error parsing projection: %s\n", projection_string.c_str());
-    return out_proj;
+    fprintf(stderr, "Error parsing projection: %s\n",
+        projection_string.c_str());
+    return out_long;
   }
 
-  long proj_code, datum_code, zone;
+  proj proj_code, datum_code, zone;
   double *params = NULL;
 
   srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
@@ -128,8 +130,6 @@ void RasterCoordTransformer::init(string source_projection,
                                   string destination_projection,
                                   Coordinate destination_ul,
                                   double destination_pixel_size) {
-
-
   src_proj = srs_to_projection(source_projection);
   source_ul_ = source_ul;
   source_pixel_size_ = source_pixel_size;
@@ -157,8 +157,7 @@ void RasterCoordTransformer::init(string source_projection,
   if (t != NULL) {
     ctrans.reset(t);
   } else {
-    printf("BAD!\n\n"); 
-    exit(1);
+    printf("BAD!\n\n");
     return;
   }
 
