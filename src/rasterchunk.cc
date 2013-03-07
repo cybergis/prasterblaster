@@ -99,5 +99,4 @@ PRB_ERROR RasterChunk::WriteRasterChunk(GDALDataset *ds, RasterChunk *chunk) {
 
   return PRB_NOERROR;
 }
-
 }
