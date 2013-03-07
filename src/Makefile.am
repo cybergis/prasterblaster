@@ -6,7 +6,8 @@ librasterblaster_la_SOURCES = projectedraster.cc \
                              configuration.cc \
                              quadtree.cc \
                              rastercoordtransformer.cc \
-                             reprojection_tools.cc
+                             reprojection_tools.cc \
+                             rasterchunk.cc
 #librasterblaster_a_LDFLAGS = $(all_libraries)  -Lgctp_cpp
 librasterblaster_la_LIBADD =  gctp_cpp/libgctp_cpp.la
 librasterblaster_la_LDFLAGS = -lgdal

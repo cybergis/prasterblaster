@@ -25,13 +25,19 @@
 #include "src/gctp_cpp/projection.h"
 #include "src/gctp_cpp/coordinate.h"
 #include "src/sharedptr.h"
+#include "src/utils.h"
 
 namespace librasterblaster {
 /// A class representing an in-memory part of a raster.
 class RasterChunk {
  public:
+  static RasterChunk* CreateRasterChunk(GDALDataset *ds, Area chunk_area);
+  static PRB_ERROR ReadRasterChunk(GDALDataset *ds, RasterChunk *chunk);
+  static PRB_ERROR WriteRasterChunk(GDALDataset *ds, RasterChunk *chunk);
   /// RasterChunk constructor
-  RasterChunk() {}
+  RasterChunk() {
+    this->pixels_ = NULL;
+  }
   /// RasterChunk destructor
   /**
    * This destructor frees the memory, if any,  allocated at pixels_.
@@ -41,7 +47,7 @@ class RasterChunk {
       free(this->pixels_);
     }
   }
-  shared_ptr<Projection> projection_;
+  std::string projection_;
   /// Location of the chunk, in raster coordinates
   /** 
    * This variable represents the upper-left location of the raster chunk, in
