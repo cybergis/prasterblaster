@@ -28,16 +28,17 @@
 #include "src/demos/sptw.h"
 
 using librasterblaster::Area;
-using librasterblaster::RowPartition;
+using librasterblaster::PartitionBySize;
 using librasterblaster::RasterChunk;
 using librasterblaster::Configuration;
 using librasterblaster::ProjectedRaster;
 using librasterblaster::PRB_ERROR;
+using librasterblaster::PRB_BADARG;
 using librasterblaster::PRB_NOERROR;
 
 using sptw::PTIFF;
 using sptw::write_subrow;
-using sptw::write_rows;
+using sptw::write_rasterchunk;
 using sptw::open_raster;
 using sptw::SPTW_ERROR;
 
@@ -76,6 +77,8 @@ int prasterblaster_main(Configuration conf, int rank, int process_count) {
   // Replace CPLErrorHandler
   CPLPushErrorHandler(MyErrorHandler);
 
+  GDALAllRegister();
+
   if (conf.input_filename == "" || conf.output_filename == "") {
     fprintf(stderr, "Specify an input and output filename\n");
     return 0;
@@ -84,10 +87,10 @@ int prasterblaster_main(Configuration conf, int rank, int process_count) {
   // Open the input raster
   // 
   // The input raster is only read so we can use the serial i/o provided by the
-  // ProjectedRaster object to read the input file.
-  shared_ptr<ProjectedRaster> input_raster(
-      new ProjectedRaster(conf.input_filename));
-  if (input_raster->ready() == false) {
+  // GDAL library.
+  GDALDataset *input_raster =
+      static_cast<GDALDataset*>(GDALOpen(conf.input_filename.c_str(), GA_ReadOnly));
+  if (input_raster == NULL) {
     fprintf(stderr, "Error opening input raster!\n");
     return 0;
   }
@@ -95,12 +98,21 @@ int prasterblaster_main(Configuration conf, int rank, int process_count) {
   // If we are the process with rank 0 we are responsible for the creation of
   // the output raster. 
   if (rank == 0) {
+    printf("prasterblaster-pio: Beginning reprojection task\n");
+    printf("\tInput File: %s, Output File: %s\n",
+           conf.input_filename.c_str(), conf.output_filename.c_str());
+    printf("\tInput Projection: %s\n\tOutput Projection: %s\n",
+           input_raster->GetProjectionRef(), conf.output_srs.c_str());
+    printf("\tProcess Count: %d\n", process_count);
+
     // Now we have to create the output raster
     printf("Creating output raster...\n");
-    PRB_ERROR err = CreateOutputRaster(input_raster,
-                                       conf.output_filename,
-                                       input_raster->pixel_size(),
-                                       conf.output_srs);
+    double gt[6];
+    input_raster->GetGeoTransform(gt);
+    PRB_ERROR err = librasterblaster::CreateOutputRaster(input_raster,
+                                                         conf.output_filename,
+                                                         gt[1],
+                                                         conf.output_srs);
     if (err != PRB_NOERROR) {
       fprintf(stderr, "Error creating raster!: %d\n", err);
       return 1;
@@ -116,8 +128,8 @@ int prasterblaster_main(Configuration conf, int rank, int process_count) {
   // only be used to read metadata. It will _not_ be used to write to the output
   // file.
   PTIFF* output_raster = open_raster(conf.output_filename);
-  shared_ptr<ProjectedRaster> pr_output_raster(
-      new ProjectedRaster(conf.output_filename));
+  GDALDataset *gdal_output_raster = 
+      static_cast<GDALDataset*>(GDALOpen(conf.output_filename.c_str(), GA_ReadOnly));
 
   if (output_raster == NULL) {
     fprintf(stderr, "Could not open output raster\n");
@@ -127,17 +139,29 @@ int prasterblaster_main(Configuration conf, int rank, int process_count) {
   // Now we will partition the output raster space. We will use a
   // maximum_height of 1 because we want single row or smaller
   // partitions to work with sptw.
-  vector<Area> partitions = RowPartition(rank,
-                                         process_count,
-                                         output_raster->y_size,
-                                         output_raster->x_size,
-                                         conf.partition_size);
+  vector<Area> partitions = PartitionBySize(rank,
+                                            process_count,
+                                            output_raster->y_size,
+                                            output_raster->x_size,
+                                            conf.partition_size);
+  printf("Process %d of %d has %lu partitions with base size: %d\n",
+         rank,
+         process_count,
+         static_cast<unsigned long>(partitions.size()),
+         conf.partition_size);
 
   // Now we loop through the returned partitions
   for (size_t i = 0; i < partitions.size(); ++i) {
+    // Swap y-axis of partition
+    double t = partitions.at(i).lr.y;
+    partitions.at(i).lr.y = partitions.at(i).ul.y;
+    partitions.at(i).ul.y = t;
+
     // The RasterMinbox function calculates what part of the input raster
     // matches the given output partition.
-    Area in_area = RasterMinbox(pr_output_raster,
+    string input_wkt(input_raster->GetProjectionRef());
+    string output_wkt(gdal_output_raster->GetProjectionRef());
+    Area in_area = RasterMinbox(gdal_output_raster,
                                 input_raster,
                                 partitions.at(i));
 
@@ -148,23 +172,19 @@ int prasterblaster_main(Configuration conf, int rank, int process_count) {
 
     // Now we use the ProjectedRaster object we created for the input file to
     // create a RasterChunk that has the pixel values read into it.
-    in_chunk = input_raster->create_raster_chunk(in_area);
+    in_chunk = RasterChunk::CreateRasterChunk(input_raster, in_area);
 
-    if (in_chunk == NULL) {
-      fprintf(stderr, "Error reading input chunk! %f %f %f %f\n",
-              in_area.ul.x, in_area.ul.y, in_area.lr.x, in_area.lr.y);
-      fprintf(stderr, "output_chunk: %f %f %f %f'\n",
-              partitions[i].ul.x, partitions[i].ul.y, partitions[i].lr.x,
-              partitions[i].lr.y);
-
+   PRB_ERROR chunk_err = RasterChunk::ReadRasterChunk(input_raster, in_chunk);
+    if (chunk_err != PRB_NOERROR) {
+      fprintf(stderr, "Error reading input chunk!\n");
       return 1;
     }
 
     // We want a RasterChunk for the output area but we area going to generate
     // the pixel values not read them from the file so we use
-    // create_allocated_raster_chunk.
-    out_chunk = pr_output_raster->create_allocated_raster_chunk(
-        partitions.at(i));
+    // create_allocated_raster_chunk
+    out_chunk = RasterChunk::CreateRasterChunk(gdal_output_raster,
+                                               partitions.at(i));
     if (out_chunk == NULL) {
       fprintf(stderr, "Error allocating output chunk! %f %f %f %f'n",
               partitions[i].ul.x,
@@ -182,25 +202,10 @@ int prasterblaster_main(Configuration conf, int rank, int process_count) {
                               conf.fillvalue,
                               conf.resampler);
     SPTW_ERROR err;
-    if (out_chunk->row_count_ > 1) {
-      // If the number of rows in the output chunk is greater than one, use the sptw::write_rows
-      err = write_rows(output_raster,
-                       out_chunk->pixels_,
-                       out_chunk->raster_location_.y,
-                       out_chunk->raster_location_.y
-                       +out_chunk->row_count_);
-    } else {
-      // otherwise use sptw::write_subrow
-      err = write_subrow(output_raster,
-                         out_chunk->pixels_,
-                         out_chunk->raster_location_.y,
-                         out_chunk->raster_location_.x,
-                         out_chunk->raster_location_.x
-                         +out_chunk->column_count_-1);
-      
-    }
+    err = write_rasterchunk(output_raster,
+                            out_chunk);
 
-    if (i % 1000 == 0) {
+    if (i % 100 == 0) {
       printf("Rank: %d wrote chunk at %f %f, %d rows, %d columns\n\n", rank,
              out_chunk->raster_location_.x, out_chunk->raster_location_.y,
              out_chunk->row_count_, out_chunk->column_count_);

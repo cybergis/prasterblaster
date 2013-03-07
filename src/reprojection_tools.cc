@@ -41,48 +41,101 @@
 
 
 namespace librasterblaster {
-PRB_ERROR CreateOutputRaster(shared_ptr<ProjectedRaster> in,
+PRB_ERROR CreateOutputRaster(GDALDataset *in,
                              string output_filename,
                              double output_pixel_size,
                              string output_srs) {
-  shared_ptr<Projection> in_proj = shared_ptr<Projection>(in->projection());
-  shared_ptr<Projection> out_proj;
-  OGRSpatialReference srs;
+  OGRSpatialReference in_srs;
+  OGRSpatialReference out_srs;
+  char *srs_str = NULL;
+  char *wkt = NULL;
+  char *tmp;
 
-  OGRErr err = srs.importFromProj4(output_srs.c_str());
+  srs_str = strdup(in->GetProjectionRef());
+  in_srs.importFromWkt(&srs_str);
 
+  OGRErr err = out_srs.importFromProj4(output_srs.c_str());
+  if (err != OGRERR_NONE) {
+    wkt = strdup(output_srs.c_str());
+    tmp = wkt;
+    err = out_srs.importFromWkt(&tmp);
+    free(wkt);
+    if (err != OGRERR_NONE) {
+      fprintf(stderr, "Error parsing projection!\n");
+      return PRB_PROJERROR;
+    }
+  }
   if (err != OGRERR_NONE) {
     fprintf(stderr, "Error parsing projection: %s\n", output_srs.c_str());
     return PRB_PROJERROR;
   }
 
-  long proj_code, datum_code, zone;
-  double *params = NULL;
+  // Determine output raster size by calculating the projected coordinate minbox
+  double in_transform[6];
+  in->GetGeoTransform(in_transform);
+  Coordinate ul(in_transform[0], in_transform[3], UNDEF);
+  in_srs.exportToProj4(&srs_str);
+  Area out_area = ProjectedMinbox(ul,
+                                  srs_str,
+                                  in_transform[1],
+                                  in->GetRasterYSize(),
+                                  in->GetRasterXSize(),
+                                  output_srs);
+  CPLFree(srs_str);
 
-  srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
+  int64_t num_rows = static_cast<int64_t>(ceil(out_area.ul.y - out_area.lr.y)
+                              / in_transform[1]);
+  int64_t num_cols = static_cast<int64_t>(ceil(out_area.lr.x - out_area.ul.x)
+                              / in_transform[1]);
 
-  out_proj = shared_ptr<Projection>(
-      Transformer::convertProjection(static_cast<ProjCode>(proj_code)));
+  GDALAllRegister();
+  GDALDriver *driver = GetGDALDriverManager()->GetDriverByName("GTiff");
 
-  if (!out_proj) {
-    return PRB_PROJERROR;
+  if (driver == NULL) {
+    return PRB_BADARG;
   }
 
-  out_proj->setUnits(in_proj->units());
-  out_proj->setDatum(in_proj->datum());
-  out_proj->setParams(params);
+  // Set driver options
+  char **options = NULL;
+  options = CSLSetNameValue(options, "INTERLEAVE", "PIXEL");
+  options = CSLSetNameValue(options, "BIGTIFF", "YES");
+  options = CSLSetNameValue(options, "TILED", "NO");
+  options = CSLSetNameValue(options, "COMPRESS", "NONE");
 
-  OGRFree(params);
 
-  bool result  = ProjectedRaster::CreateRaster(output_filename,
-                                               in,
-                                               out_proj,
-                                               output_pixel_size);
-  if (result) {
-    return PRB_NOERROR;
-  } else {
-    return PRB_IOERROR;
+  GDALDataset *output = driver->Create(output_filename.c_str(),
+                                       num_cols,
+                                       num_rows,
+                                       in->GetRasterCount(),
+                                       in->GetRasterBand(1)->GetRasterDataType(),
+                                       options);
+
+  if (output == NULL) {
+    return PRB_BADARG;
   }
+
+
+  // Setup georeferencing
+  double out_t[6] = { out_area.ul.x,
+                      in_transform[1],
+                      0.0,
+                      out_area.ul.y,
+                      0.0,
+                      in_transform[5] };
+
+  output->SetGeoTransform(out_t);
+  OGRSpatialReference out_sr;
+  wkt = NULL;
+  out_sr.importFromProj4(output_srs.c_str());
+  out_sr.exportToWkt(&wkt);
+  printf("Setting projection to: %s\n",
+         wkt);
+  output->SetProjection(wkt);
+
+  CSLDestroy(options);
+  GDALClose(output);
+
+  return PRB_NOERROR;
 }
 
 PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
@@ -156,6 +209,7 @@ Projection* ProjectionFactory(string output_srs) {
   char *tmp = NULL;
 
   OGRErr err = srs.importFromProj4(output_srs.c_str());
+
   if (err != OGRERR_NONE) {
     wkt = strdup(output_srs.c_str());
     tmp = wkt;
@@ -370,38 +424,39 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
 
   return output_area;
 }
-
-
-Area RasterMinbox(shared_ptr<ProjectedRaster> source,
-                  shared_ptr<ProjectedRaster> destination,
+Area RasterMinbox(GDALDataset *source,
+                  GDALDataset *destination,
                   Area destination_raster_area) {
-  Coordinate s_ul(source->ul_x(),
-                  source->ul_y(),
-                  UNDEF);
+  double s_gt[6];
+  double d_gt[6];
+  source->GetGeoTransform(s_gt);
+  destination->GetGeoTransform(d_gt);
 
-  Coordinate d_ul(destination->ul_x(),
-                  destination->ul_y(),
-                  UNDEF);
-  shared_ptr<Projection> s_proj = source->projection();
-  shared_ptr<Projection> d_proj = destination->projection();
-  return RasterMinbox(s_proj,
-                      s_ul,
-                      source->pixel_size(),
-                      source->row_count(),
-                      source->column_count(),
-                      d_proj,
-                      d_ul,
-                      destination->pixel_size(),
-                      destination->row_count(),
-                      destination->column_count(),
-                      destination_raster_area);
+  Coordinate s_ul(s_gt[0], s_gt[3], UNDEF);
+  Coordinate d_ul(d_gt[0], d_gt[3], UNDEF);
+
+  string s_srs(source->GetProjectionRef());
+  string d_srs(destination->GetProjectionRef());
+
+  return RasterMinbox2(s_srs,
+                       s_ul,
+                       s_gt[1],
+                       source->GetRasterYSize(),
+                       source->GetRasterXSize(),
+                       d_srs,
+                       d_ul,
+                       d_gt[1],
+                       destination->GetRasterYSize(),
+                       destination->GetRasterXSize(),
+                       destination_raster_area);
 }
-Area RasterMinbox(shared_ptr<Projection> source_projection,
+
+Area RasterMinbox2(string source_projection,
                   Coordinate source_ul,
                   double source_pixel_size,
                   int source_row_count,
                   int source_column_count,
-                  shared_ptr<Projection> destination_projection,
+                  string destination_projection,
                   Coordinate destination_ul,
                   double destination_pixel_size,
                   int destination_row_count,
@@ -409,7 +464,6 @@ Area RasterMinbox(shared_ptr<Projection> source_projection,
                   Area destination_raster_area) {
   Area source_area;
   Coordinate c;
-  shared_ptr<Projection> dproj = destination_projection;
   RasterCoordTransformer rt(source_projection,
                             source_ul,
                             source_pixel_size,
@@ -420,13 +474,6 @@ Area RasterMinbox(shared_ptr<Projection> source_projection,
                             destination_pixel_size);
   Area temp;
   int buffer = 5;
-
-  if (dproj->errorOccured() == true) {
-    fprintf(stderr, "Error with destination projection in RasterMinbox\n");
-    source_area.ul.x = -1.0;
-    source_area.lr.x = -1.0;
-    return source_area;
-  }
 
   source_area.ul.x = source_area.ul.y = DBL_MAX;
   source_area.lr.y = source_area.lr.x = -DBL_MAX;
@@ -441,8 +488,7 @@ Area RasterMinbox(shared_ptr<Projection> source_projection,
       c.y = y;
 
       temp = rt.Transform(c);
-//      printf("\t Source point: %d %d\n", x, y);
-//      printf("\t\t Calculated point: %f %f %f %f\n", temp.ul.x, temp.ul.y, temp.lr.x, temp.lr.y);
+
       if (temp.ul.x == -1) {
         continue;
       }

@@ -27,8 +27,10 @@
 #include <tiffio.h>
 
 #include "src/demos/sptw.h"
+#include "src/rasterchunk.h"
 
 using std::string;
+using librasterblaster::RasterChunk;
 
 namespace sptw {
 SPTW_ERROR create_raster(string filename,
@@ -212,6 +214,30 @@ SPTW_ERROR write_subrow(PTIFF *ptiff,
                   subrow_size, count);
   }
 
+  return SP_None;
+}
+
+SPTW_ERROR write_rasterchunk(PTIFF *ptiff,
+                             RasterChunk *chunk) {
+  SPTW_ERROR err = SP_None;
+  unsigned char *pixels = NULL;
+  const int64_t x_offset = static_cast<int64_t>(chunk->raster_location_.x);
+  const int64_t y_offset = static_cast<int64_t>(chunk->raster_location_.y);
+  const int64_t column_byte_size = 
+      chunk->column_count_ * chunk->band_count_ * ptiff->band_type_size;
+
+  for (int64_t i = 0; i < chunk->row_count_; ++i) {
+    pixels = static_cast<unsigned char*>(chunk->pixels_);
+        + (i * ptiff->band_type_size * chunk->column_count_);
+    err = write_subrow(ptiff,
+                       pixels, 
+                       y_offset + i,
+                       x_offset,
+                       x_offset + chunk->column_count_ - 1);
+    if (err != SP_None) {
+      return err;
+    }
+  }
   return SP_None;
 }
 }

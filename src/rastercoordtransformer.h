@@ -27,7 +27,7 @@
 #include "src/sharedptr.h"
 #include "src/utils.h"
 
-
+using std::string;
 
 /// Raster Coordinate transformation class
 /*
@@ -72,12 +72,12 @@ class RasterCoordTransformer {
     three but for the destination raster.
 
   */
-  RasterCoordTransformer(shared_ptr<Projection> source_projection,
+  RasterCoordTransformer(string source_projection,
                          Coordinate source_ul,
                          double source_pixel_size,
                          int source_row_count,
                          int souce_column_count,
-                         shared_ptr<Projection> destination_projection,
+                         string destination_projection,
                          Coordinate destination_ul,
                          double destination_pixel_size);
 
@@ -99,12 +99,12 @@ class RasterCoordTransformer {
   Area Transform(Coordinate source, bool area_check = true);
 
  private:
-  void init(shared_ptr<Projection> source_projection,
+  void init(string source_projection,
             Coordinate source_ul,
             double source_pixel_size,
             int source_row_count,
             int source_column_count,
-            shared_ptr<Projection> destination_projection,
+            string destination_projection,
             Coordinate destination_ul,
             double destination_pixel_size);
   shared_ptr<Projection> src_proj, dest_proj;

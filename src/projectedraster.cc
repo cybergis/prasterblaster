@@ -351,7 +351,7 @@ RasterChunk* ProjectedRaster::create_allocated_raster_chunk(Area area) {
 RasterChunk* ProjectedRaster::create_empty_raster_chunk(Area area) {
   RasterChunk *temp = new RasterChunk;
 
-  temp->projection_ = shared_ptr<Projection>(projection());
+
   temp->raster_location_ = area.ul;
   temp->ul_projected_corner_ = Coordinate(ul_x_+(area.ul.x*pixel_size()),
                                           ul_y_-(area.ul.y*pixel_size()),

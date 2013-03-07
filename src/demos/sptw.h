@@ -22,8 +22,9 @@
 #include <gdal_priv.h>
 #include <mpi.h>
 #include <stdint.h>
-
 #include <string>
+
+#include "src/rasterchunk.h"
 
 using std::string;
 
@@ -107,6 +108,9 @@ SPTW_ERROR write_subrow(PTIFF *ptiff,
                         int64_t row,
                         int64_t first_column,
                         int64_t last_column);
+
+SPTW_ERROR write_rasterchunk(PTIFF *ptiff,
+                             librasterblaster::RasterChunk *chunk);
 }
 
 #endif  // SRC_DEMOS_SPTW_H_

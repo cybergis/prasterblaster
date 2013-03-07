@@ -37,44 +37,72 @@
 
 namespace librasterblaster {
 
-RasterCoordTransformer::
-RasterCoordTransformer(shared_ptr<ProjectedRaster> source,
-                       shared_ptr<ProjectedRaster> _dest) {
-  init(source->projection(),
-       Coordinate(source->ul_x(), source->ul_y(), UNDEF),
-       source->pixel_size(),
-       source->row_count(),
-       source->column_count(),
-       _dest->projection(),
-       Coordinate(_dest->ul_x(), _dest->ul_y(), UNDEF),
-       _dest->pixel_size());
-  return;
+OGRSpatialReference* srs_to_ogrspatialreference(string projection_string) {
+  char *srs_str = NULL;
+  char *wkt = NULL;
+  char *tmp;
+  OGRSpatialReference *sr = new OGRSpatialReference();
+
+  OGRErr err = sr->importFromProj4(projection_string.c_str());
+  if (err != OGRERR_NONE) {
+    wkt = strdup(projection_string.c_str());
+    tmp = wkt;
+    err = sr->importFromWkt(&tmp);
+    free(wkt);
+    if (err != OGRERR_NONE) {
+      return NULL;
+    }
+  }
+  return sr;
+}
+
+shared_ptr<Projection> srs_to_projection(string projection_string) {
+  OGRSpatialReference srs;
+  shared_ptr<Projection> out_proj;
+  char *wkt = NULL;
+  char *tmp;
+
+  OGRErr err = srs.importFromProj4(projection_string.c_str());
+  if (err != OGRERR_NONE) {
+    wkt = strdup(projection_string.c_str());
+    tmp = wkt;
+    err = srs.importFromWkt(&tmp);
+    free(wkt);
+  }
+
+  if (err != OGRERR_NONE) {
+    fprintf(stderr, "Error parsing projection: %s\n", projection_string.c_str());
+    return out_proj;
+  }
+
+  long proj_code, datum_code, zone;
+  double *params = NULL;
+
+  srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
+
+  out_proj = shared_ptr<Projection>(
+      Transformer::convertProjection(static_cast<ProjCode>(proj_code)));
+
+  if (!out_proj) {
+    return out_proj;
+  }
+
+  out_proj->setUnits(METER);
+  out_proj->setDatum(static_cast<ProjDatum>(datum_code));
+  out_proj->setParams(params);
+
+  OGRFree(params);
+
+  return out_proj;
 }
 
 RasterCoordTransformer::
-RasterCoordTransformer(shared_ptr<ProjectedRaster> source,
-                       shared_ptr<Projection> destination_projection,
-                       Coordinate destination_ul,
-                       double destination_pixel_size) {
-  init(source->projection(),
-       Coordinate(source->ul_x(), source->ul_y(), UNDEF),
-       source->pixel_size(),
-       source->row_count(),
-       source->column_count(),
-       destination_projection,
-       destination_ul,
-       destination_pixel_size);
-
-  return;
-}
-
-RasterCoordTransformer::
-RasterCoordTransformer(shared_ptr<Projection> source_projection,
+RasterCoordTransformer(string source_projection,
                        Coordinate source_ul,
                        double source_pixel_size,
                        int source_row_count,
                        int source_column_count,
-                       shared_ptr<Projection> destination_projection,
+                       string destination_projection,
                        Coordinate destination_ul,
                        double destination_pixel_size) {
   init(source_projection,
@@ -92,38 +120,45 @@ RasterCoordTransformer::~RasterCoordTransformer() {
   return;
 }
 
-void RasterCoordTransformer::init(shared_ptr<Projection> source_projection,
+void RasterCoordTransformer::init(string source_projection,
                                   Coordinate source_ul,
                                   double source_pixel_size,
                                   int source_row_count,
                                   int source_column_count,
-                                  shared_ptr<Projection> destination_projection,
+                                  string destination_projection,
                                   Coordinate destination_ul,
                                   double destination_pixel_size) {
-  src_proj = source_projection;
+
+
+  src_proj = srs_to_projection(source_projection);
   source_ul_ = source_ul;
   source_pixel_size_ = source_pixel_size;
-  dest_proj = destination_projection;
+  dest_proj = srs_to_projection(destination_projection);
   destination_ul_ = destination_ul;
   destination_pixel_size_ = destination_pixel_size;
 
-  OGRSpatialReference source_sr, dest_sr;
-  char *source_wkt = strdup(source_projection->wkt().c_str());
-  char *dest_wkt = strdup(destination_projection->wkt().c_str());
-  char *srctemp = source_wkt;
-  char *desttmp = dest_wkt;
-  source_sr.importFromWkt(&srctemp);
-  dest_sr.importFromWkt(&desttmp);
-  OGRCoordinateTransformation *t = OGRCreateCoordinateTransformation(&source_sr,
-                                                                     &dest_sr);
+  OGRSpatialReference *source_sr, *dest_sr;
+  char *source_wkt = strdup(source_projection.c_str());
+  char *dest_wkt = strdup(destination_projection.c_str());
+  char *srs_str = NULL;
+  char *wkt = NULL;
 
+  source_sr = srs_to_ogrspatialreference(source_projection);
+  dest_sr = srs_to_ogrspatialreference(destination_projection);
+
+  OGRCoordinateTransformation *t = OGRCreateCoordinateTransformation(source_sr,
+                                                                     dest_sr);
+
+  free(source_sr);
+  free(dest_sr);
   free(source_wkt);
   free(dest_wkt);
 
   if (t != NULL) {
     ctrans.reset(t);
   } else {
-    printf("BAD!\n\n");
+    printf("BAD!\n\n"); 
+    exit(1);
     return;
   }
 

@@ -44,7 +44,7 @@ namespace librasterblaster {
  * @param output_srs The Proj.4 specification of  projection and projection parameters.
  *
  */
-PRB_ERROR CreateOutputRaster(shared_ptr<ProjectedRaster> in,
+PRB_ERROR CreateOutputRaster(GDALDataset *in,
                              string output_filename,
                              double output_pixel_size,
                              string output_srs);
@@ -86,16 +86,16 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
                      int input_column_count,
                      string output_srs);
 
-Area RasterMinbox(shared_ptr<ProjectedRaster> source,
-                  shared_ptr<ProjectedRaster> destination,
+Area RasterMinbox(GDALDataset *source,
+                  GDALDataset *destination,
                   Area destination_raster_area);
 
-Area RasterMinbox(shared_ptr<Projection> source_projection,
+Area RasterMinbox2(string source_projection,
                   Coordinate source_ul,
                   double source_pixel_size,
                   int source_row_count,
                   int source_column_count,
-                  shared_ptr<Projection> destination_projection,
+                  string destination_projection,
                   Coordinate destination_ul,
                   double destination_pixel_size,
                   int destination_row_count,
@@ -123,12 +123,9 @@ bool ReprojectChunkType(RasterChunk *source,
                         pixelType fillvalue,
                         pixelType (*resampler)(RasterChunk*,
                                                Area)) {
-  shared_ptr<Projection> outproj, inproj;
   Coordinate temp1, temp2;
   std::vector<char> inraster, outraster;
 
-  outproj = destination->projection_;
-  inproj = source->projection_;
 
   Area pixelArea;
 
