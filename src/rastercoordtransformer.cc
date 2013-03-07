@@ -252,4 +252,11 @@ Transform(Coordinate source, bool area_check) {
 
   return value;
 }
+
+bool RasterCoordTransformer::ready() {
+  if (ctrans.get() == NULL) {
+    return false;
+  }
+  return true;
+}
 }

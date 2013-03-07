@@ -100,6 +100,12 @@ class RasterCoordTransformer {
   */
   Area Transform(Coordinate source, bool area_check = true);
 
+  // ! A normal member function taking no arguments
+  /*
+    This function returns a boolean value indicating whether the
+    RasterCoordTransformer constructed corrrectly and is ready to use.
+   */
+  bool ready();
  private:
   void init(string source_projection,
             Coordinate source_ul,

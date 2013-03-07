@@ -471,6 +471,10 @@ Area RasterMinbox2(string source_projection,
                             destination_projection,
                             destination_ul,
                             destination_pixel_size);
+  if (rt.ready() == false) {
+    return Area(-1.0, -1.0, -1.0, -1.0);
+  }
+
   Area temp;
   int buffer = 5;
 
