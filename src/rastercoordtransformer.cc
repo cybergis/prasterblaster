@@ -74,10 +74,10 @@ shared_ptr<Projection> srs_to_projection(string projection_string) {
   if (err != OGRERR_NONE) {
     fprintf(stderr, "Error parsing projection: %s\n",
         projection_string.c_str());
-    return out_long;
+    return out_proj;
   }
 
-  proj proj_code, datum_code, zone;
+  long proj_code, datum_code, zone;
   double *params = NULL;
 
   srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
