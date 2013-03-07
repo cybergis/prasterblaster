@@ -103,12 +103,13 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   options = CSLSetNameValue(options, "COMPRESS", "NONE");
 
 
-  GDALDataset *output = driver->Create(output_filename.c_str(),
-                                       num_cols,
-                                       num_rows,
-                                       in->GetRasterCount(),
-                                       in->GetRasterBand(1)->GetRasterDataType(),
-                                       options);
+  GDALDataset *output =
+      driver->Create(output_filename.c_str(),
+                     num_cols,
+                     num_rows,
+                     in->GetRasterCount(),
+                     in->GetRasterBand(1)->GetRasterDataType(),
+                     options);
 
   if (output == NULL) {
     return PRB_BADARG;
@@ -294,8 +295,9 @@ void SearchAndUpdate(Area input_area,
   char *outtemp = output_wkt;
   input_sr.importFromWkt(&intemp);
   output_sr.importFromWkt(&outtemp);
-  OGRCoordinateTransformation *t = OGRCreateCoordinateTransformation(&input_sr,
-                                                                     &output_sr);
+  OGRCoordinateTransformation *t =
+      OGRCreateCoordinateTransformation(&input_sr,
+                                        &output_sr);
 
   if (t == NULL) {
           output_area->ul.x = -1.0;
@@ -321,8 +323,6 @@ void SearchAndUpdate(Area input_area,
       }
       if (temp.y > output_area->ul.y) {
         output_area->ul.y = temp.y;
-        //printf("New UL_Y: %f %f, %f %f\n", temp.x, temp.y, x * input_pixel_size + input_ulx, input_uly - (y * input_pixel_size));
-
       }
       if (temp.x > output_area->lr.x)
         output_area->lr.x = temp.x;
@@ -341,7 +341,6 @@ void SearchAndUpdate(Area input_area,
   }
 
   OCTDestroyCoordinateTransformation(t);
-     
   return;
 }
 
@@ -492,17 +491,17 @@ Area RasterMinbox2(string source_projection,
       if (temp.ul.x == -1) {
         continue;
       }
-      
+
       // Check that calculated minbox in within destination raster space.
       if ((temp.ul.x < -0.01) || (temp.ul.x > destination_column_count)
           || (temp.ul.y < 0.0) || (temp.ul.y > destination_row_count)
           || (temp.lr.x > destination_column_count - 1) || (temp.lr.x < 0.0)
           || (temp.lr.y > destination_row_count -1) || (temp.lr.y < 0.0)) {
-        printf("Source raster size, rows: %f, columns %f\n", destination_raster_area.lr.x, destination_raster_area.lr.y);
+        printf("Source raster size, rows: %f, columns %f\n",
+               destination_raster_area.lr.x, destination_raster_area.lr.y);
         printf("Source: %d %d\n", x, y);
-        printf("Outside rasterspace: %f %f %f %f\n", temp.ul.x, temp.ul.y, temp.lr.x, temp.lr.y);
-
-        
+        printf("Outside rasterspace: %f %f %f %f\n",
+               temp.ul.x, temp.ul.y, temp.lr.x, temp.lr.y);
       }
 
       if (temp.lr.x > source_area.lr.x) {
@@ -565,51 +564,6 @@ Area RasterMinbox2(string source_projection,
   }
 
   return source_area;
-}
-
-PRB_ERROR CreateOutputRaster2(shared_ptr<ProjectedRaster> in,
-                             string output_filename,
-                             double output_pixel_size,
-                             string output_srs) {
-  shared_ptr<Projection> in_proj = shared_ptr<Projection>(in->projection());
-  shared_ptr<Projection> out_proj;
-  OGRSpatialReference srs;
-
-  OGRErr err = srs.importFromProj4(output_srs.c_str());
-
-  if (err != OGRERR_NONE) {
-    fprintf(stderr, "Error parsing projection!\n");
-    return PRB_PROJERROR;
-  }
-
-  long proj_code, datum_code, zone;
-  double *params = NULL;
-
-  srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
-
-  out_proj = shared_ptr<Projection>(
-      Transformer::convertProjection(static_cast<ProjCode>(proj_code)));
-
-  if (!out_proj) {
-    return PRB_PROJERROR;
-  }
-
-  out_proj->setUnits(in_proj->units());
-  out_proj->setDatum(in_proj->datum());
-  out_proj->setParams(params);
-
-  OGRFree(params);
-
-  bool result  = ProjectedRaster::CreateRaster(output_filename,
-                                               in,
-                                               shared_ptr<Projection>(
-                                                   out_proj->copy()),
-                                               output_pixel_size);
-  if (result) {
-    return PRB_NOERROR;
-  } else {
-    return PRB_NOERROR;
-  }
 }
 
 /**
