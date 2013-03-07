@@ -54,7 +54,26 @@ to be run one time.
 
     make
     bash tests/testdata/getdata.sh
+
+To test the functionality of the library run the tests/systemtest
+binary. This program will attempt to reproject the test data. The
+binary is designed to be run with mpirun though it works fine
+standalone.
+
     tests/systemtest
+
+Or it can be run with mpirun like this:
+
+    mpirun -n 4 tests/systemtest
+
+If you want to tweak the parition size you can do so with the -n
+argument. The value is the number of pixels in a partition.
+
+    mpirun -n 4 test/systemtest -p 21600
+
+
+
+
 
 Background information and terminology
 --------------------------------------

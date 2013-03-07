@@ -119,8 +119,6 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   char *wkt = NULL;
   out_sr.SetFromUserInput(output_srs.c_str());
   out_sr.exportToWkt(&wkt);
-  printf("Setting projection to: %s\n",
-         wkt);
   output->SetProjection(wkt);
 
   OGRFree(wkt);
@@ -492,8 +490,17 @@ Area RasterMinbox2(string source_projection,
           || (temp.ul.y < 0.0) || (temp.ul.y > destination_row_count)
           || (temp.lr.x > destination_column_count - 1) || (temp.lr.x < 0.0)
           || (temp.lr.y > destination_row_count -1) || (temp.lr.y < 0.0)) {
-        printf("Source raster size, rows: %f, columns %f\n",
-               destination_raster_area.lr.x, destination_raster_area.lr.y);
+        temp.ul.x = -1.0;
+        continue;
+        printf("\n\nSearch Area: %f %f %f %f\n",
+               destination_raster_area.ul.x,
+               destination_raster_area.ul.y,
+               destination_raster_area.lr.x,
+               destination_raster_area.lr.y);
+        printf("Source UL: %f %f\n", source_ul.x, source_ul.y);
+        printf("Destin UL: %f %f\n", destination_ul.x, destination_ul.y);
+        printf("Source raster size, columns: %d, rows %d\n",
+               destination_column_count, destination_row_count);
         printf("Source: %d %d\n", x, y);
         printf("Outside rasterspace: %f %f %f %f\n",
                temp.ul.x, temp.ul.y, temp.lr.x, temp.lr.y);

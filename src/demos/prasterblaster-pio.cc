@@ -98,12 +98,17 @@ int prasterblaster_main(Configuration conf, int rank, int process_count) {
   // If we are the process with rank 0 we are responsible for the creation of
   // the output raster. 
   if (rank == 0) {
+    OGRSpatialReference sr;
+    char *wkt;
+    sr.SetFromUserInput(input_raster->GetProjectionRef());
+    sr.exportToPrettyWkt(&wkt);
     printf("prasterblaster-pio: Beginning reprojection task\n");
     printf("\tInput File: %s, Output File: %s\n",
            conf.input_filename.c_str(), conf.output_filename.c_str());
     printf("\tInput Projection: %s\n\tOutput Projection: %s\n",
-           input_raster->GetProjectionRef(), conf.output_srs.c_str());
+           wkt, conf.output_srs.c_str());
     printf("\tProcess Count: %d\n", process_count);
+    OGRFree(wkt);
 
     // Now we have to create the output raster
     printf("Creating output raster...\n");
@@ -177,6 +182,7 @@ int prasterblaster_main(Configuration conf, int rank, int process_count) {
    PRB_ERROR chunk_err = RasterChunk::ReadRasterChunk(input_raster, in_chunk);
     if (chunk_err != PRB_NOERROR) {
       fprintf(stderr, "Error reading input chunk!\n");
+      MPI_Abort(MPI_COMM_WORLD, 1);
       return 1;
     }
 
