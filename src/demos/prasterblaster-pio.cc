@@ -138,7 +138,7 @@ int prasterblaster_main(Configuration conf, int rank, int process_count) {
 
   if (output_raster == NULL) {
     fprintf(stderr, "Could not open output raster\n");
-    return 0;
+    MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
   // Now we will partition the output raster space. We will use a
