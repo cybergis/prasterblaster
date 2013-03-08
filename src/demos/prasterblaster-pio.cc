@@ -224,6 +224,8 @@ int prasterblaster_main(Configuration conf, int rank, int process_count) {
   // Clean up
   close_raster(output_raster);
   output_raster = NULL;
+  delete gdal_output_raster;
+  delete input_raster;
 
   return 0;
 }
