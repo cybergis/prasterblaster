@@ -15,7 +15,7 @@
 using librasterblaster::Configuration;
 
 int main(int argc, char *argv[]) {
-  const int raster_count = 2;
+  const int raster_count = 4;
   const char *input_files[] = { 
     "tests/testdata/glc_geographic_30sec.tif",
     "tests/testdata/veg_geographic_1deg.tif",
@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
   conf.resampler = librasterblaster::MIN;
   
   int ret = 0;
-  for (int i=0; i<raster_count; ++i) {
+  for (int i=3; i<raster_count; ++i) {
     conf.input_filename = input_files[i];
     conf.output_filename = output_files[i];
     conf.output_srs = output_srs[i];
