@@ -211,7 +211,7 @@ int prasterblaster_main(Configuration conf, int rank, int process_count) {
     err = write_rasterchunk(output_raster,
                             out_chunk);
 
-    if (i % (partitions.size()/100) == 0) {
+    if (i % (partitions.size()+1/100) == 0) {
       printf("Rank: %d wrote chunk at %f %f, %d rows, %d columns\n\n", rank,
              out_chunk->raster_location_.x, out_chunk->raster_location_.y,
              out_chunk->row_count_, out_chunk->column_count_);
