@@ -1,6 +1,24 @@
+/*!
+ * Copyright 0000 <Nobody>
+ * @file
+ * @author David Matthew Mattli <dmattli@usgs.gov>
+ *
+ * @section LICENSE
+ *
+ * This software is in the public domain, furnished "as is", without
+ * technical support, and with no warranty, express or implied, as to
+ * its usefulness for any purpose.
+ *
+ * @section DESCRIPTION
+ *
+ * System level tests
+ *
+ */
 
 
 #include <vector>
+
+#include "gtest/gtest.h"
 
 #include "src/configuration.h"
 #include "src/projectedraster.h"
@@ -14,79 +32,129 @@
 
 using librasterblaster::Configuration;
 
-int main(int argc, char *argv[]) {
-  const int raster_count = 4;
-  const char *input_files[] = { 
-    "tests/testdata/veg_geographic_1deg.tif",
-    "tests/testdata/holdnorm_geographic_30min.tif",
-    "tests/testdata/glc_geographic_30sec.tif",
-    "tests/testdata/nlcd2006_landcover_4-20-11_se5.tif" 
-  };
+namespace {
+// The fixture for system testing
+class RasterTest : public ::testing::Test {
+ protected:
+  // You can remove any or all of the following functions if its body
+  // is empty.
 
-  const char *output_files[] = {
-    "tests/testoutput/veg_geographic_1deg.tif",
-    "tests/testoutput/holdnorm_geographic_30min.tif",
-    "tests/testoutput/glc_mollweide_30sec.tif",
-    "tests/testoutput/nlcd2006_landcover_4-20-11_se5_mollweide.tif"
-  };
+  RasterTest() {
+    // You can do set-up work for each test here.
+  }
 
-  const char *output_srs[] = {
-    "+proj=moll +a=6370997 +b=6370997",
-    "+proj=moll +a=6370997 +b=6370997",
-    "+proj=moll +a=6370997 +b=6370997",
-    "+proj=moll +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83"
-  };
+  virtual ~RasterTest() {
+    // You can do clean-up work that doesn't throw exceptions here.
+  }
 
-  int rank = 0;
-  int process_count = 0;
-  double runtimes[raster_count] = {0.0};
+  // If the constructor and destructor are not enough for setting up
+  // and cleaning up each test, you can define the following methods:
 
+  virtual void SetUp() {
+    // Code here will be called immediately after the constructor (right
+    // before each test).
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &process_count);
+  }
+
+  virtual void TearDown() {
+    // Code here will be called immediately after each test (right
+    // before the destructor).
+  }
+
+  // Objects declared here can by used by all tests in fixture
+  int rank;
+  int process_count;
+  std::vector<std::string> test_names;
+  std::vector<double> run_times;
+};
+
+TEST_F(RasterTest, Veg1Deg) {
+  Configuration conf;
+  conf.partition_size = 21600;
+  conf.input_filename = "tests/testdata/veg_geographic_1deg.tif";
+  conf.output_filename = "tests/testoutput/veg_geographic_1deg.tif";
+  conf.resampler = librasterblaster::MIN;
+  conf.output_srs = "+proj=moll +a=6370997 +b=6370997";
+
+  double start_time, stop_time;
+  MPI_Barrier(MPI_COMM_WORLD);
+  start_time = MPI_Wtime();
+  int ret = prasterblasterpio(conf, rank, process_count);
+  MPI_Barrier(MPI_COMM_WORLD);
+  stop_time = MPI_Wtime();
+
+  test_names.push_back("Veg 1deg");
+  run_times.push_back(stop_time - start_time);
+}
+
+TEST_F(RasterTest, HoldNorm30Min) {
+  Configuration conf;
+  conf.partition_size = 21600;
+  conf.input_filename = "tests/testdata/holdnorm_geographic_30min.tif";
+  conf.output_filename = "tests/testoutput/holdnorm_geographic_30min.tif";
+  conf.resampler = librasterblaster::MIN;
+  conf.output_srs = "+proj=moll +a=6370997 +b=6370997";
+
+  double start_time, stop_time;
+  MPI_Barrier(MPI_COMM_WORLD);
+  start_time = MPI_Wtime();
+  int ret = prasterblasterpio(conf, rank, process_count);
+  MPI_Barrier(MPI_COMM_WORLD);
+  stop_time = MPI_Wtime();
+
+  test_names.push_back("Holdnorm 30min");
+  run_times.push_back(stop_time - start_time);
+}
+
+TEST_F(RasterTest, GLC30sec) {
+  Configuration conf;
+  conf.partition_size = 21600;
+  conf.input_filename = "tests/testdata/glc_geographic_30sec.tif";
+  conf.output_filename = "tests/testoutput/glc_mollweide_30sec.tif";
+  conf.resampler = librasterblaster::MIN;
+  conf.output_srs = "+proj=moll +a=6370997 +b=6370997";
+
+  double start_time, stop_time;
+  MPI_Barrier(MPI_COMM_WORLD);
+  start_time = MPI_Wtime();
+  int ret = prasterblasterpio(conf, rank, process_count);
+  MPI_Barrier(MPI_COMM_WORLD);
+  stop_time = MPI_Wtime();
+
+  test_names.push_back("GLC 30sec");
+  run_times.push_back(stop_time - start_time);
+}
+
+TEST_F(RasterTest, NLCD) {
+  Configuration conf;
+  conf.partition_size = 21600;
+  conf.input_filename =
+      "tests/testdata/nlcd2006_landcover_4-20-11_se5.tif";
+  conf.output_filename =
+      "tests/testoutput/nlcd2006_landcover_4-20-11_se5_mollweide.tif";
+  conf.resampler = librasterblaster::MIN;
+  conf.output_srs =
+      "+proj=moll +lat_1=29.5 +lat_2=45.5 "
+      "+lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83";
+
+  double start_time, stop_time;
+  MPI_Barrier(MPI_COMM_WORLD);
+  start_time = MPI_Wtime();
+  int ret = prasterblasterpio(conf, rank, process_count);
+  MPI_Barrier(MPI_COMM_WORLD);
+  stop_time = MPI_Wtime();
+
+  test_names.push_back("NLCD");
+  run_times.push_back(stop_time - start_time);
+}
+}  // namespace
+
+int main(int argc, char **argv) {
   MPI_Init(&argc, &argv);
 
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &process_count);
-
-  Configuration conf(argc, argv);
-  if (conf.partition_size == -1) {
-    conf.partition_size = 21600;
-  }
-  
-  conf.resampler = librasterblaster::MIN;
-
-  int job_size = 2;
-  if ((argc > 1) && strcmp(argv[argc-1], "full") == 0) {
-    job_size = raster_count;
-  }
-
-  int ret = 0;
-  double start_time, stop_time;
-  for (int i=0; i<job_size; ++i) {
-    conf.input_filename = input_files[i];
-    conf.output_filename = output_files[i];
-    conf.output_srs = output_srs[i];
-
-    start_time = MPI_Wtime();
-    ret = prasterblaster_main(conf, rank, process_count);
-    stop_time = MPI_Wtime();
-    runtimes[i] = stop_time - start_time;
-
-    if (ret != 0) {
-      fprintf(stderr, "Error reprojecting: %s\n", conf.input_filename.c_str());
-      MPI_Finalize();
-      return 1;
-    }
-
-  }
-  // Now print runtimes for each raster
-  if (rank == 0) {
-          printf("\n\nRUNTIMES:\n\n");
-          for (int i=0; i<job_size; ++i) {
-                  printf("FILE:\t%s", output_files[i]);
-                  printf("\t%f seconds\n", runtimes[i]);
-          }
-  }
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 
   MPI_Finalize();
-
-  return 0;
 }

@@ -1,4 +1,4 @@
-
+t
 
 
 libRasterBlaster {#overview}
@@ -66,12 +66,28 @@ Or it can be run with mpirun like this:
 
     mpirun -n 4 tests/systemtest
 
-If you want to tweak the parition size you can do so with the -n
-argument. The value is the number of pixels in a partition.
+You can run tests separately with the --gtest_filter argument:
 
-    mpirun -n 4 test/systemtest -p 21600
+    tests/systemtest --gtest_list_tests
 
+    RasterTest.
+      Veg1Deg
+      HoldNorm30Min
+      GLC30sec
+      NLCD
 
+The tests should be listed in order of increasing size. To run only
+the largest raster, use this command:
+
+    tests/systemtest --gtest_filter='RasterTest.NLCD'
+
+or
+
+    tests/systemtest --gtest_filter='*NLCD'
+
+The demo program is called 'prasterblasterpio'
+
+    ./prasterblasterpio --t_srs +proj=moll -n 21600 tests/testdata/glc_geographic_30sec.tif tests/testoutput/glc_mollweide_30sec.tif
 
 
 
