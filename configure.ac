@@ -9,7 +9,9 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_PROG_LIBTOOL
 AC_CONFIG_MACRO_DIR([m4])
 
-LT_INIT([shared static])
+LT_INIT
+AC_ENABLE_SHARED
+AC_ENABLE_STATIC
 
 # Check for programs
 AC_PROG_CXX([mpiCC mpiCXX mpic++])
