@@ -65,46 +65,28 @@ class RasterTest : public ::testing::Test {
   // Objects declared here can by used by all tests in fixture
   int rank;
   int process_count;
-  std::vector<std::string> test_names;
-  std::vector<double> run_times;
 };
 
 TEST_F(RasterTest, Veg1Deg) {
   Configuration conf;
   conf.partition_size = 21600;
   conf.input_filename = "tests/testdata/veg_geographic_1deg.tif";
-  conf.output_filename = "tests/testoutput/veg_geographic_1deg.tif";
+  conf.output_filename = "tests/testoutput/veg_mollweide_1deg.tif";
   conf.resampler = librasterblaster::MIN;
   conf.output_srs = "+proj=moll +a=6370997 +b=6370997";
 
-  double start_time, stop_time;
-  MPI_Barrier(MPI_COMM_WORLD);
-  start_time = MPI_Wtime();
   int ret = prasterblasterpio(conf, rank, process_count);
-  MPI_Barrier(MPI_COMM_WORLD);
-  stop_time = MPI_Wtime();
-
-  test_names.push_back("Veg 1deg");
-  run_times.push_back(stop_time - start_time);
 }
 
 TEST_F(RasterTest, HoldNorm30Min) {
   Configuration conf;
   conf.partition_size = 21600;
   conf.input_filename = "tests/testdata/holdnorm_geographic_30min.tif";
-  conf.output_filename = "tests/testoutput/holdnorm_geographic_30min.tif";
+  conf.output_filename = "tests/testoutput/holdnorm_mollweide_30min.tif";
   conf.resampler = librasterblaster::MIN;
   conf.output_srs = "+proj=moll +a=6370997 +b=6370997";
 
-  double start_time, stop_time;
-  MPI_Barrier(MPI_COMM_WORLD);
-  start_time = MPI_Wtime();
   int ret = prasterblasterpio(conf, rank, process_count);
-  MPI_Barrier(MPI_COMM_WORLD);
-  stop_time = MPI_Wtime();
-
-  test_names.push_back("Holdnorm 30min");
-  run_times.push_back(stop_time - start_time);
 }
 
 TEST_F(RasterTest, GLC30sec) {
@@ -115,15 +97,7 @@ TEST_F(RasterTest, GLC30sec) {
   conf.resampler = librasterblaster::MIN;
   conf.output_srs = "+proj=moll +a=6370997 +b=6370997";
 
-  double start_time, stop_time;
-  MPI_Barrier(MPI_COMM_WORLD);
-  start_time = MPI_Wtime();
   int ret = prasterblasterpio(conf, rank, process_count);
-  MPI_Barrier(MPI_COMM_WORLD);
-  stop_time = MPI_Wtime();
-
-  test_names.push_back("GLC 30sec");
-  run_times.push_back(stop_time - start_time);
 }
 
 TEST_F(RasterTest, NLCD) {
@@ -138,15 +112,7 @@ TEST_F(RasterTest, NLCD) {
       "+proj=moll +lat_1=29.5 +lat_2=45.5 "
       "+lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83";
 
-  double start_time, stop_time;
-  MPI_Barrier(MPI_COMM_WORLD);
-  start_time = MPI_Wtime();
   int ret = prasterblasterpio(conf, rank, process_count);
-  MPI_Barrier(MPI_COMM_WORLD);
-  stop_time = MPI_Wtime();
-
-  test_names.push_back("NLCD");
-  run_times.push_back(stop_time - start_time);
 }
 }  // namespace
 
