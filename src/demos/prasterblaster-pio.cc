@@ -73,6 +73,9 @@ prasterblaster-pio.cc.
 /** Main function for the prasterblasterpio program */
 int prasterblasterpio(Configuration conf, int rank, int process_count) {
   RasterChunk *in_chunk, *out_chunk;
+  double start_time, end_time;
+
+  start_time = MPI_Wtime();
 
   // Replace CPLErrorHandler
   CPLPushErrorHandler(MyErrorHandler);
@@ -155,6 +158,12 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
          static_cast<unsigned long>(partitions.size()),
          conf.partition_size);
 
+  double read_start, read_total;
+  double write_start, write_total;
+  double resample_start, resample_total;
+
+  read_total = write_total = resample_total = 0.0;
+
   // Now we loop through the returned partitions
   for (size_t i = 0; i < partitions.size(); ++i) {
     // Swap y-axis of partition
@@ -179,12 +188,14 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
     // create a RasterChunk that has the pixel values read into it.
     in_chunk = RasterChunk::CreateRasterChunk(input_raster, in_area);
 
-   PRB_ERROR chunk_err = RasterChunk::ReadRasterChunk(input_raster, in_chunk);
+    read_start = MPI_Wtime();
+    PRB_ERROR chunk_err = RasterChunk::ReadRasterChunk(input_raster, in_chunk);
     if (chunk_err != PRB_NOERROR) {
       fprintf(stderr, "Error reading input chunk!\n");
       MPI_Abort(MPI_COMM_WORLD, 1);
       return 1;
     }
+    read_total += MPI_Wtime() - read_start;
 
     // We want a RasterChunk for the output area but we area going to generate
     // the pixel values not read them from the file so we use
@@ -203,16 +214,24 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
     // Now we call ReprojectChunk with the RasterChunk pair and the desired
     // resampler. ReprojectChunk performs the reprojection/resampling and fills
     // the output RasterChunk with the new values.
+    resample_start = MPI_Wtime();
     bool ret = ReprojectChunk(in_chunk,
                               out_chunk,
                               conf.fillvalue,
                               conf.resampler);
+    resample_total += MPI_Wtime() - resample_start;
+
+    write_start = MPI_Wtime();
     SPTW_ERROR err;
     err = write_rasterchunk(output_raster,
                             out_chunk);
+    write_total += MPI_Wtime() - write_start;
 
-    if (i % (partitions.size()+1/100) == 0) {
-      printf("Rank: %d wrote chunk at %f %f, %d rows, %d columns\n\n", rank,
+    if (i % 10 == 0) {
+      printf("Rank %d wrote chunk (%zd of %zd) at (%.0f,%.0f) with %d rows, %d columns\n", 
+             rank,
+             i,
+             partitions.size(),
              out_chunk->raster_location_.x, out_chunk->raster_location_.y,
              out_chunk->row_count_, out_chunk->column_count_);
     }
@@ -227,6 +246,21 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
   delete gdal_output_raster;
   delete input_raster;
 
+  end_time = MPI_Wtime();
+  double runtimes[4] = { end_time - start_time, read_total, write_total, resample_total};
+  std::vector<double> process_runtimes(process_count*4);
+  MPI_Gather(runtimes, 4, MPI_DOUBLE, &(process_runtimes[0]), 4, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+  if (rank == 0) {
+    printf("\nRank\t  Total Runtime\t  Read I/O\t  Write I/O\t  Resampling\n");
+    for (unsigned int i = 0; i < process_runtimes.size(); i+=4) {
+      printf("%4u\t| %.4fs\t| %.4fs\t| %.4fs\t| %.4fs\n",
+             i/4,
+             process_runtimes.at(i),
+             process_runtimes.at(i+1),
+             process_runtimes.at(i+2),
+             process_runtimes.at(i+3));
+    }
+  }
   return 0;
 }
-
