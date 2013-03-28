@@ -227,8 +227,9 @@ SPTW_ERROR write_rasterchunk(PTIFF *ptiff,
       chunk->column_count_ * chunk->band_count_ * ptiff->band_type_size;
 
   for (int64_t i = 0; i < chunk->row_count_; ++i) {
-    pixels = static_cast<unsigned char*>(chunk->pixels_);
+    pixels = static_cast<unsigned char*>(chunk->pixels_)
         + (i * ptiff->band_type_size * chunk->column_count_);
+
     err = write_subrow(ptiff,
                        pixels, 
                        y_offset + i,
