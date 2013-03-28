@@ -109,7 +109,7 @@ TEST_F(RasterTest, HoldNorm30Min) {
 
 TEST_F(RasterTest, GLC30sec) {
   Configuration conf;
-  conf.partition_size = 21600;
+  conf.partition_size = 216000;
   conf.input_filename = "tests/testdata/glc_geographic_30sec.tif";
   conf.output_filename = "tests/testoutput/glc_mollweide_30sec.tif";
   conf.resampler = librasterblaster::MIN;
@@ -128,7 +128,7 @@ TEST_F(RasterTest, GLC30sec) {
 
 TEST_F(RasterTest, NLCD) {
   Configuration conf;
-  conf.partition_size = 21600;
+  conf.partition_size = 216000;
   conf.input_filename =
       "tests/testdata/nlcd2006_landcover_4-20-11_se5.tif";
   conf.output_filename =
