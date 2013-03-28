@@ -231,19 +231,19 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
-    if (i % process_count == 0) {
-      printf("Rank %d wrote chunk (%zd of %zd) at (%.0f,%.0f) with %d rows, %d columns\n", 
+    if (i % 10 == 0) {
+      printf("<Rank %d wrote (%zd of %zd)>  ", 
              rank,
              i,
              partitions.size(),
              out_chunk->raster_location_.x, out_chunk->raster_location_.y,
              out_chunk->row_count_, out_chunk->column_count_);
+      fflush(stdout);
     }
-
     delete in_chunk;
     delete out_chunk;
   }
-
+  printf("\n");
   // Clean up
   close_raster(output_raster);
   output_raster = NULL;
