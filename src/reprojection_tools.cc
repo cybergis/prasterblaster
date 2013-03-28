@@ -27,6 +27,8 @@
 
 #include <algorithm>
 #include <vector>
+#include <ctime>
+#include <cstdlib>
 
 #include "gctp_cpp/projection.h"
 #include "gctp_cpp/transformer.h"
@@ -232,11 +234,19 @@ Projection* ProjectionFactory(string output_srs) {
   return out_proj;
 }
 
+// For use by PartitionBySize
+int simplerandom(int i) {
+  return std::rand()%i;
+}
+
 std::vector<Area> PartitionBySize(int rank,
                                   int process_count,
                                   int row_count,
                                   int column_count,
                                   int maximum_partition_size) {
+  // Seed the psuedorandom generator. This _must_ be the same on all processes.
+  std::srand(42);
+
   QuadTree qt(row_count,
               column_count,
               maximum_partition_size);
@@ -245,6 +255,10 @@ std::vector<Area> PartitionBySize(int rank,
   vector<Area> partitions;
   size_t partition_count = leaves.size();
   size_t partitions_per_proc = partition_count / process_count;
+
+  // Now we shuffle the partitions for load balancing.
+  // All processes should generate the same shuffle.
+  std::random_shuffle(leaves.begin(), leaves.end(), simplerandom);
 
   if (partitions_per_proc == 0) {
     // process_count < partition_count
@@ -267,6 +281,7 @@ std::vector<Area> PartitionBySize(int rank,
 
   return partitions;
 }
+
 
 void SearchAndUpdate(Area input_area,
                      shared_ptr<Projection> input_projection,
