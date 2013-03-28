@@ -223,11 +223,15 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
 
     write_start = MPI_Wtime();
     SPTW_ERROR err;
-    err = write_rasterchunk(output_raster,
-                            out_chunk);
+    err = sptw::write_rasterchunk(output_raster,
+                                  out_chunk);
     write_total += MPI_Wtime() - write_start;
+    if (err != sptw::SP_None) {
+      fprintf(stderr, "Rank %d: Error writing chunk!\n", rank);
+      MPI_Abort(MPI_COMM_WORLD, 1);
+    }
 
-    if (i % 10 == 0) {
+    if (i % process_count == 0) {
       printf("Rank %d wrote chunk (%zd of %zd) at (%.0f,%.0f) with %d rows, %d columns\n", 
              rank,
              i,
@@ -246,6 +250,7 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
   delete gdal_output_raster;
   delete input_raster;
 
+  // Report runtimes
   end_time = MPI_Wtime();
   double runtimes[4] = { end_time - start_time, read_total, write_total, resample_total};
   std::vector<double> process_runtimes(process_count*4);
