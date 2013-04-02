@@ -572,7 +572,6 @@ Area RasterMinbox2(string source_projection,
   }
 
   if (source_area.lr.y < source_area.ul.y) {
-    double t = source_area.lr.y;
     source_area.lr.y = source_area.ul.y;
   }
 
