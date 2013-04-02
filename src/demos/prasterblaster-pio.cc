@@ -142,6 +142,7 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
   if (output_raster == NULL) {
     fprintf(stderr, "Could not open output raster\n");
     MPI_Abort(MPI_COMM_WORLD, 1);
+    return 1;
   }
 
   // Now we will partition the output raster space. We will use a
@@ -152,12 +153,11 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
                                             output_raster->y_size,
                                             output_raster->x_size,
                                             conf.partition_size);
-  printf("Process %d of %d has %lu partitions with base size: %d\n",
-         rank,
-         process_count,
-         static_cast<unsigned long>(partitions.size()),
-         conf.partition_size);
-
+  if (rank == 0) {
+    printf("Typical process has %lu partitions with base size: %d\n",
+           static_cast<unsigned long>(partitions.size()),
+           conf.partition_size);
+  }
   double read_start, read_total;
   double write_start, write_total;
   double resample_start, resample_total;
@@ -219,6 +219,10 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
                               out_chunk,
                               conf.fillvalue,
                               conf.resampler);
+    if (ret == false) {
+            fprintf(stderr, "Error reprojecting chunk!\n");
+            MPI_Abort(MPI_COMM_WORLD, 1);
+    }
     resample_total += MPI_Wtime() - resample_start;
 
     write_start = MPI_Wtime();
