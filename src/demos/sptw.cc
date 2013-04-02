@@ -100,6 +100,7 @@ PTIFF* open_raster(string filename) {
                                                        GA_Update));
 
   if (ds == NULL) {
+    free(c_filename);
     return NULL;
   }
 
@@ -128,7 +129,6 @@ PTIFF* open_raster(string filename) {
 
   if (offset == NULL) {
     fprintf(stderr, "Error reading strip offsets\n");
-    free(c_filename);
     return NULL;
   }
 
@@ -152,6 +152,7 @@ PTIFF* open_raster(string filename) {
             c_filename,
             errstr);
 
+    free(errstr);
     return NULL;
   }
 
@@ -223,8 +224,6 @@ SPTW_ERROR write_rasterchunk(PTIFF *ptiff,
   unsigned char *pixels = NULL;
   const int64_t x_offset = static_cast<int64_t>(chunk->raster_location_.x);
   const int64_t y_offset = static_cast<int64_t>(chunk->raster_location_.y);
-  const int64_t column_byte_size = 
-      chunk->column_count_ * chunk->band_count_ * ptiff->band_type_size;
 
   for (int64_t i = 0; i < chunk->row_count_; ++i) {
     pixels = static_cast<unsigned char*>(chunk->pixels_)
