@@ -106,6 +106,7 @@ class RasterCoordTransformer {
     RasterCoordTransformer constructed corrrectly and is ready to use.
    */
   bool ready();
+
  private:
   void init(string source_projection,
             Coordinate source_ul,
