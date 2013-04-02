@@ -20,9 +20,9 @@
 #ifndef SRC_RASTERCHUNK_H_
 #define SRC_RASTERCHUNK_H_
 
-#include <string>
-
 #include <gdal_priv.h>
+
+#include <string>
 
 #include "src/gctp_cpp/projection.h"
 #include "src/gctp_cpp/coordinate.h"
