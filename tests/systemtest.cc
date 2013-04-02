@@ -74,6 +74,7 @@ TEST_F(RasterTest, Veg1Deg) {
   conf.output_filename = "tests/testoutput/veg_mollweide_1deg.tif";
   conf.resampler = librasterblaster::MIN;
   conf.output_srs = "+proj=moll +a=6370997 +b=6370997";
+  conf.fillvalue = "32";
 
   int ret = prasterblasterpio(conf, rank, process_count);
 }
@@ -85,24 +86,26 @@ TEST_F(RasterTest, HoldNorm30Min) {
   conf.output_filename = "tests/testoutput/holdnorm_mollweide_30min.tif";
   conf.resampler = librasterblaster::MIN;
   conf.output_srs = "+proj=moll +a=6370997 +b=6370997";
+  conf.fillvalue = "32";
 
   int ret = prasterblasterpio(conf, rank, process_count);
 }
 
 TEST_F(RasterTest, GLC30sec) {
   Configuration conf;
-  conf.partition_size = 216000;
+  conf.partition_size = 21600;
   conf.input_filename = "tests/testdata/glc_geographic_30sec.tif";
   conf.output_filename = "tests/testoutput/glc_mollweide_30sec.tif";
   conf.resampler = librasterblaster::MIN;
   conf.output_srs = "+proj=moll +a=6370997 +b=6370997";
+  conf.fillvalue = "32";
 
   int ret = prasterblasterpio(conf, rank, process_count);
 }
 
 TEST_F(RasterTest, NLCD) {
   Configuration conf;
-  conf.partition_size = 216000;
+  conf.partition_size = 2160000;
   conf.input_filename =
       "tests/testdata/nlcd2006_landcover_4-20-11_se5.tif";
   conf.output_filename =
@@ -111,6 +114,7 @@ TEST_F(RasterTest, NLCD) {
   conf.output_srs =
       "+proj=moll +lat_1=29.5 +lat_2=45.5 "
       "+lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83";
+  conf.fillvalue = "32";
 
   int ret = prasterblasterpio(conf, rank, process_count);
 }
