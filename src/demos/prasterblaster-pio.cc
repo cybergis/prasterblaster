@@ -180,7 +180,34 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
                                 partitions.at(i));
 
     if (in_area.ul.x == -1.0) {  // chunk is outside of projected area
-      // We should write the fill value here too
+      // Output chunk has no corresponding area in the input raster, it's
+      // outside the projected area. Create a chunk with the fill value and
+      // write it to the output raster.
+
+      // Create a simple input_chunk. This is not used for anything. Because the
+      // output_chunk does not correspond to any area in the input, no matter
+      // what the input_chunk is, the output will consist of only fill.
+      in_chunk = RasterChunk::CreateRasterChunk(input_raster, Area(0,0,0,0));
+      out_chunk = RasterChunk::CreateRasterChunk(gdal_output_raster,
+                                               partitions.at(i));
+      bool error = ReprojectChunk(in_chunk,
+                                  out_chunk,
+                                  conf.fillvalue,
+                                  conf.resampler);
+      if (!error) {
+        fprintf(stderr, "Error reprojecting fill output chunk\n");
+        MPI_Abort(MPI_COMM_WORLD, 1);
+      }
+      SPTW_ERROR fillerr = sptw::write_rasterchunk(output_raster,
+                                                   out_chunk);
+
+      if (fillerr != sptw::SP_None) {
+        fprintf(stderr, "Error write fill output chunk!\n");
+        MPI_Abort(MPI_COMM_WORLD, 1);
+      }
+
+      delete in_chunk;
+      delete out_chunk;
       continue;
     }
 
@@ -199,7 +226,7 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
 
     // We want a RasterChunk for the output area but we area going to generate
     // the pixel values not read them from the file so we use
-    // create_allocated_raster_chunk
+    // CreateRasterChunk
     out_chunk = RasterChunk::CreateRasterChunk(gdal_output_raster,
                                                partitions.at(i));
     if (out_chunk == NULL) {
