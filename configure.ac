@@ -6,6 +6,7 @@
 AC_INIT([prasterblaster], [0.01], [dmattli@usgs.gov])  
 	 	
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])  
+AM_PROG_AR
 AC_PROG_LIBTOOL
 AC_CONFIG_MACRO_DIR([m4])
 
