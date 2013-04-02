@@ -1,4 +1,4 @@
-t
+
 
 
 libRasterBlaster {#overview}
@@ -89,6 +89,16 @@ The demo program is called 'prasterblasterpio'
 
     ./prasterblasterpio --t_srs +proj=moll -n 21600 tests/testdata/glc_geographic_30sec.tif tests/testoutput/glc_mollweide_30sec.tif
 
+The resampling function can be specified for prasterblasterpio or tests/systemtest with the -r flag:
+
+    tests/systemtest --gtest_filter='*NLCD' -r mean
+
+Either method of running the program can be run in parallel as well:
+
+    mpirun -n 100 tests/systemtest --gtest_filter='*GLC30sec'
+
+or
+    mpirun -n 100 ./prasterblasterpio --t_srs +proj=moll -n 21600 tests/testdata/glc_geographic_30sec.tif tests/testoutput/glc_mollweide_30sec.tif
 
 
 Background information and terminology
@@ -337,3 +347,8 @@ raster, the output filename, pixel size, and proj4 projection
 string. It then calculates the size of the output raster and creates
 the file.
 
+SPTW
+----
+
+The Simple Parallel Tiff Writer (SPTW) is a correctly but not optimal
+implemention of tiff file output.
