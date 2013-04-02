@@ -152,6 +152,7 @@ PTIFF* open_raster(string filename) {
             c_filename,
             errstr);
 
+    free(c_filename);
     free(errstr);
     return NULL;
   }
