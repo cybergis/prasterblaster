@@ -60,7 +60,7 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   if (err != OGRERR_NONE) {
     return PRB_BADARG;
   }
-  
+
   // Determine output raster size by calculating the projected coordinate minbox
   double in_transform[6];
   in->GetGeoTransform(in_transform);
@@ -107,6 +107,11 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
     return PRB_BADARG;
   }
 
+  // Copy ColorTable
+  if (in->GetRasterCount() > 0) {
+    GDALColorTable *ct = in->GetRasterBand(1)->GetColorTable();
+    output->GetRasterBand(1)->SetColorTable(ct);
+  }
 
   // Setup georeferencing
   double out_t[6] = { out_area.ul.x,
@@ -145,7 +150,7 @@ PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
     return PRB_PROJERROR;
   }
 
-  long proj_code, datum_code, zone;
+  int64_t proj_code, datum_code, zone;
   double *params = NULL;
 
   srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
@@ -214,7 +219,7 @@ Projection* ProjectionFactory(string output_srs) {
   }
 
 
-  long proj_code, datum_code, zone;
+  int64_t proj_code, datum_code, zone;
   double *params = NULL;
 
   srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);

@@ -394,7 +394,7 @@ bool ProjectedRaster::load_raster(string filename) {
   dataset_ = 0;
   row_count_ = column_count_ = -1;
   char *ref, **ugh;
-  long projsys, zone, datum;
+  int64_t projsys, zone, datum;
   double params[18] = {0.0};
   double *p;
   OGRSpatialReference sr;

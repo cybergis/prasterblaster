@@ -57,7 +57,7 @@ shared_ptr<Projection> srs_to_projection(string projection_string) {
     return out_proj;
   }
 
-  long proj_code, datum_code, zone;
+  int64_t proj_code, datum_code, zone;
   double *params = NULL;
 
   srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
@@ -120,8 +120,6 @@ void RasterCoordTransformer::init(string source_projection,
   OGRSpatialReference source_sr, dest_sr;
   char *source_wkt = strdup(source_projection.c_str());
   char *dest_wkt = strdup(destination_projection.c_str());
-  char *srs_str = NULL;
-  char *wkt = NULL;
 
   source_sr.SetFromUserInput(source_projection.c_str());
   dest_sr.SetFromUserInput(destination_projection.c_str());
