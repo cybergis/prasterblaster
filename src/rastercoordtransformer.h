@@ -22,9 +22,9 @@
 #ifndef SRC_RASTERCOORDTRANSFORMER_H_
 #define SRC_RASTERCOORDTRANSFORMER_H_
 
-#include <string>
-
 #include <ogr_spatialref.h>
+
+#include <string>
 
 #include "src/sharedptr.h"
 #include "src/utils.h"
