@@ -15,7 +15,7 @@ wget -c http://download.osgeo.org/proj/proj-4.8.0.tar.gz
 rm -rf proj-4.8.0
 tar xfz proj-4.8.0.tar.gz
 cd proj-4.8.0
-./configure --prefix=$PRBROOT/src/gdal/
+./configure --prefix=$PRBROOT/src/gdal/ --without-jni
 make -j2 install
 
 # Build GDAL
