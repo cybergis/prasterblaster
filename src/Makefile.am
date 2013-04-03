@@ -11,7 +11,7 @@ librasterblaster_la_SOURCES = projectedraster.cc \
 librasterblaster_la_LDFLAGS = $(all_libraries) -lgdal -Lgctp_cpp -Lgdal/lib/
 librasterblaster_la_LIBADD =  gctp_cpp/libgctp_cpp.la
 
-AM_CPPFLAGS = $(all_includes) -IpRPL -Igctp_cpp
+AM_CPPFLAGS = $(all_includes) -IpRPL -Igctp_cpp -Igdal/include
 
 AM_CXXFLAGS = -W -Wall -Wextra -Wcast-align \
 		-Wpointer-arith -Wsign-compare -g\

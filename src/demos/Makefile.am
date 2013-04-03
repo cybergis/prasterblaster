@@ -2,11 +2,12 @@
 
 noinst_LTLIBRARIES = libsptw.la
 libsptw_la_SOURCES = sptw.cc
-libsptw_la_CPPFLAGS = -I../../src/
+libsptw_la_CPPFLAGS = -I../../src/ -I../gdal/include
+libsptw_la_CXXFLAGS = -L../gdal/lib
 
 bin_PROGRAMS = top/prasterblasterpio
 top_prasterblasterpio_SOURCES = prasterblaster-pio.cc prasterblaster-main.cc
-top_prasterblasterpio_CPPFLAGS = -I..
+top_prasterblasterpio_CPPFLAGS = -I.. -I../gdal/include
 top_prasterblasterpio_LDFLAGS = $(all_libraries)  -L../gctp_cpp -L.. -L../gdal/lib/
 top_prasterblasterpio_LDADD = ../librasterblaster.la ../gctp_cpp/libgctp_cpp.la libsptw.la
 top_prasterblasterpio_CXXFLAGS = -lgdal -lrasterblaster

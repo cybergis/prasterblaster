@@ -9,7 +9,8 @@ AM_CXXFLAGS = -W -Wall -Wextra -Wcast-align \
                 -Wformat=2 -Wno-format-y2k  -Wmissing-braces -Wparentheses \
                 -Wtrigraphs -Wstrict-aliasing=2
 
-libgctp_cpp_la_CXXFLAGS = -fPIC
+libgctp_cpp_la_CXXFLAGS = -fPIC -L../gdal/lib
+libgctp_cpp_la_CPPFLAGS = -I../gdal/include/
 libgctp_cpp_la_SOURCES = alaskaconformal.cpp \
            albersConEqArea.cpp \
            azequidistant.cpp \
