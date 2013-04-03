@@ -42,8 +42,8 @@ AC_ARG_WITH(tiff-libdir,
   [TIFF_CXXFLAGS="-L$withval -Wl,-R$withval"], [])
 AC_SUBST(GDAL_CPPFLAGS)
 AC_SUBST(GDAL_CFLAGS)
-CPPFLAGS="${CPPFLAGS} ${GDAL_CPPFLAGS} ${TIFF_CPPFLAGS} -Isrc/gdal/include/"
-CXXFLAGS="${CXXFLAGS} ${GDAL_CXXFLAGS} ${TIFF_CXXFLAGS} -Lsrc/gdal/lib/"
+CPPFLAGS="${CPPFLAGS} ${GDAL_CPPFLAGS} ${TIFF_CPPFLAGS} -I`pwd`/src/gdal/include/"
+CXXFLAGS="${CXXFLAGS} ${GDAL_CXXFLAGS} ${TIFF_CXXFLAGS} -L`pwd`/src/gdal/lib/"
 
 LIBS="$LIBS -lm"
 

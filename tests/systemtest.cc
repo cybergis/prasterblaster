@@ -79,6 +79,30 @@ TEST_F(RasterTest, Veg1Deg) {
   int ret = prasterblasterpio(conf, rank, process_count);
 }
 
+TEST_F(RasterTest, Veg1DegRobin) {
+  Configuration conf;
+  conf.partition_size = 21600;
+  conf.input_filename = "tests/testdata/veg_geographic_1deg.tif";
+  conf.output_filename = "tests/testoutput/veg_robinson_1deg.tif";
+  conf.resampler = librasterblaster::MIN;
+  conf.output_srs = "+proj=robin +a=6370997 +b=6370997";
+  conf.fillvalue = "32";
+
+  int ret = prasterblasterpio(conf, rank, process_count);
+}
+
+TEST_F(RasterTest, Veg1DegSinusoidal) {
+  Configuration conf;
+  conf.partition_size = 21600;
+  conf.input_filename = "tests/testdata/veg_geographic_1deg.tif";
+  conf.output_filename = "tests/testoutput/veg_sinosoidal_1deg.tif";
+  conf.resampler = librasterblaster::MIN;
+  conf.output_srs = "+proj=sinu +lon_0=0.0 +a=6370997 +b=6370997";
+  conf.fillvalue = "32";
+
+  int ret = prasterblasterpio(conf, rank, process_count);
+}
+
 TEST_F(RasterTest, HoldNorm30Min) {
   Configuration conf;
   conf.partition_size = 21600;
