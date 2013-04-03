@@ -2,7 +2,7 @@
 # Author: David Mattli <dmattli@usgs.gov
 # License: PUBLIC DOMAIN
 # Portions from to
-
+m4_pattern_allow([AM_PROG_AR])
 AC_INIT([prasterblaster], [0.01], [dmattli@usgs.gov])  
 	 	
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])  
@@ -87,7 +87,6 @@ AC_COMPILE_IFELSE(
             [AC_MSG_RESULT([no])
              AC_MSG_ERROR([configure cannot find shared_ptr.])])])])
 
-
 # Check for GDAL library and headers
 AC_CHECK_HEADER([gdal.h], [], [echo 'gdal.h not found! Set --with-gdal-incdir=path'; exit])
 AC_SEARCH_LIBS([GDALAllRegister], [gdal], [], [AC_MSG_ERROR(['libgdal not found! Set --with-gdal-libdir=path'])], [])
@@ -104,5 +103,8 @@ AC_CONFIG_FILES([
   src/gtest/Makefile
   tests/Makefile
 ])  
+
+mkdir src/gdal/
+mkdir src/gdal/lib
 	 	
 AC_OUTPUT  

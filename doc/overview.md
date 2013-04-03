@@ -44,6 +44,13 @@ like this:
 
     ./configure CXX=mpiCC --with-gdal-incdir=/usr/local/include/gdal/ --with-gdal-libdir=/usr/local/lib/
 
+Or you can build a local GDAL with the buildgdal.sh script.
+
+    sh buildgdal.sh
+
+After running buildgdal.sh the configure script should automatically
+find the local gdal library.
+
 After successfully running configure you can build librasterblaster
 and the demo program by calling make. libRasterBlaster now comes with
 system level tests which demonstrate the proper functioning of the
@@ -99,6 +106,59 @@ Either method of running the program can be run in parallel as well:
 
 or
     mpirun -n 100 ./prasterblasterpio --t_srs +proj=moll -n 21600 tests/testdata/glc_geographic_30sec.tif tests/testoutput/glc_mollweide_30sec.tif
+
+SPTW
+----
+
+The Simple Parallel Tiff Writer (SPTW) is a correct but not optimal
+implemention of tiff file output. The MPI specification imposes three
+requirements to guarantee sequential consistency:
+
+    Case 1: $fh_1 FH_1$ All operations on fh1 are sequentially consistent
+    if atomic mode is set. If nonatomic mode is set, then all operations
+    on fh1 are sequentially consistent if they are either nonconcurrent,
+    nonconflicting, or both.
+
+    Case 2: $fh_1a FH_1$ and $fh_1b FH_1$ Assume A1 is a data access
+    operation using fh1a, and A2 is a data access operation using fh1b. If
+    for any access A1, there is no access A2 that conflicts with A1, then
+    MPI guarantees sequential consistency.
+
+    However, unlike POSIX semantics, the default MPI semantics for
+    conflicting accesses do not guarantee sequential consistency. If A1
+    and A2 conflict, sequential consistency can be guaranteed by either
+    enabling atomic mode via the MPI_FILE_SET_ATOMICITY routine, or
+    meeting the condition described in Case 3 below.
+
+    Case 3: $fh_1 FH_1$ and $fh_2 FH_2$ 
+
+
+SPTW provides sequential consistency only when all write operations
+are nonconflicting, that is, each write operation accesses a distinct
+section of the raster file. In the prasterblater-pio demo program each
+pixel of the output raster is contained in only one partition and each
+partition is only assigned to one process. This ensures all write
+accesses are nonconflicting and that sequential consistency is
+maintained.
+
+### Possible improvements
+
+SPTW achieves sequential consistency but it is almost certainly not
+optimal. Possble improvements include:
+
+#### Collective Operations
+
+Currently all file writes are done with non-collective operations. MPI
+I/O supports collective calls in which use a shared file pointer and
+file accesses are coordinated among processes.
+
+#### Using MPI I/O for read operations
+
+SPTW is only used to write the output file in the prasterblasterpio
+demo program. The file reads are done with the standard POSIX I/O
+functions. The use of collective reads may be more efficient.
+
+
 
 
 Background information and terminology
@@ -346,9 +406,3 @@ librasterblaster::ProjectedRaster object representing the input
 raster, the output filename, pixel size, and proj4 projection
 string. It then calculates the size of the output raster and creates
 the file.
-
-SPTW
-----
-
-The Simple Parallel Tiff Writer (SPTW) is a correctly but not optimal
-implemention of tiff file output.
