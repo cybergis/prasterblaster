@@ -26,6 +26,7 @@
 #include "src/sharedptr.h"
 
 #include "src/demos/sptw.h"
+#include "src/utils.h"
 
 using librasterblaster::Area;
 using librasterblaster::PartitionBySize;
@@ -69,13 +70,20 @@ prasterblaster-pio.cc.
 
 </p>
  */
+namespace librasterblaster {
 
 /** Main function for the prasterblasterpio program */
-int prasterblasterpio(Configuration conf, int rank, int process_count) {
+PRB_ERROR prasterblasterpio(Configuration conf) {
   RasterChunk *in_chunk, *out_chunk;
   double start_time, end_time;
 
   start_time = MPI_Wtime();
+
+  int rank = 0;
+  int process_count = 1;
+
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &process_count);
 
   // Replace CPLErrorHandler
   CPLPushErrorHandler(MyErrorHandler);
@@ -84,7 +92,7 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
 
   if (conf.input_filename == "" || conf.output_filename == "") {
     fprintf(stderr, "Specify an input and output filename\n");
-    return 0;
+    return PRB_BADARG;
   }
 
   // Open the input raster
@@ -95,7 +103,7 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
       static_cast<GDALDataset*>(GDALOpen(conf.input_filename.c_str(), GA_ReadOnly));
   if (input_raster == NULL) {
     fprintf(stderr, "Error opening input raster!\n");
-    return 0;
+    return PRB_IOERROR;
   }
 
   // If we are the process with rank 0 we are responsible for the creation of
@@ -123,7 +131,7 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
                                                          conf.output_srs);
     if (err != PRB_NOERROR) {
       fprintf(stderr, "Error creating raster!: %d\n", err);
-      return 1;
+      return PRB_IOERROR;
     }
 
     printf("Output raster created...\n");
@@ -142,7 +150,7 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
   if (output_raster == NULL) {
     fprintf(stderr, "Could not open output raster\n");
     MPI_Abort(MPI_COMM_WORLD, 1);
-    return 1;
+    return PRB_IOERROR;
   }
 
   // Now we will partition the output raster space. We will use a
@@ -220,7 +228,7 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
     if (chunk_err != PRB_NOERROR) {
       fprintf(stderr, "Error reading input chunk!\n");
       MPI_Abort(MPI_COMM_WORLD, 1);
-      return 1;
+      return PRB_IOERROR;
     }
     read_total += MPI_Wtime() - read_start;
 
@@ -235,7 +243,7 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
               partitions[i].ul.y,
               partitions[i].lr.x,
               partitions[i].lr.y);
-      return 1;
+      return PRB_BADARG;
     }
        
     // Now we call ReprojectChunk with the RasterChunk pair and the desired
@@ -298,5 +306,6 @@ int prasterblasterpio(Configuration conf, int rank, int process_count) {
              process_runtimes.at(i+3));
     }
   }
-  return 0;
+  return PRB_NOERROR;
+}
 }

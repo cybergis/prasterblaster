@@ -76,7 +76,7 @@ TEST_F(RasterTest, Veg1Deg) {
   conf.output_srs = "+proj=moll +a=6370997 +b=6370997";
   conf.fillvalue = "32";
 
-  int ret = prasterblasterpio(conf, rank, process_count);
+  int ret = prasterblasterpio(conf);
 }
 
 TEST_F(RasterTest, Veg1DegRobin) {
@@ -88,7 +88,7 @@ TEST_F(RasterTest, Veg1DegRobin) {
   conf.output_srs = "+proj=robin +a=6370997 +b=6370997";
   conf.fillvalue = "32";
 
-  int ret = prasterblasterpio(conf, rank, process_count);
+  int ret = prasterblasterpio(conf);
 }
 
 TEST_F(RasterTest, Veg1DegSinusoidal) {
@@ -100,7 +100,7 @@ TEST_F(RasterTest, Veg1DegSinusoidal) {
   conf.output_srs = "+proj=sinu +lon_0=0.0 +a=6370997 +b=6370997";
   conf.fillvalue = "32";
 
-  int ret = prasterblasterpio(conf, rank, process_count);
+  int ret = prasterblasterpio(conf);
 }
 
 TEST_F(RasterTest, HoldNorm30Min) {
@@ -112,7 +112,7 @@ TEST_F(RasterTest, HoldNorm30Min) {
   conf.output_srs = "+proj=moll +a=6370997 +b=6370997";
   conf.fillvalue = "32";
 
-  int ret = prasterblasterpio(conf, rank, process_count);
+  int ret = prasterblasterpio(conf);
 }
 
 TEST_F(RasterTest, GLC30sec) {
@@ -124,7 +124,7 @@ TEST_F(RasterTest, GLC30sec) {
   conf.output_srs = "+proj=moll +a=6370997 +b=6370997";
   conf.fillvalue = "32";
 
-  int ret = prasterblasterpio(conf, rank, process_count);
+  int ret = prasterblasterpio(conf);
 }
 
 TEST_F(RasterTest, NLCD) {
@@ -140,7 +140,7 @@ TEST_F(RasterTest, NLCD) {
       "+lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83";
   conf.fillvalue = "32";
 
-  int ret = prasterblasterpio(conf, rank, process_count);
+  int ret = prasterblasterpio(conf);
 }
 }  // namespace
 

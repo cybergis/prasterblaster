@@ -1,3 +1,6 @@
 #include "src/configuration.h"
+#include "src/utils.h"
 
-int prasterblasterpio(librasterblaster::Configuration conf, int rank, int process_count);
+namespace librasterblaster {
+PRB_ERROR prasterblasterpio(librasterblaster::Configuration conf);
+}

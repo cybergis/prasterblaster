@@ -14,13 +14,10 @@ int main(int argc, char *argv[]) {
   // Give MPI_Init first run at the command-line arguments
   MPI_Init(&argc, &argv);
   
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &process_count);
-  
   // Initialize Configuration object 
   Configuration conf(argc, argv);
 
-  int ret =  prasterblasterpio(conf, rank, process_count);
+  int ret =  prasterblasterpio(conf);
   MPI_Finalize();
 
   return ret;
