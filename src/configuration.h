@@ -88,11 +88,6 @@ struct Configuration {
    */
   string nodata_value;
   /**
-   * Some implementations require a processor local temporary path. The default
-   * value is "".
-   */
-  string temporary_path;
-  /**
    * The maximum size of output raster partitions. The default value is 0;
    */
   int partition_size;

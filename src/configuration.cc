@@ -27,7 +27,6 @@ struct option longopts[] = {
   {"partition-size", required_argument, NULL, 'n'},
   {"resampler", required_argument, NULL, 'r'},
   {"dstnodata", required_argument, NULL, 'f'},
-  {"temporary-path", required_argument, NULL, 't'},
   {0, 0, 0, 0}
 };
 
@@ -65,9 +64,6 @@ Configuration::Configuration(int argc, char *argv[]) {
       case 'f':
         fillvalue = optarg;
         break;
-      case 't':
-        temporary_path = optarg;
-        break;
       default:
         fprintf(stderr, "%s: option '-%c' is invalid: ignored\n",
                 argv[0], optopt);
@@ -79,9 +75,6 @@ Configuration::Configuration(int argc, char *argv[]) {
       input_filename = argv[argc-2];
     }
 
-    if (argc > 2 && temporary_path == "") {
-      temporary_path = ".";
-    }
   }
 
   return;
