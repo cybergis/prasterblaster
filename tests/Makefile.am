@@ -4,8 +4,7 @@ AM_CLFLAGS =  -W -Wall -Wcast-align -Wstrict-prototypes -Wmissing \
 		-Wformat=2 -Wno-format-y2k -Wimplicit -Wmissing-braces \
 		-Wnested-externs -Wparentheses -Wtrigraphs -g
 
-noinst_bin_PROGRAMS = tests systemtest
-noinst_bindir = $(top_builddir)/tests
+noinst_PROGRAMS = tests systemtest
 tests_CXXFLAGS  = -I../src/ -lgctp_cpp -lgtest
 tests_LDFLAGS = $(all_libraries) -lgctp_cpp -lgtest -lgtest_main -L../src/ -L../src/gctp_cpp/ -L../src/gtest/ -L../src/gdal/lib/
 tests_CPPFLAGS = -I ../src/gtest/include -I../src/gdal/include
