@@ -10,6 +10,12 @@ librasterblaster_la_SOURCES = projectedraster.cc \
                              rasterchunk.cc
 librasterblaster_la_LDFLAGS = $(all_libraries) -lgdal -Lgctp_cpp -Lgdal/lib/
 librasterblaster_la_LIBADD =  gctp_cpp/libgctp_cpp.la
+otherincludedir = $(includedir)/librasterblaster
+otherinclude_HEADERS = configuration.h  projectedraster.h  quadtree.h  \
+                              rasterchunk.h  rastercoordtransformer.h  reprojection_tools.h  \
+                              resampler.h  sharedptr.h  utils.h
+
+
 
 AM_CPPFLAGS = $(all_includes) -IpRPL -Igctp_cpp -Igdal/include
 
