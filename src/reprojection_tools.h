@@ -33,6 +33,30 @@ class Projection;
 
 /// Container namespace for librasterblaster project
 namespace librasterblaster {
+#define GEN_RESAMPLER_CASES(C_PIXEL_TYPE)   \
+        switch (resampler) {               \
+        case MIN: \
+          return ReprojectChunkType<C_PIXEL_TYPE>(source, \
+                                                   destination, \
+                                                   static_cast<C_PIXEL_TYPE>(fvalue), \
+                                                   &(Min<C_PIXEL_TYPE>)); \
+          break; \
+        case MAX: \
+          return ReprojectChunkType<C_PIXEL_TYPE>(source, \
+                                                   destination, \
+                                                   static_cast<C_PIXEL_TYPE>(fvalue), \
+                                                   &(Max<C_PIXEL_TYPE>)); \
+          break; \
+    case NEAREST: \
+    default: \
+          return ReprojectChunkType<C_PIXEL_TYPE>(source, \
+                                                   destination, \
+                                                   static_cast<C_PIXEL_TYPE>(fvalue), \
+                                                   NULL); \
+      } \
+      break; \
+
+
 /**
  * @brief
  * This function creates a new raster file at the path

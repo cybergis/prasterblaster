@@ -612,54 +612,23 @@ bool ReprojectChunk(RasterChunk *source,
 
   switch (source->pixel_type_) {
     case GDT_Byte:
-      switch (resampler) {
-        case MIN:
-          return ReprojectChunkType<unsigned char>(source,
-                                                   destination,
-                                                   static_cast<uint8_t>(fvalue),
-                                                   &(Min<unsigned char>));
-          break;
-        case MAX:
-          return ReprojectChunkType<unsigned char>(source,
-                                                   destination,
-                                                   static_cast<uint8_t>(fvalue),
-                                                   &(Max<uint8_t>));
-    case NEAREST:
-    default:
-          return ReprojectChunkType<unsigned char>(source,
-                                                   destination,
-                                                   static_cast<uint8_t>(fvalue),
-                                                   NULL);
-      }
-      break;
+      GEN_RESAMPLER_CASES(uint8_t);
     case GDT_UInt16:
-      return ReprojectChunkType<uint16_t>(source,
-                                                destination,
-                                                static_cast<uint16_t>(fvalue),
-                                                &(Max<uint16_t>));
-      break;
+      GEN_RESAMPLER_CASES(uint16_t);
+    case GDT_Int16:
+      GEN_RESAMPLER_CASES(int16_t);
+    case GDT_UInt32:
+      GEN_RESAMPLER_CASES(uint32_t);
+    case GDT_Int32:
+      GEN_RESAMPLER_CASES(int32_t);
     case GDT_Float32:
-      switch (resampler) {
-        case MIN:
-          return ReprojectChunkType<float>(source,
-                                           destination,
-                                           static_cast<float>(fvalue),
-                                           &(Min<float>));
-          break;
-        case MAX:
-          return ReprojectChunkType<float>(source,
-                                           destination,
-                                           static_cast<float>(fvalue),
-                                           &(Max<float>));
-        case NEAREST:
-        default:
-          return ReprojectChunkType<float>(source,
-                                           destination,
-                                           static_cast<float>(fvalue),
-                                           NULL);
-          break;
-      }
-
+      GEN_RESAMPLER_CASES(float);
+    case GDT_Float64:
+      GEN_RESAMPLER_CASES(double);
+    case GDT_CInt16:
+    case GDT_CInt32:
+    case GDT_CFloat32:
+    case GDT_CFloat64:
     default:
       fprintf(stderr, "Invalid type in ReprojectChunk!\n");
       return false;
