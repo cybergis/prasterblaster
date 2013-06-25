@@ -84,6 +84,7 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   GDALDriver *driver = GetGDALDriverManager()->GetDriverByName("GTiff");
 
   if (driver == NULL) {
+    fprintf(stderr, "Error opening GTiff driver.\n");
     return PRB_BADARG;
   }
 
@@ -104,6 +105,7 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
                      options);
 
   if (output == NULL) {
+    fprintf(stderr, "driver->Create call failed.\n");
     return PRB_BADARG;
   }
 
