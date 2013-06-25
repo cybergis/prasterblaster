@@ -638,6 +638,28 @@ bool ReprojectChunk(RasterChunk *source,
                                                 static_cast<uint16_t>(fvalue),
                                                 &(Max<uint16_t>));
       break;
+    case GDT_Float32:
+      switch (resampler) {
+        case MIN:
+          return ReprojectChunkType<float>(source,
+                                           destination,
+                                           static_cast<float>(fvalue),
+                                           &(Min<float>));
+          break;
+        case MAX:
+          return ReprojectChunkType<float>(source,
+                                           destination,
+                                           static_cast<float>(fvalue),
+                                           &(Max<float>));
+        case NEAREST:
+        default:
+          return ReprojectChunkType<float>(source,
+                                           destination,
+                                           static_cast<float>(fvalue),
+                                           NULL);
+          break;
+      }
+
     default:
       fprintf(stderr, "Invalid type in ReprojectChunk!\n");
       return false;
