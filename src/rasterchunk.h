@@ -33,8 +33,52 @@ namespace librasterblaster {
 /// A class representing an in-memory part of a raster.
 class RasterChunk {
  public:
+  /**
+   * @brief
+   * This function creates a RasterChunk.
+   *
+   * @param ds Dataset to create chunk from
+   * @param chunk_area The inclusive area that the chunk should represent.
+   *
+   */
   static RasterChunk* CreateRasterChunk(GDALDataset *ds, Area chunk_area);
+  
+  /**
+   * @brief
+   *
+   * This function creates a RasterChunk from the "destination" dataset by
+   *   calculating the area in "destination" that corresponds to 
+   *   "source_area" in "source" .
+   *
+   * @param destination Dataset to create the chunk from.
+   * @param source Dataset that is used to find the area
+   * @param source_area Area that is used to calculate area from 
+   *                    destination
+   *
+   *
+   */
+  static RasterChunk* CreateRasterChunk(GDALDataset *destination,
+                                        GDALDataset *source,
+                                        Area source_area);
+  /**
+   * @brief 
+   * This function reads the pixel values from the GDALDataset into the
+   * RasterChunk.
+   *
+   * @param ds The raster to read from.
+   * @param chunk The chunk to read to.
+   *
+   */
   static PRB_ERROR ReadRasterChunk(GDALDataset *ds, RasterChunk *chunk);
+  /**
+   * @brief
+   * This function writes the pixel values from the RasterChunk into the
+   * file behind the GDALDataset.
+   *
+   * @param ds The GDALDataset to write to.
+   * @param chunk The RasterChunk to write to the file.
+   *
+   */
   static PRB_ERROR WriteRasterChunk(GDALDataset *ds, RasterChunk *chunk);
   /// RasterChunk constructor
   RasterChunk() {

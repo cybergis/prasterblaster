@@ -179,17 +179,9 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     partitions.at(i).lr.y = partitions.at(i).ul.y;
     partitions.at(i).ul.y = t;
 
-    // The RasterMinbox function calculates what part of the input raster
-    // matches the given output partition.
-    string input_wkt(input_raster->GetProjectionRef());
-    string output_wkt(gdal_output_raster->GetProjectionRef());
-    Area in_area = RasterMinbox(gdal_output_raster,
-                                input_raster,
-                                partitions.at(i));
-
     // Now we use the ProjectedRaster object we created for the input file to
     // create a RasterChunk that has the pixel values read into it.
-    in_chunk = RasterChunk::CreateRasterChunk(input_raster, in_area);
+    in_chunk = RasterChunk::CreateRasterChunk(input_raster, gdal_output_raster, partitions.at(i));
 
     read_start = MPI_Wtime();
     PRB_ERROR chunk_err = RasterChunk::ReadRasterChunk(input_raster, in_chunk);

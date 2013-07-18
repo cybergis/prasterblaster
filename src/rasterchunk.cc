@@ -18,6 +18,7 @@
 
 #include <gdal.h>
 
+#include "src/reprojection_tools.h"
 #include "src/rasterchunk.h"
 #include "src/utils.h"
 
@@ -61,6 +62,17 @@ RasterChunk* RasterChunk::CreateRasterChunk(GDALDataset *ds, Area chunk_area) {
   }
 
   return temp;
+}
+
+RasterChunk* RasterChunk::CreateRasterChunk(GDALDataset *input_raster,
+                                            GDALDataset *output_raster,
+                                            Area output_area) {
+  // The RasterMinbox function calculates what part of the input raster
+  // matches the given output partition.
+  Area in_area = librasterblaster::RasterMinbox(output_raster,
+                              input_raster,
+                              output_area);
+  return CreateRasterChunk(input_raster, in_area);
 }
 
 PRB_ERROR RasterChunk::ReadRasterChunk(GDALDataset *ds, RasterChunk *chunk) {
