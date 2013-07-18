@@ -25,6 +25,16 @@ namespace librasterblaster {
 RasterChunk* RasterChunk::CreateRasterChunk(GDALDataset *ds, Area chunk_area) {
   RasterChunk *temp = new RasterChunk;
   double gt[6];
+
+  if (chunk_area.ul.x == -1.0) { // Create a chunk with a single value for
+                               // resampling no data area.
+          chunk_area.ul.x
+              = chunk_area.ul.y
+              = chunk_area.lr.x
+              = chunk_area.lr.y
+              = 0.0;
+  }
+
   ds->GetGeoTransform(gt);
   ds->GetGeoTransform(temp->geotransform_);
 
