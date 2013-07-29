@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "src/configuration.h"
-#include "src/projectedraster.h"
 #include "src/quadtree.h"
 #include "src/reprojection_tools.h"
 #include "src/sharedptr.h"
@@ -32,7 +31,6 @@ using librasterblaster::Area;
 using librasterblaster::PartitionBySize;
 using librasterblaster::RasterChunk;
 using librasterblaster::Configuration;
-using librasterblaster::ProjectedRaster;
 using librasterblaster::PRB_ERROR;
 using librasterblaster::PRB_BADARG;
 using librasterblaster::PRB_NOERROR;

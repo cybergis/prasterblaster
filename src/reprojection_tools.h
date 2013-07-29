@@ -21,7 +21,6 @@
 #include <string>
 #include <vector>
 
-#include "src/projectedraster.h"
 #include "src/rastercoordtransformer.h"
 #include "src/resampler.h"
 #include "src/sharedptr.h"
@@ -63,7 +62,7 @@ namespace librasterblaster {
  * output_filename, with projection specified by output_srs. The
  * minbox of in is calculated with the new projection.
  *
- * @param in The ProjectedRaster that is used to determine the size of the new raster
+ * @param in The GDALDataset that represents the input file.
  * @param output_filename The path the new raster will be created at.
  * @param output_srs The Proj.4 specification of  projection and projection parameters.
  *
@@ -72,21 +71,6 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
                              string output_filename,
                              double output_pixel_size,
                              string output_srs);
-/**
- * @brief
- * This function creates a new raster with a maximum size of
- * output_size x output_size, meant to be used to make reprojection previews.
- *
- * @param input The ProjectedRaster that is used to determine the geographic area  of the output file
- * @param output_filename File path that the new raster will be created at
- * @param output_pixel_size Size in meters of the pixels in the output raster
- * @param output_srs Projection specification string
- *
- */
-PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
-                             string output_filename,
-                             string output_srs,
-                             int output_size);
 
 std::vector<Area> PartitionBySize(int rank,
                                   int process_count,

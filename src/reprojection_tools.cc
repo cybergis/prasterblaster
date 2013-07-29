@@ -34,7 +34,6 @@
 #include "gctp_cpp/coordinate.h"
 
 #include "src/rastercoordtransformer.h"
-#include "src/projectedraster.h"
 #include "src/quadtree.h"
 #include "src/resampler.h"
 #include "src/std_int.h"
@@ -135,70 +134,6 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   GDALClose(output);
 
   return PRB_NOERROR;
-}
-
-PRB_ERROR CreateSampleOutput(shared_ptr<ProjectedRaster> input,
-                             string output_filename,
-                             string output_srs,
-                             int output_size) {
-  shared_ptr<Projection> in_proj = input->projection();
-  shared_ptr<Projection> out_proj;
-  OGRSpatialReference srs;
-
-  OGRErr err = srs.importFromProj4(output_srs.c_str());
-
-  if (err != OGRERR_NONE) {
-    fprintf(stderr, "Error parsing projection!\n");
-    return PRB_PROJERROR;
-  }
-
-  int64_t proj_code, datum_code, zone;
-  double *params = NULL;
-
-  srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
-
-  out_proj = shared_ptr<Projection>(
-      Transformer::convertProjection(static_cast<ProjCode>(proj_code)));
-
-  if (!out_proj) {
-    return PRB_PROJERROR;
-  }
-
-  out_proj->setUnits(in_proj->units());
-  out_proj->setDatum(in_proj->datum());
-  out_proj->setParams(params);
-
-  OGRFree(params);
-
-  Coordinate ul(input->ul_x(), input->ul_y(), UNDEF);
-  Area parea = ProjectedMinbox(ul,
-                               in_proj->wkt(),
-                               input->pixel_size(),
-                               input->row_count(),
-                               input->column_count(),
-                               output_srs);
-
-
-  int xsize = (parea.lr.x - parea.ul.x) / output_size;
-  int ysize = (parea.ul.y - parea.lr.y) / output_size;
-  double pixel_size = (parea.lr.x - parea.ul.x) / xsize;
-
-  if (ysize > xsize) {
-    xsize = ysize;
-    pixel_size = (parea.ul.y - parea.lr.y) / xsize;
-  }
-
-  bool result = ProjectedRaster::CreateRaster(output_filename,
-                                              input,
-                                              out_proj,
-                                              pixel_size);
-
-
-  if (result) {
-    return PRB_NOERROR;
-  } else {
-    return PRB_IOERROR;
-  }
 }
 
 Projection* ProjectionFactory(string output_srs) {

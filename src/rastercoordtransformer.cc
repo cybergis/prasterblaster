@@ -30,7 +30,6 @@
 #include "src/gctp_cpp/transformer.h"
 #include "src/gctp_cpp/coordinate.h"
 
-#include "src/projectedraster.h"
 #include "src/reprojection_tools.h"
 #include "src/resampler.h"
 #include "src/sharedptr.h"

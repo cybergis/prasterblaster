@@ -18,6 +18,8 @@
 #ifndef SRC_UTILS_H_
 #define SRC_UTILS_H_
 
+#include "src/gctp_cpp/coordinate.h"
+
 namespace librasterblaster {
 /** An enum of possible return values */
 enum PRB_ERROR {

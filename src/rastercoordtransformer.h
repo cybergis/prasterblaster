@@ -26,6 +26,7 @@
 
 #include <string>
 
+#include "src/gctp_cpp/projection.h"
 #include "src/sharedptr.h"
 #include "src/utils.h"
 
@@ -37,32 +38,8 @@ using std::string;
  */
 
 namespace librasterblaster {
-class ProjectedRaster;
 class RasterCoordTransformer {
  public:
-  // ! A constructor
-  /* !  
-
-    This constructor takes two initialized ProjectedRaster
-    shared_ptrs and constructs a ready RasterCoordTransformer.
-  */
-  RasterCoordTransformer(shared_ptr<ProjectedRaster> source,
-                         shared_ptr<ProjectedRaster> dest);
-
-  // ! A constructor
-  /* !
-
-    This constructor takes a shared_ptr to a source raster and
-    three parameters that describe a destination raster: a
-    projection, upper-left coordinate, and a pixel size in
-    meters.
-
-  */
-  RasterCoordTransformer(shared_ptr<ProjectedRaster> source,
-                         shared_ptr<Projection> destination_projection,
-                         Coordinate destination_ul,
-                         double destination_pixel_size);
-
   // ! A constructor
   /* ! 
 

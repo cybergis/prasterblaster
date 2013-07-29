@@ -21,7 +21,6 @@
 #include "gtest/gtest.h"
 
 #include "src/configuration.h"
-#include "src/projectedraster.h"
 #include "src/quadtree.h"
 #include "src/reprojection_tools.h"
 #include "src/resampler.h"
@@ -117,7 +116,7 @@ TEST_F(RasterTest, HoldNorm30Min) {
 
 TEST_F(RasterTest, GLC30sec) {
   Configuration conf;
-  conf.partition_size = 21600;
+  conf.partition_size = 1166400;
   conf.input_filename = "tests/testdata/glc_geographic_30sec.tif";
   conf.output_filename = "tests/testoutput/glc_mollweide_30sec.tif";
   conf.resampler = librasterblaster::MIN;

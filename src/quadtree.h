@@ -20,7 +20,8 @@
 #include <cstddef>
 #include <vector>
 
-#include "src/projectedraster.h"
+#include "src/gctp_cpp/coordinate.h"
+#include "src/utils.h"
 
 using std::vector;
 
