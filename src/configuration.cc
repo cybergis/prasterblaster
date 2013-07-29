@@ -74,9 +74,7 @@ Configuration::Configuration(int argc, char *argv[]) {
       output_filename = argv[argc-1];
       input_filename = argv[argc-2];
     }
-
   }
-
   return;
 }
 }
