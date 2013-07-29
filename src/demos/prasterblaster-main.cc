@@ -11,7 +11,7 @@
 //
 // @section DESCRIPTION
 //
-// The Configuration class represents the configuration of a reprojection task.
+// Implements main() function for prasterblasterpio command-line tool.
 //
 //
 
@@ -22,6 +22,7 @@
 
 using librasterblaster::Configuration;
 using librasterblaster::prasterblasterpio;
+using librasterblaster::RasterChunk;
 
 int main(int argc, char *argv[]) {
   int rank = 0;
