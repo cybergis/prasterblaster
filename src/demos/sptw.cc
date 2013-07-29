@@ -22,12 +22,12 @@
 #include <ogr_api.h>
 #include <ogr_spatialref.h>
 #include <mpi.h>
-#include <stdint.h>
 #include <tiff.h>
 #include <tiffio.h>
 
 #include "src/demos/sptw.h"
 #include "src/rasterchunk.h"
+#include "src/std_int.h"
 
 using std::string;
 using librasterblaster::RasterChunk;
@@ -36,12 +36,12 @@ namespace sptw {
 SPTW_ERROR create_raster(string filename,
                          int x_size,
                          int y_size,
-                         double ul_x,
-                         double ul_y,
-                         double pixel_size,
                          int band_count,
                          GDALDataType band_type,
-                         string projection_srs) {
+                         double pixel_size,
+                         double *geotransform,
+                         string projection_srs,
+                         SPTW_TIFFTYPE tiff_type) {
   GDALDriver *gtiff_driver = NULL;
   GDALDataset *ds = NULL;
   char **options = NULL;
@@ -49,7 +49,6 @@ SPTW_ERROR create_raster(string filename,
   char *srs_wkt = NULL;
   GDALRasterBand *band = NULL;
   const char *format = "GTiff";
-  double geotransform[16] = {0.0};
 
   GDALAllRegister();
 
@@ -61,13 +60,16 @@ SPTW_ERROR create_raster(string filename,
 
   options = CSLSetNameValue(options, "BIGTIFF", "YES");
 
+  if (tiff_type == SP_TILED) {
+    options = CSLSetNameValue(options, "TILED", "YES");
+  }
+
   ds = gtiff_driver->Create(filename.c_str(),
                             x_size,
                             y_size,
                             band_count,
                             band_type,
                             options);
-
   // Clean up options
   CSLDestroy(options);
 
@@ -77,12 +79,7 @@ SPTW_ERROR create_raster(string filename,
     return SP_BadArg;
   }
 
-  geotransform[1] = geotransform[5] = pixel_size;
-  geotransform[0] = ul_x;
-  geotransform[3] = ul_y;
-
   ds->SetGeoTransform(geotransform);
-
 
   // Close dataset
   GDALClose((GDALDatasetH) ds);
@@ -120,7 +117,8 @@ PTIFF* open_raster(string filename) {
     return NULL;
   }
 
-  uint64_t *offset = NULL;
+  uint64_t *tile_width = NULL;
+  uint64_t offset;
 
   int ret = TIFFGetField(tiffds, TIFFTAG_STRIPOFFSETS, &offset);
   if (ret != 1) {
@@ -132,7 +130,7 @@ PTIFF* open_raster(string filename) {
     return NULL;
   }
 
-  ptiff->first_strip_offset = *offset;
+  ptiff->first_strip_offset = offset;
 
   TIFFClose(tiffds);
 
@@ -231,7 +229,7 @@ SPTW_ERROR write_rasterchunk(PTIFF *ptiff,
         + (i * ptiff->band_type_size * chunk->column_count_);
 
     err = write_subrow(ptiff,
-                       pixels, 
+                       pixels,
                        y_offset + i,
                        x_offset,
                        x_offset + chunk->column_count_ - 1);
