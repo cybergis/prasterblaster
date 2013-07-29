@@ -42,7 +42,7 @@ class RasterChunk {
    *
    */
   static RasterChunk* CreateRasterChunk(GDALDataset *ds, Area chunk_area);
-  
+
   /**
    * @brief
    *
