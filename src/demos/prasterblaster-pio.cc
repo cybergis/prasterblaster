@@ -96,18 +96,19 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   }
 
   // Open the input raster
-  // 
+  //
   // The input raster is only read so we can use the serial i/o provided by the
   // GDAL library.
   GDALDataset *input_raster =
-      static_cast<GDALDataset*>(GDALOpen(conf.input_filename.c_str(), GA_ReadOnly));
+      static_cast<GDALDataset*>(GDALOpen(conf.input_filename.c_str(),
+                                         GA_ReadOnly));
   if (input_raster == NULL) {
     fprintf(stderr, "Error opening input raster!\n");
     return PRB_IOERROR;
   }
 
   // If we are the process with rank 0 we are responsible for the creation of
-  // the output raster. 
+  // the output raster.
   if (rank == 0) {
     OGRSpatialReference sr;
     char *wkt;
@@ -144,8 +145,9 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   // only be used to read metadata. It will _not_ be used to write to the output
   // file.
   PTIFF* output_raster = open_raster(conf.output_filename);
-  GDALDataset *gdal_output_raster = 
-      static_cast<GDALDataset*>(GDALOpen(conf.output_filename.c_str(), GA_ReadOnly));
+  GDALDataset *gdal_output_raster =
+      static_cast<GDALDataset*>(GDALOpen(conf.output_filename.c_str(),
+                                         GA_ReadOnly));
 
   if (output_raster == NULL) {
     fprintf(stderr, "Could not open output raster\n");
@@ -181,7 +183,9 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
 
     // Now we use the ProjectedRaster object we created for the input file to
     // create a RasterChunk that has the pixel values read into it.
-    in_chunk = RasterChunk::CreateRasterChunk(input_raster, gdal_output_raster, partitions.at(i));
+    in_chunk = RasterChunk::CreateRasterChunk(input_raster,
+                                              gdal_output_raster,
+                                              partitions.at(i));
 
     read_start = MPI_Wtime();
     PRB_ERROR chunk_err = RasterChunk::ReadRasterChunk(input_raster, in_chunk);
@@ -205,7 +209,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
               partitions[i].lr.y);
       return PRB_BADARG;
     }
-       
+
     // Now we call ReprojectChunk with the RasterChunk pair and the desired
     // resampler. ReprojectChunk performs the reprojection/resampling and fills
     // the output RasterChunk with the new values.
@@ -231,7 +235,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     }
 
     if (i % 10 == 0) {
-      printf("<Rank %d wrote (%zd of %zd)>  ", 
+      printf("<Rank %d wrote (%zd of %zd)>  ",
              rank,
              i,
              partitions.size(),
@@ -251,9 +255,19 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
 
   // Report runtimes
   end_time = MPI_Wtime();
-  double runtimes[4] = { end_time - start_time, read_total, write_total, resample_total};
+  double runtimes[4] = { end_time - start_time,
+                         read_total,
+                         write_total,
+                         resample_total};
   std::vector<double> process_runtimes(process_count*4);
-  MPI_Gather(runtimes, 4, MPI_DOUBLE, &(process_runtimes[0]), 4, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  MPI_Gather(runtimes,
+             4,
+             MPI_DOUBLE,
+             &(process_runtimes[0]),
+             4,
+             MPI_DOUBLE,
+             0,
+             MPI_COMM_WORLD);
 
   if (rank == 0) {
     printf("\nRank\t  Total Runtime\t  Read I/O\t  Write I/O\t  Resampling\n");
