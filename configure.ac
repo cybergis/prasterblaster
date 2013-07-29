@@ -87,6 +87,17 @@ AC_COMPILE_IFELSE(
             [AC_MSG_RESULT([no])
              AC_MSG_ERROR([configure cannot find shared_ptr.])])])])
 
+# Check for stdint.h, otherwise specify c++11 and use cstdint
+AC_MSG_CHECKING([for stdint.h])
+AC_COMPILE_IFELSE(
+        [AC_LANG_PROGRAM([[#include <stdint.h>]],
+                         [[int64_t test_int64_t;]])],
+        [AC_MSG_RESULT([yes])
+         AC_DEFINE_UNQUOTED([HAVE_STDINT_H], 1, [Define to 1 if stdint.h exists.])],
+        [AC_MSG_RESULT([no])
+         AC_DEFINE_UNQUOTED([HAVE_STDINT_H], 0, [])
+         [CXXFLAGS="${CXXFLAGS} -std=c++11"]])
+
 # Check for GDAL library and headers
 AC_CHECK_HEADER([gdal.h], [], [echo 'gdal.h not found! Set --with-gdal-incdir=path'; exit])
 AC_SEARCH_LIBS([GDALAllRegister], [gdal], [], [AC_MSG_ERROR(['libgdal not found! Set --with-gdal-libdir=path'])], [])

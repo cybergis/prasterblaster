@@ -18,7 +18,6 @@
 #include "src/reprojection_tools.h"
 
 #include <float.h>
-#include <stdint.h>
 
 #include <ogr_api.h>
 #include <ogr_spatialref.h>
@@ -38,6 +37,7 @@
 #include "src/projectedraster.h"
 #include "src/quadtree.h"
 #include "src/resampler.h"
+#include "src/std_int.h"
 #include "src/sharedptr.h"
 #include "src/utils.h"
 

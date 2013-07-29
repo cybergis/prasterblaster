@@ -18,7 +18,6 @@
 #ifndef SRC_REPROJECTION_TOOLS_H_
 #define SRC_REPROJECTION_TOOLS_H_
 
-#include <stdint.h>
 #include <string>
 #include <vector>
 
@@ -26,6 +25,7 @@
 #include "src/rastercoordtransformer.h"
 #include "src/resampler.h"
 #include "src/sharedptr.h"
+#include "src/std_int.h"
 #include "src/utils.h"
 
 using std::string;
