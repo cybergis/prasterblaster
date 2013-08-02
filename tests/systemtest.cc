@@ -24,7 +24,6 @@
 #include "src/quadtree.h"
 #include "src/reprojection_tools.h"
 #include "src/resampler.h"
-#include "src/sharedptr.h"
 #include "src/demos/prasterblaster-pio.h"
 
 #include "src/demos/sptw.h"

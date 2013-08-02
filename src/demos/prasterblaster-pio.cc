@@ -22,7 +22,6 @@
 #include "src/configuration.h"
 #include "src/quadtree.h"
 #include "src/reprojection_tools.h"
-#include "src/sharedptr.h"
 
 #include "src/demos/sptw.h"
 #include "src/utils.h"

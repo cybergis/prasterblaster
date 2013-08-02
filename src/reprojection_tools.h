@@ -23,7 +23,6 @@
 
 #include "src/rastercoordtransformer.h"
 #include "src/resampler.h"
-#include "src/sharedptr.h"
 #include "src/std_int.h"
 #include "src/utils.h"
 
@@ -78,10 +77,9 @@ std::vector<Area> PartitionBySize(int rank,
                                   int column_count,
                                   int maximum_partition_size);
 
-Projection*  ProjectionFactory(string srs);
 void SearchAndUpdate(Area input_area,
-                     shared_ptr<Projection> input_projection,
-                     shared_ptr<Projection> output_projection,
+                     string input_srs,
+                     string output_srs,
                      double input_ulx,
                      double input_uly,
                      double input_pixel_size,

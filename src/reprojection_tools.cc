@@ -37,7 +37,6 @@
 #include "src/quadtree.h"
 #include "src/resampler.h"
 #include "src/std_int.h"
-#include "src/sharedptr.h"
 #include "src/utils.h"
 
 
@@ -156,7 +155,7 @@ Projection* ProjectionFactory(string output_srs) {
   }
 
 
-  int64_t proj_code, datum_code, zone;
+  long proj_code, datum_code, zone;
   double *params = NULL;
 
   srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
@@ -226,8 +225,8 @@ std::vector<Area> PartitionBySize(int rank,
 
 
 void SearchAndUpdate(Area input_area,
-                     shared_ptr<Projection> input_projection,
-                     shared_ptr<Projection> output_projection,
+                     string input_srs,
+                     string output_srs,
                      double input_ulx,
                      double input_uly,
                      double input_pixel_size,
@@ -235,12 +234,9 @@ void SearchAndUpdate(Area input_area,
   Coordinate input_coord;
   Coordinate temp;
   OGRSpatialReference input_sr, output_sr;
-  char *input_wkt = strdup(input_projection->wkt().c_str());
-  char *output_wkt = strdup(output_projection->wkt().c_str());
-  char *intemp = input_wkt;
-  char *outtemp = output_wkt;
-  input_sr.importFromWkt(&intemp);
-  output_sr.importFromWkt(&outtemp);
+
+  input_sr.SetFromUserInput(input_srs.c_str());
+  output_sr.SetFromUserInput(output_srs.c_str());
   OGRCoordinateTransformation *t =
       OGRCreateCoordinateTransformation(&input_sr,
                                         &output_sr);
@@ -256,11 +252,6 @@ void SearchAndUpdate(Area input_area,
       input_coord.x = x * input_pixel_size + input_ulx;
       input_coord.y = input_uly - (y * input_pixel_size);
 
-      /*
-      input_projection->inverse(input_coord.x,
-                                input_coord.y, &temp.x, &temp.y);
-      output_projection->forward(temp.x, temp.y, &temp.x, &temp.y);
-      */
       t->Transform(1, &input_coord.x, &input_coord.y);
       temp = input_coord;
 
@@ -277,15 +268,6 @@ void SearchAndUpdate(Area input_area,
     }
   }
 
-  if (input_wkt != NULL) {
-    free(input_wkt);
-  }
-
-
-  if (output_wkt != NULL) {
-    free(output_wkt);
-  }
-
   OCTDestroyCoordinateTransformation(t);
   return;
 }
@@ -300,13 +282,7 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
   Area ia;
   // Projected Area
   Area output_area;
-  shared_ptr<Projection> input_proj(ProjectionFactory(input_srs));
-  shared_ptr<Projection> output_projection(ProjectionFactory(output_srs));
   const int buffer = 2;
-
-  if (input_proj.get() == NULL || output_projection.get() == NULL) {
-    return Area(-1, -1, -1, -1);
-  }
 
   output_area.ul.x = output_area.lr.y = DBL_MAX;
   output_area.ul.y = output_area.lr.x = -DBL_MAX;
@@ -318,8 +294,8 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
   ia.lr.y = 0;
 
   SearchAndUpdate(ia,
-                  input_proj,
-                  output_projection,
+                  input_srs,
+                  output_srs,
                   input_ul_corner.x,
                   input_ul_corner.y,
                   input_pixel_size,
@@ -332,8 +308,8 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
   ia.lr.y = input_row_count - 1 - buffer;
 
   SearchAndUpdate(ia,
-                  input_proj,
-                  output_projection,
+                  input_srs,
+                  output_srs,
                   input_ul_corner.x,
                   input_ul_corner.y,
                   input_pixel_size,
@@ -346,8 +322,8 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
   ia.lr.y = 0;
 
   SearchAndUpdate(ia,
-                  input_proj,
-                  output_projection,
+                  input_srs,
+                  output_srs,
                   input_ul_corner.x,
                   input_ul_corner.y,
                   input_pixel_size,
@@ -360,8 +336,8 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
   ia.lr.y = 0;
 
   SearchAndUpdate(ia,
-                  input_proj,
-                  output_projection,
+                  input_srs,
+                  output_srs,
                   input_ul_corner.x,
                   input_ul_corner.y,
                   input_pixel_size,
@@ -369,6 +345,7 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
 
   return output_area;
 }
+
 Area RasterMinbox(GDALDataset *source,
                   GDALDataset *destination,
                   Area destination_raster_area) {

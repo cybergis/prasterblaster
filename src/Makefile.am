@@ -12,7 +12,7 @@ librasterblaster_la_LIBADD =  gctp_cpp/libgctp_cpp.la
 otherincludedir = $(includedir)/librasterblaster
 otherinclude_HEADERS = configuration.h  quadtree.h  \
                               rasterchunk.h  rastercoordtransformer.h  reprojection_tools.h  \
-                              resampler.h  sharedptr.h  utils.h
+                              resampler.h utils.h
 
 
 

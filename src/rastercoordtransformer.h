@@ -27,7 +27,6 @@
 #include <string>
 
 #include "src/gctp_cpp/projection.h"
-#include "src/sharedptr.h"
 #include "src/utils.h"
 
 using std::string;
@@ -93,8 +92,8 @@ class RasterCoordTransformer {
             string destination_projection,
             Coordinate destination_ul,
             double destination_pixel_size);
-  shared_ptr<Projection> src_proj, dest_proj;
-  shared_ptr<OGRCoordinateTransformation> ctrans;
+  
+  OGRCoordinateTransformation *ctrans, *src_to_geo, *geo_to_src;
   Area maximum_geographic_area_;
   Coordinate source_ul_;
   double source_pixel_size_;

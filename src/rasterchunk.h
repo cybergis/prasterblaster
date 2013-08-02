@@ -26,7 +26,6 @@
 
 #include "src/gctp_cpp/projection.h"
 #include "src/gctp_cpp/coordinate.h"
-#include "src/sharedptr.h"
 #include "src/utils.h"
 
 namespace librasterblaster {
