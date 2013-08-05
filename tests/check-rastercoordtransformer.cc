@@ -21,7 +21,6 @@
 
 #include "src/reprojection_tools.h"
 #include "src/rastercoordtransformer.h"
-#include "src/gctp_cpp/transformer.h"
 
 using librasterblaster::RasterCoordTransformer;
 using librasterblaster::Area;

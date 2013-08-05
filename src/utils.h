@@ -18,7 +18,7 @@
 #ifndef SRC_UTILS_H_
 #define SRC_UTILS_H_
 
-#include "src/gctp_cpp/coordinate.h"
+#include <cmath>
 
 namespace librasterblaster {
 /** An enum of possible return values */
@@ -27,6 +27,51 @@ enum PRB_ERROR {
   PRB_IOERROR, /*!< Error communicating or performing file I/O */
   PRB_BADARG,  /*!< Bad argument provided */
   PRB_PROJERROR, /*!< Error with projection specification */
+};
+
+enum ProjUnit {
+  UNDEF=-1,
+  RADIAN=0, //Radians
+  FEET, //Feet
+  METER, //Meters
+  SECOND, //Seconds
+  DEGREE, //Decimal Degrees
+  INT_FEET //International Feet
+};
+
+/*! Coordinate struct
+   This class provides a more readable way of storing and passing coordinate
+   parameters for the Transformer class. It stores x and y as doubles and units
+   corresponds to the GCTP enumeration as defined in constants.h
+*/
+struct Coordinate {
+  /*! Default Constructor
+    0's all attributes.
+  */
+  Coordinate():x(0.0), y(0.0), units(UNDEF) {};
+  /*! Full Constructor
+    Set's all attributes in the Coordinate according to the parameters.
+  */
+  Coordinate( double xx, double yy, ProjUnit uunits )
+      : x(xx), y(yy), units(uunits){};
+
+  /*! Copy Constructor
+    Set's all attributes to equal those in Coordinate c.
+  */
+  Coordinate( const Coordinate &c ): x(c.x), y(c.y), units(c.units){};
+
+  //! Set this Coordinate's attributes to equal those in Coordinate c.
+  void copy( const Coordinate &c )
+  {
+    x = c.x;
+    y = c.y;
+    units = c.units;
+    return;
+  }
+
+  double x;
+  double y;
+  ProjUnit units;
 };
 
 /** 

@@ -26,10 +26,6 @@
 
 #include <cmath>
 
-#include "src/gctp_cpp/projection.h"
-#include "src/gctp_cpp/transformer.h"
-#include "src/gctp_cpp/coordinate.h"
-
 #include "src/reprojection_tools.h"
 #include "src/resampler.h"
 #include "src/quadtree.h"
@@ -56,7 +52,6 @@ RasterCoordTransformer(string source_projection,
 }
 
 RasterCoordTransformer::~RasterCoordTransformer() {
-  
   return;
 }
 
@@ -79,9 +74,9 @@ void RasterCoordTransformer::init(string source_projection,
 
   source_sr.SetFromUserInput(source_projection.c_str());
   dest_sr.SetFromUserInput(destination_projection.c_str());
-  geo_sr.importFromEPSG(4326); // WGS84
+  geo_sr.importFromEPSG(4326);  // WGS84
 
-  OGRCoordinateTransformation *t = 
+  OGRCoordinateTransformation *t =
       OGRCreateCoordinateTransformation(&source_sr,
                                         &dest_sr);
   src_to_geo = OGRCreateCoordinateTransformation(&source_sr,

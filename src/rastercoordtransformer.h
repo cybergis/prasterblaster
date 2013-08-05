@@ -26,7 +26,6 @@
 
 #include <string>
 
-#include "src/gctp_cpp/projection.h"
 #include "src/utils.h"
 
 using std::string;

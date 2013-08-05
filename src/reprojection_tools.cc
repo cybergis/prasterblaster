@@ -29,10 +29,6 @@
 #include <ctime>
 #include <cstdlib>
 
-#include "gctp_cpp/projection.h"
-#include "gctp_cpp/transformer.h"
-#include "gctp_cpp/coordinate.h"
-
 #include "src/rastercoordtransformer.h"
 #include "src/quadtree.h"
 #include "src/resampler.h"
@@ -133,46 +129,6 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   GDALClose(output);
 
   return PRB_NOERROR;
-}
-
-Projection* ProjectionFactory(string output_srs) {
-  Projection *out_proj;
-  OGRSpatialReference srs;
-  char *wkt = NULL;
-  char *tmp = NULL;
-
-  OGRErr err = srs.importFromProj4(output_srs.c_str());
-
-  if (err != OGRERR_NONE) {
-    wkt = strdup(output_srs.c_str());
-    tmp = wkt;
-    err = srs.importFromWkt(&tmp);
-    free(wkt);
-    if (err != OGRERR_NONE) {
-      fprintf(stderr, "Error parsing projection!\n");
-      return NULL;
-    }
-  }
-
-
-  long proj_code, datum_code, zone;
-  double *params = NULL;
-
-  srs.exportToUSGS(&proj_code, &zone, &params, &datum_code);
-
-  out_proj = Transformer::convertProjection(static_cast<ProjCode>(proj_code));
-
-  if (!out_proj) {
-    return NULL;
-  }
-
-  out_proj->setDatum(static_cast<ProjDatum>(datum_code));
-  out_proj->setParams(params);
-  out_proj->setUnits(METER);
-
-  OGRFree(params);
-
-  return out_proj;
 }
 
 // For use by PartitionBySize

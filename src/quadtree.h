@@ -20,7 +20,6 @@
 #include <cstddef>
 #include <vector>
 
-#include "src/gctp_cpp/coordinate.h"
 #include "src/utils.h"
 
 using std::vector;
