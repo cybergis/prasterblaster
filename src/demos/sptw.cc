@@ -123,10 +123,6 @@ PTIFF* open_raster(string filename) {
   int ret = TIFFGetField(tiffds, TIFFTAG_STRIPOFFSETS, &offset);
   if (ret != 1) {
     fprintf(stderr, "Error reading strip offsets!\n");
-  }
-
-  if (offset == NULL) {
-    fprintf(stderr, "Error reading strip offsets\n");
     return NULL;
   }
 
