@@ -63,7 +63,7 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   in_srs.exportToProj4(&srs_str);
   Area out_area = ProjectedMinbox(ul,
                                   srs_str,
-                                  in_transform[1],
+                                  output_pixel_size,
                                   in->GetRasterYSize(),
                                   in->GetRasterXSize(),
                                   output_srs);
@@ -355,10 +355,9 @@ Area RasterMinbox2(string source_projection,
   }
 
   Area temp;
-  int buffer = 5;
-
   source_area.ul.x = source_area.ul.y = DBL_MAX;
   source_area.lr.y = source_area.lr.x = -DBL_MAX;
+  source_area.units = UNDEF;
 
   int step = 1;
 
