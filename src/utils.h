@@ -50,24 +50,15 @@ struct Coordinate {
   */
   Coordinate():x(0.0), y(0.0), units(UNDEF) {};
   /*! Full Constructor
-    Set's all attributes in the Coordinate according to the parameters.
+    Sets all attributes in the Coordinate according to the parameters.
   */
   Coordinate( double xx, double yy, ProjUnit uunits )
       : x(xx), y(yy), units(uunits){};
 
   /*! Copy Constructor
-    Set's all attributes to equal those in Coordinate c.
+    Sets all attributes to equal those in Coordinate c.
   */
   Coordinate( const Coordinate &c ): x(c.x), y(c.y), units(c.units){};
-
-  //! Set this Coordinate's attributes to equal those in Coordinate c.
-  void copy( const Coordinate &c )
-  {
-    x = c.x;
-    y = c.y;
-    units = c.units;
-    return;
-  }
 
   double x;
   double y;
@@ -82,7 +73,7 @@ struct Area {
   /** 
    * @brief This constructor initializes points to zero.
    */
-  Area() {}
+ Area():ul(), lr(), units(UNDEF) {}
   /// A constructor
   /**
    * @brief This constructor allows both coordinates to be given initial values.
@@ -94,7 +85,7 @@ struct Area {
 Area(double ulx,
      double uly,
      double lrx,
-     double lry) : ul(ulx, uly, UNDEF), lr(lrx, lry, UNDEF) {}
+     double lry) : ul(ulx, uly, UNDEF), lr(lrx, lry, UNDEF), units(UNDEF) {}
   /// Upper-left coordinate of area
   Coordinate ul;
   /// Lower-right coordinate of area
