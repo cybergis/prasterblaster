@@ -26,9 +26,6 @@
 #include "src/std_int.h"
 #include "src/utils.h"
 
-using std::string;
-class Projection;
-
 /// Container namespace for librasterblaster project
 namespace librasterblaster {
 #define GEN_RESAMPLER_CASES(C_PIXEL_TYPE)   \
