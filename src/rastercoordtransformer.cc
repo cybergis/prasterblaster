@@ -68,20 +68,20 @@ void RasterCoordTransformer::init(string source_projection,
   destination_ul_ = destination_ul;
   destination_pixel_size_ = destination_pixel_size;
 
-  OGRSpatialReference source_sr, dest_sr, geo_sr;
+  OGRSpatialReference source_sr, dest_sr, *geo_sr;
   char *source_wkt = strdup(source_projection.c_str());
   char *dest_wkt = strdup(destination_projection.c_str());
 
   source_sr.SetFromUserInput(source_projection.c_str());
   dest_sr.SetFromUserInput(destination_projection.c_str());
-  geo_sr.importFromEPSG(4326);  // WGS84
+  geo_sr = source_sr.CloneGeogCS();
 
   OGRCoordinateTransformation *t =
       OGRCreateCoordinateTransformation(&source_sr,
                                         &dest_sr);
   src_to_geo = OGRCreateCoordinateTransformation(&source_sr,
-                                                 &geo_sr);
-  geo_to_src = OGRCreateCoordinateTransformation(&geo_sr,
+                                                 geo_sr);
+  geo_to_src = OGRCreateCoordinateTransformation(geo_sr,
                                                  &source_sr);
   free(source_wkt);
   free(dest_wkt);
@@ -119,12 +119,13 @@ Transform(Coordinate source, bool area_check) {
   temp1.x = (static_cast<double>(source.x) * source_pixel_size_) + source_ul_.x;
   temp1.y = source_ul_.y - (static_cast<double>(source.y) * source_pixel_size_);
   temp2.x = temp1.x;
-  temp2.y = temp2.y;
+  temp2.y = temp1.y;
 
   src_to_geo->Transform(1, &temp2.x, &temp2.y);
   geo_to_src->Transform(1, &temp2.x, &temp2.y);
 
-  if (area_check && fabs(temp1.x - temp2.x) > 0.01) {
+  if (area_check && (fabs(temp1.y - temp2.y) > 0.01)
+      || fabs(temp1.x - temp2.x) > 0.01) {
     // Point is outside defined projection area, return no-value
     value.ul.x = -1.0;
     value.lr.x = -1.0;
