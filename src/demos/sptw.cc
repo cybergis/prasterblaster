@@ -118,7 +118,7 @@ PTIFF* open_raster(string filename) {
   }
 
   uint64_t *tile_width = NULL;
-  uint64_t offset;
+  uint64_t *offset;
 
   int ret = TIFFGetField(tiffds, TIFFTAG_STRIPOFFSETS, &offset);
   if (ret != 1) {
@@ -126,7 +126,7 @@ PTIFF* open_raster(string filename) {
     return NULL;
   }
 
-  ptiff->first_strip_offset = offset;
+  ptiff->first_strip_offset = *offset;
 
   TIFFClose(tiffds);
 
