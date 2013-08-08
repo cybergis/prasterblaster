@@ -40,8 +40,8 @@ AC_ARG_WITH(tiff-libdir,
   AS_HELP_STRING( [--with-tiff-libdir=path],
   [Specify the path to the tiff shared library file]),
   [TIFF_CXXFLAGS="-L$withval -Wl,-R$withval"], [])
-AC_SUBST(GDAL_CPPFLAGS)
-AC_SUBST(GDAL_CFLAGS)
+#AC_SUBST(GDAL_CPPFLAGS)
+#AC_SUBST(GDAL_CFLAGS)
 CPPFLAGS="${CPPFLAGS} ${GDAL_CPPFLAGS} ${TIFF_CPPFLAGS}"
 CXXFLAGS="${CXXFLAGS} ${GDAL_CXXFLAGS} ${TIFF_CXXFLAGS}"
 
