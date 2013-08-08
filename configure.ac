@@ -90,7 +90,6 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([  
   Makefile  
   src/Makefile
-  src/gctp_cpp/Makefile
   src/demos/Makefile
   src/gtest/Makefile
   tests/Makefile
