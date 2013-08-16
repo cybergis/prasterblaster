@@ -19,14 +19,15 @@ cd proj-4.8.0
 make -j2 install
 
 # Build GDAL
-cd $PRBROOT/gdal/
+cd $PRBROOT/src/gdal/
 wget -c http://download.osgeo.org/gdal/gdal-1.9.2.tar.gz
 rm -rf gdal-1.9.2
 tar xfz gdal-1.9.2.tar.gz
 cd gdal-1.9.2/
 ./configure --prefix=$PRBROOT/src/gdal/ --with-libtiff=internal --with-geotiff=internal \
- --with-liblzma=no \
- --with-pg=no \
+--with-jpeg=internal \
+--with-liblzma=no \
+--with-pg=no \
 --with-grass=no \
 --with-libgrass=no \
 --with-cfitsio=no \
@@ -34,7 +35,6 @@ cd gdal-1.9.2/
 --with-png=no \
 --with-gta=no \
 --with-pci-disk=no \
---with-jpeg=no \
 --with-gif=no \
 --with-ogdi=no \
 --with-fme=no \
@@ -78,7 +78,7 @@ cd gdal-1.9.2/
 --with-mdb=no \
 --with-radaman=no \
 --with-armadillo=no \
---with-libz=no \
+--with-libz=internal \
 --with-grib=no
 
 
