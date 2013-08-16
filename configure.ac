@@ -40,10 +40,10 @@ AC_ARG_WITH(tiff-libdir,
   AS_HELP_STRING( [--with-tiff-libdir=path],
   [Specify the path to the tiff shared library file]),
   [TIFF_CXXFLAGS="-L$withval -Wl,-R$withval"], [])
-AC_SUBST(GDAL_CPPFLAGS)
-AC_SUBST(GDAL_CFLAGS)
-CPPFLAGS="${CPPFLAGS} ${GDAL_CPPFLAGS} ${TIFF_CPPFLAGS} -I`pwd`/src/gdal/include/"
-CXXFLAGS="${CXXFLAGS} ${GDAL_CXXFLAGS} ${TIFF_CXXFLAGS} -L`pwd`/src/gdal/lib/"
+#AC_SUBST(GDAL_CPPFLAGS)
+#AC_SUBST(GDAL_CFLAGS)
+CPPFLAGS="${CPPFLAGS} ${GDAL_CPPFLAGS} ${TIFF_CPPFLAGS}"
+CXXFLAGS="${CXXFLAGS} ${GDAL_CXXFLAGS} ${TIFF_CXXFLAGS}"
 
 LIBS="$LIBS -lm"
 
@@ -90,7 +90,6 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([  
   Makefile  
   src/Makefile
-  src/gctp_cpp/Makefile
   src/demos/Makefile
   src/gtest/Makefile
   tests/Makefile
