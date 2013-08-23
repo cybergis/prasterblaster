@@ -17,9 +17,7 @@
 
 #include <gtest/gtest.h>
 #include <gdal_priv.h>
-
 #include <vector>
-
 
 TEST(GDALTest, ReadTiffFile) {
   std::string filename = "tests/testdata/veg_geographic_1deg.tif";
@@ -63,3 +61,4 @@ TEST(GDALTEST, GTiffCreation) {
 
   ASSERT_TRUE( output != NULL );
 }
+

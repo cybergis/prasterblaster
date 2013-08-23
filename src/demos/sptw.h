@@ -56,11 +56,6 @@ enum SPTW_ERROR {
   SP_BadArg, /*!< A bad argument was provided */
 };
 
-enum SPTW_TIFFTYPE {
-  SP_STRIP, /* The tiff file uses strips. */
-  SP_TILED, /* The tiff file uses tiles. */
-};
-
 /**
  * @struct PTIFF sptw.h
  * @brief PTIFF struct represents an open parallel tiff file
@@ -72,12 +67,10 @@ struct PTIFF {
   /*! MPI-IO file handle. This should be changed with open_raster or
    *  close_raster */
   MPI_File fh;
-  /*! Indicator whether tiled or stripped tiff file */
-  SPTW_TIFFTYPE tiff_type;
   /*! Size of the opened raster in the x dimension */
-  int x_size;
+  int64_t x_size;
   /*! Size of the opened raster in the y dimension */
-  int y_size;
+  int64_t y_size;
   /*! Number of bands in the raster */
   int band_count;
   /*! Datatype of the band values */
@@ -85,23 +78,29 @@ struct PTIFF {
   /*! Size in bytes of the band_type */
   int band_type_size;
   /*! Byte offset to the first strip of the tiff file */
-  uint32_t first_strip_offset;
+  int64_t first_strip_offset;
   /*! Width of each tile */
-  uint64_t block_x_size;
+  int64_t block_x_size;
   /* Height of each tile or strip */
-  uint64_t block_y_size;
+  int64_t block_y_size;
 };
 
 SPTW_ERROR create_raster(string filename,
-                         int x_size,
-                         int y_size,
+                         int64_t x_size,
+                         int64_t y_size,
                          int band_count,
                          GDALDataType band_type,
-                         double pixel_size,
                          double *geotransform,
-                         string projection_srs,
-                         SPTW_TIFFTYPE tiff_type);
+                         string projection_srs);
 
+SPTW_ERROR create_tiled_raster(string filename,
+                               int64_t x_size,
+                               int64_t y_size,
+                               int band_count,
+                               GDALDataType band_type,
+                               double *geotransform,
+                               string projection_srs,
+                               int64_t tile_size);
 PTIFF* open_raster(string filename);
 SPTW_ERROR close_raster(PTIFF *ptiff);
 /**

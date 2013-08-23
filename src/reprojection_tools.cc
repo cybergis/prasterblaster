@@ -86,7 +86,7 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   char **options = NULL;
   options = CSLSetNameValue(options, "INTERLEAVE", "PIXEL");
   options = CSLSetNameValue(options, "BIGTIFF", "YES");
-  options = CSLSetNameValue(options, "TILED", "NO");
+  options = CSLSetNameValue(options, "TILED", "YES");
   options = CSLSetNameValue(options, "COMPRESS", "NONE");
 
 

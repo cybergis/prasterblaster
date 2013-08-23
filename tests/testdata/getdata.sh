@@ -1,7 +1,7 @@
 #!/bin/bash
 
-OLDDIR= $(pwd)
-DATADIR= $(dirname $0)
+OLDDIR=$(pwd)
+DATADIR=$(dirname $0)
 
 cd $DATADIR
 
