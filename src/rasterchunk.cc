@@ -121,4 +121,16 @@ PRB_ERROR RasterChunk::WriteRasterChunk(GDALDataset *ds, RasterChunk *chunk) {
 
   return PRB_NOERROR;
 }
+
+Coordinate RasterChunk::ChunkToRaster(Coordinate chunk_coordinate) {
+  return Coordinate(chunk_coordinate.x + raster_location_.x,
+                    chunk_coordinate.y + raster_location_.y,
+                    chunk_coordinate.units);
+}
+
+Coordinate RasterChunk::RasterToChunk(Coordinate raster_coordinate) {
+  return Coordinate(raster_coordinate.x - raster_location_.x,
+                    raster_coordinate.y - raster_location_.y,
+                    raster_coordinate.units);
+}
 }

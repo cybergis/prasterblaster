@@ -90,6 +90,9 @@ class RasterChunk {
       free(this->pixels_);
     }
   }
+  Coordinate ChunkToRaster(Coordinate chunk_coordinate);
+  Coordinate RasterToChunk(Coordinate raster_coordinate);
+
   std::string projection_;
   /// Location of the chunk, in raster coordinates
   /** 
