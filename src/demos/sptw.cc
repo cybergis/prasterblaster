@@ -228,108 +228,6 @@ SPTW_ERROR close_raster(PTIFF *ptiff) {
   return SP_None;
 }
 
-SPTW_ERROR write_rows(PTIFF *ptiff,
-                      void *buffer,
-                      int64_t first_row,
-                      int64_t last_row) {
-  int64_t row_size = ptiff->x_size * ptiff->band_count * ptiff->band_type_size;
-  MPI_Offset offset = ptiff->first_strip_offset + (first_row * row_size);
-  int count = (last_row - first_row + 1) * row_size;
-
-  MPI_Status status;
-  int err = MPI_SUCCESS;
-
-  err = MPI_File_write_at(ptiff->fh, offset, buffer, count, MPI_BYTE, &status);
-
-  if (err != MPI_SUCCESS) {
-    fprintf(stderr, "Write error: %d\n", status.MPI_ERROR);
-    return SP_WriteError;
-  }
-
-  return SP_None;
-}
-
-SPTW_ERROR write_subrow(PTIFF *ptiff,
-                        void *buffer,
-                        int64_t row,
-                        int64_t first_column,
-                        int64_t last_column) {
-  int64_t row_size = ptiff->x_size * ptiff->band_count * ptiff->band_type_size;
-  int64_t subrow_size = (last_column - first_column + 1)
-      * ptiff->band_count * ptiff->band_type_size;
-  MPI_Offset offset = ptiff->first_strip_offset
-      + (row * row_size) + first_column;
-
-  MPI_Status status;
-
-  MPI_File_write_at(ptiff->fh, offset, buffer, subrow_size, MPI_BYTE, &status);
-
-  int count = 0;
-  MPI_Get_count(&status, MPI_BYTE, &count);
-  if (count != subrow_size) {
-          fprintf(stderr,
-                  "Error writing row! Wanted to write: %ld Actually wrote %d\n",
-                  subrow_size, count);
-  }
-
-  return SP_None;
-}
-
-int64_t get_contiguous_size(PTIFF *tiff_file,
-                            RasterChunk *chunk,
-                            int64_t chunk_offset)
-{
-  const int64_t chunk_x_beginning = chunk->raster_location_.x + (chunk_offset % chunk->column_count_);
-  const int64_t chunk_y_beginning = chunk->raster_location_.y + (chunk_offset / chunk->column_count_);
-        
-  const int64_t tile_x_beginning = (chunk_x_beginning / tiff_file->block_x_size) * tiff_file->block_x_size;
-  const int64_t tile_y_beginning = (chunk_y_beginning / tiff_file->block_y_size) * tiff_file->block_y_size;
-  const int64_t tile_x_end = tile_x_beginning + tiff_file->block_x_size - 1;
-  const int64_t tile_y_end = tile_y_beginning + tiff_file->block_y_size - 1;
-  const int64_t chunk_x_end = chunk->raster_location_.x + chunk->column_count_ - 1;
-  const int64_t chunk_y_end = chunk->raster_location_.y + chunk->row_count_ - 1;
-
-  librasterblaster::Coordinate end;
-  end.x = tile_x_end;
-  end.y = tile_y_end;
-
-  if (chunk_x_end < tile_x_end) {
-    //  The chunk is horizontally smaller than a tile so write a scanline.
-    end.x = chunk_x_end;
-    end.y = chunk_y_beginning;
-  } else if (chunk_x_beginning != tile_x_beginning && chunk_x_end >= tile_x_end) {
-    //  The chunk is wider than a tile so write the portion of the scanline that
-    //  in in the tile.
-    end.x = tile_x_end;
-    end.y = chunk_y_beginning;
-  } else if (chunk_x_beginning == tile_x_beginning
-             && chunk_x_end == tile_x_end
-             && tile_y_end > chunk_y_end) {
-    //  The chunk is exactly the size of a tile so write the entire chunk.
-    end.x = chunk_x_end;
-    end.y = chunk_y_end;
-  } else if (chunk_x_beginning == tile_x_beginning
-             && chunk_x_end == tile_x_end
-             && chunk_y_end >= tile_y_end) {
-    //  The chunk is the width of a tile but vertically larger so write the rest
-    //  of the tile.
-    end.x = tile_x_end;
-    end.y = tile_y_end;
-  } else {
-    return -1;
-  }
-
-  const int64_t first_chunk_x = chunk_offset % chunk->column_count_;
-  const int64_t first_chunk_y = chunk_offset / chunk->column_count_;
-  const int64_t last_chunk_x = end.x - chunk->raster_location_.x;
-  const int64_t last_chunk_y = end.y - chunk->raster_location_.y;
-
-  const int64_t contiguous_area_size = (last_chunk_x - first_chunk_x + 1) 
-      + ((last_chunk_y - first_chunk_y) * chunk->column_count_);
-
-  return contiguous_area_size;
-}
-
 int64_t chunk_to_file_offset(PTIFF *tiff_file,
                              RasterChunk *chunk,
                              int64_t chunk_offset) {
@@ -360,7 +258,7 @@ int64_t chunk_to_file_offset(PTIFF *tiff_file,
       + (tile_y * tiff_file->block_x_size * tiff_file->band_type_size);
 }
 
-SPTW_ERROR fill_stack(std::vector<Area> write_stack,
+SPTW_ERROR fill_stack(std::vector<Area> *write_stack,
                       Area old_area,
                       Area written_subset) {
   const double size_above = written_subset.ul.y - old_area.ul.y;
@@ -369,32 +267,34 @@ SPTW_ERROR fill_stack(std::vector<Area> write_stack,
   const double size_right = old_area.lr.x - written_subset.lr.x;
 
   if (size_above > 0.0) {
-    write_stack.push_back(Area(old_area.ul.x,
+    write_stack->push_back(Area(old_area.ul.x,
                                old_area.ul.y,
                                old_area.lr.x,
                                written_subset.ul.y - 1));
   }
 
   if (size_below > 0.0) {
-    write_stack.push_back(Area(old_area.ul.x,
+    write_stack->push_back(Area(old_area.ul.x,
                                written_subset.lr.y + 1,
                                old_area.lr.x,
                                old_area.lr.y));
   }
 
   if (size_left > 0.0) {
-    write_stack.push_back(Area(old_area.ul.x,
+    write_stack->push_back(Area(old_area.ul.x,
                                written_subset.ul.y,
                                written_subset.lr.x - 1,
                                written_subset.lr.y));
   }
 
   if (size_right > 0.0) {
-    write_stack.push_back(Area(written_subset.lr.x + 1,
+    write_stack->push_back(Area(written_subset.lr.x + 1,
                                written_subset.ul.y,
                                old_area.lr.x,
                                written_subset.lr.y));
   }
+
+  return SP_None;
 }
 
 Area calculate_tile_intersection(PTIFF *tiff_file,
@@ -462,20 +362,20 @@ SPTW_ERROR write_subset(PTIFF *tiff_file,
     for (int i = raster_subset.ul.y; i <= raster_subset.lr.y; ++i) {
       ChunkArea.ul = chunk->RasterToChunk(librasterblaster::Coordinate(raster_subset.ul.x, i, librasterblaster::UNDEF));
       ChunkArea.lr = chunk->RasterToChunk(librasterblaster::Coordinate(raster_subset.lr.x, i, librasterblaster::UNDEF));
-    pixel_offset = (ChunkArea.ul.x + (ChunkArea.ul.y * chunk->column_count_))
-        * tiff_file->band_type_size * chunk->band_count_;
-    count = ((ChunkArea.lr.x - ChunkArea.ul.x + 1) * (ChunkArea.lr.y - ChunkArea.ul.y + 1))
-        * tiff_file->band_type_size * chunk->band_count_;
-    file_offset = chunk_to_file_offset(tiff_file,
-                                       chunk,
-                                       ChunkArea.ul.x + ChunkArea.ul.y * chunk->column_count_);
+      pixel_offset = (ChunkArea.ul.x + (ChunkArea.ul.y * chunk->column_count_))
+          * tiff_file->band_type_size * chunk->band_count_;
+      count = ((ChunkArea.lr.x - ChunkArea.ul.x + 1) * (ChunkArea.lr.y - ChunkArea.ul.y + 1))
+          * tiff_file->band_type_size * chunk->band_count_;
+      file_offset = chunk_to_file_offset(tiff_file,
+                                         chunk,
+                                         ChunkArea.ul.x + ChunkArea.ul.y * chunk->column_count_);
 
-    MPI_File_write_at(tiff_file->fh,
-                      file_offset,
-                      (static_cast<char*>(chunk->pixels_)) + pixel_offset,
-                      count,
-                      MPI_BYTE,
-                      &status);    
+      MPI_File_write_at(tiff_file->fh,
+                        file_offset,
+                        (static_cast<char*>(chunk->pixels_)) + pixel_offset,
+                        count,
+                        MPI_BYTE,
+                        &status);    
     }
   }
   
@@ -501,7 +401,7 @@ SPTW_ERROR write_rasterchunk(PTIFF *ptiff,
     Area subset = calculate_tile_intersection(ptiff, top);
 
     // Fill the stack with any leftover areas
-    fill_stack(write_stack, top, subset);
+    fill_stack(&write_stack, top, subset);
 
     // Finally write the tile-bound subset
     write_subset(ptiff, chunk, subset);
