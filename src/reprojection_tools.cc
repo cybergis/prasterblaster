@@ -88,8 +88,8 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   options = CSLSetNameValue(options, "BIGTIFF", "YES");
   options = CSLSetNameValue(options, "TILED", "YES");
   options = CSLSetNameValue(options, "COMPRESS", "NONE");
-  options = CSLSetNameValue(options, "BLOCKXSIZE", "512");
-  options = CSLSetNameValue(options, "BLOCKYSIZE", "512");
+  options = CSLSetNameValue(options, "BLOCKXSIZE", "1024");
+  options = CSLSetNameValue(options, "BLOCKYSIZE", "1024");
 
   GDALDataset *output =
       driver->Create(output_filename.c_str(),

@@ -79,10 +79,15 @@ struct PTIFF {
   int band_type_size;
   /*! Byte offset to the first strip of the tiff file */
   int64_t first_strip_offset;
+  int64_t *tile_offsets;
   /*! Width of each tile */
   int64_t block_x_size;
   /* Height of each tile or strip */
   int64_t block_y_size;
+  /* Number of tiles across raster */
+  int64_t tiles_across;
+  /* Number of tiles down raster */
+  int64_t tiles_down;
 };
 
 SPTW_ERROR create_raster(string filename,
