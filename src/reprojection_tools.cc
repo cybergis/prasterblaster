@@ -152,31 +152,16 @@ std::vector<Area> PartitionBySize(int rank,
   vector<Area> leaves = qt.collectLeaves();
   vector<Area> partitions;
   size_t partition_count = leaves.size();
-  size_t partitions_per_proc = partition_count / process_count;
 
   // Now we shuffle the partitions for load balancing.
   // All processes should generate the same shuffle.
   std::random_shuffle(leaves.begin(), leaves.end(), simplerandom);
 
-  if (partitions_per_proc == 0) {
-    // process_count < partition_count
-    if (static_cast<size_t>(rank) < partition_count) {
-      partitions.push_back(leaves.at(rank));
-    }
-  } else {
-    // process_count >= partition_count
-    size_t first_index = rank * partitions_per_proc;
-    size_t last_index = (rank+1) * partitions_per_proc - 1;
-
-    if (rank == process_count - 1) {
-      last_index = leaves.size() - 1;
-    }
-
-    for (size_t i = first_index; i <= last_index; ++i) {
+  for (size_t i = 0; i < leaves.size(); ++i) {
+    if (i % process_count == rank) {
       partitions.push_back(leaves.at(i));
     }
   }
-
   return partitions;
 }
 
