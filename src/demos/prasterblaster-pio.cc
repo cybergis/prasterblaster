@@ -199,11 +199,13 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   double read_start, read_end, read_total;
   double write_start, write_end, write_total;
   double resample_start, resample_end, resample_total;
+  double loop_start;
 
   read_total = write_total = resample_total = 0.0;
 
   // Now we loop through the returned partitions
   for (size_t i = 0; i < partitions.size(); ++i) {
+    loop_start = MPI_Wtime();
     // Swap y-axis of partition
     double t = partitions.at(i).lr.y;
     partitions.at(i).lr.y = partitions.at(i).ul.y;
@@ -265,18 +267,20 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
+    delete in_chunk;
+    delete out_chunk;
+
     if (i % 10 == 0) {
-      printf("<Rank %d wrote (%zd of %zd) in %f %f %f>  ",
+      printf("<Rank %d wrote (%zd of %zd) in %f %f %f %f>  ",
              rank,
              i,
              partitions.size(),
              read_end - read_start,
              write_end - write_start,
-             resample_end - resample_start);
+             resample_end - resample_start,
+             MPI_Wtime() - loop_start);
       fflush(stdout);
     }
-    delete in_chunk;
-    delete out_chunk;
   }
   printf("Rank %d done\n", rank);
   // Clean up
