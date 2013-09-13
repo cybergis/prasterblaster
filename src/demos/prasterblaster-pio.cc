@@ -199,7 +199,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   double read_start, read_end, read_total;
   double write_start, write_end, write_total;
   double resample_start, resample_end, resample_total;
-  double loop_start;
+  double loop_start, prelude_end, prologue_end;
 
   read_total = write_total = resample_total = 0.0;
 
@@ -216,7 +216,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     in_chunk = RasterChunk::CreateRasterChunk(input_raster,
                                               gdal_output_raster,
                                               partitions.at(i));
-
+    prelude_end = MPI_Wtime();
     read_start = MPI_Wtime();
     PRB_ERROR chunk_err = RasterChunk::ReadRasterChunk(input_raster, in_chunk);
     if (chunk_err != PRB_NOERROR) {
@@ -269,16 +269,18 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
 
     delete in_chunk;
     delete out_chunk;
+    prologue_end = MPI_Wtime();
 
     if (i % 10 == 0) {
-      printf("<Rank %d wrote (%zd of %zd) in %f %f %f %f>  ",
+      printf("<Rank %d wrote (%zd of %zd) in %f %f %f %f %f>  ",
              rank,
              i,
              partitions.size(),
+             prelude_end - loop_start,
              read_end - read_start,
              write_end - write_start,
              resample_end - resample_start,
-             MPI_Wtime() - loop_start);
+             prologue_end - loop_start);
       fflush(stdout);
     }
   }
