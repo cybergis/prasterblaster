@@ -91,6 +91,18 @@ struct Configuration {
    * The maximum size of output raster partitions. The default value is 0;
    */
   int partition_size;
+  /**
+   * Decomposition method to use: "pixel" or "tile"
+   */
+  string partitioner;
+  /**
+   * File layout: striped or tiled
+   */
+  string layout;
+  /**
+   * Tile size
+   */
+  int tile_size;
 };
 }
 

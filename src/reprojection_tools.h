@@ -67,7 +67,7 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
                              string output_filename,
                              double output_pixel_size,
                              string output_srs);
-
+bool partition_compare(Area a, Area b);
 std::vector<Area> PartitionBySize(int rank,
                                   int process_count,
                                   int row_count,

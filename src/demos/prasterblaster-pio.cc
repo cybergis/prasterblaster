@@ -69,6 +69,32 @@ prasterblaster-pio.cc.
  */
 namespace librasterblaster {
 
+std::vector<Area> TilePartition(int rank,
+                                int process_count,
+                                PTIFF *tiff_file,
+                                int tiles_per_partition) {
+  std::vector<Area> parts = PartitionBySize(rank,
+                                            process_count,
+                                            tiff_file->tiles_down,
+                                            tiff_file->tiles_across,
+                                            tiles_per_partition);
+  //  Now convert the tile partitions into raster coordinates
+  for (int i = 0; i < parts.size(); ++i) {
+    parts.at(i).ul.x *= tiff_file->block_x_size;
+    parts.at(i).ul.y *= tiff_file->block_y_size;
+
+    parts.at(i).lr.x += 1;
+    parts.at(i).lr.x *= tiff_file->block_x_size;
+    parts.at(i).lr.x -= 1;
+
+    parts.at(i).lr.y += 1;
+    parts.at(i).lr.y *= tiff_file->block_y_size;
+    parts.at(i).lr.y -= 1;
+  }
+
+  return parts;
+}
+
 /** Main function for the prasterblasterpio program */
 PRB_ERROR prasterblasterpio(Configuration conf) {
   RasterChunk *in_chunk, *out_chunk;
@@ -152,14 +178,19 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     return PRB_IOERROR;
   }
 
-  // Now we will partition the output raster space. We will use a
-  // maximum_height of 1 because we want single row or smaller
-  // partitions to work with sptw.
-  vector<Area> partitions = PartitionBySize(rank,
-                                            process_count,
-                                            output_raster->y_size,
-                                            output_raster->x_size,
-                                            conf.partition_size);
+  vector<Area> partitions;
+  if (conf.partitioner == "tile") {
+    partitions = TilePartition(rank,
+                               process_count,
+                               output_raster,
+                               conf.partition_size);
+  } else {
+    partitions = PartitionBySize(rank,
+                                 process_count,
+                                 output_raster->y_size,
+                                 output_raster->x_size,
+                                 conf.partition_size);
+  }
   if (rank == 0) {
     printf("Typical process has %lu partitions with base size: %d\n",
            static_cast<unsigned long>(partitions.size()),
@@ -199,7 +230,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     out_chunk = RasterChunk::CreateRasterChunk(gdal_output_raster,
                                                partitions.at(i));
     if (out_chunk == NULL) {
-      fprintf(stderr, "Error allocating output chunk! %f %f %f %f'n",
+      fprintf(stderr, "Error allocating output chunk! %f %f %f %f\n",
               partitions[i].ul.x,
               partitions[i].ul.y,
               partitions[i].lr.x,
@@ -235,15 +266,13 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
       printf("<Rank %d wrote (%zd of %zd)>  ",
              rank,
              i,
-             partitions.size(),
-             out_chunk->raster_location_.x, out_chunk->raster_location_.y,
-             out_chunk->row_count_, out_chunk->column_count_);
+             partitions.size());
       fflush(stdout);
     }
     delete in_chunk;
     delete out_chunk;
   }
-  printf("\n");
+  printf("Rank %d done\n", rank);
   // Clean up
   close_raster(output_raster);
   output_raster = NULL;

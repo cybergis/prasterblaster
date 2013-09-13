@@ -27,6 +27,9 @@ struct option longopts[] = {
   {"partition-size", required_argument, NULL, 'n'},
   {"resampler", required_argument, NULL, 'r'},
   {"dstnodata", required_argument, NULL, 'f'},
+  {"partitioner", required_argument, NULL, 'q'},
+  {"layout", required_argument, NULL, 'y'},
+  {"tile-size", required_argument, NULL, 'x'},
   {0, 0, 0, 0}
 };
 
@@ -40,7 +43,10 @@ Configuration::Configuration(int argc, char *argv[]) {
   partition_size = -1;
   std::string arg = "";
   resampler = NEAREST;
-  while ((c = getopt_long(argc, argv, "p:r:f:n:t:", longopts, NULL)) != -1) {
+  partitioner = "pixel";
+  layout = "tiled";
+  tile_size = 1024;
+  while ((c = getopt_long(argc, argv, "p:r:f:n:t:q:y:x", longopts, NULL)) != -1) {
     switch (c) {
       case 0:
         // getopt_long() set a variable, just keep going
@@ -64,6 +70,12 @@ Configuration::Configuration(int argc, char *argv[]) {
       case 'f':
         fillvalue = optarg;
         break;
+      case 'q':
+        partitioner = optarg;
+      case 'y':
+        layout = optarg;
+      case 'x':
+        tile_size = strtol(optarg, NULL, 10);
       default:
         fprintf(stderr, "%s: option '-%c' is invalid: ignored\n",
                 argv[0], optopt);

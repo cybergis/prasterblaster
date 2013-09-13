@@ -137,6 +137,20 @@ int simplerandom(int i) {
   return std::rand()%i;
 }
 
+bool partition_compare(Area a, Area b) {
+  if (a.ul.y < b.ul.y) {
+    return true;
+  } else if (a.ul.y > b.ul.y) {
+    return false;
+  }
+  else if (a.ul.x < b.ul.x) {
+    return true;
+  } else {
+    return false;
+  }
+  return false;
+}
+
 std::vector<Area> PartitionBySize(int rank,
                                   int process_count,
                                   int row_count,
@@ -151,11 +165,17 @@ std::vector<Area> PartitionBySize(int rank,
 
   vector<Area> leaves = qt.collectLeaves();
   vector<Area> partitions;
-  size_t partition_count = leaves.size();
+
+  // Sort the partition for better file locality
+  std::sort(leaves.begin(), leaves.end(), partition_compare);
 
   // Now we shuffle the partitions for load balancing.
   // All processes should generate the same shuffle.
-  std::random_shuffle(leaves.begin(), leaves.end(), simplerandom);
+  for (size_t i = 0; i < leaves.size()-process_count; i += process_count) {
+    vector<Area>::iterator beg = leaves.begin() + i;
+    vector<Area>::iterator end = beg + process_count - 1;
+    std::random_shuffle(beg, end, simplerandom);
+  }
 
   for (size_t i = 0; i < leaves.size(); ++i) {
     if (i % process_count == rank) {
@@ -164,7 +184,6 @@ std::vector<Area> PartitionBySize(int rank,
   }
   return partitions;
 }
-
 
 void SearchAndUpdate(Area input_area,
                      string input_srs,
