@@ -196,9 +196,9 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
            static_cast<unsigned long>(partitions.size()),
            conf.partition_size);
   }
-  double read_start, read_total;
-  double write_start, write_total;
-  double resample_start, resample_total;
+  double read_start, read_end, read_total;
+  double write_start, write_end, write_total;
+  double resample_start, resample_end, resample_total;
 
   read_total = write_total = resample_total = 0.0;
 
@@ -222,7 +222,8 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
       MPI_Abort(MPI_COMM_WORLD, 1);
       return PRB_IOERROR;
     }
-    read_total += MPI_Wtime() - read_start;
+    read_end = MPI_Wtime();
+    read_total += read_end - read_start;
 
     // We want a RasterChunk for the output area but we area going to generate
     // the pixel values not read them from the file so we use
@@ -250,23 +251,28 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
             fprintf(stderr, "Error reprojecting chunk!\n");
             MPI_Abort(MPI_COMM_WORLD, 1);
     }
-    resample_total += MPI_Wtime() - resample_start;
+    resample_end = MPI_Wtime();
+    resample_total += resample_end - resample_start;
 
     write_start = MPI_Wtime();
     SPTW_ERROR err;
     err = sptw::write_rasterchunk(output_raster,
                                   out_chunk);
-    write_total += MPI_Wtime() - write_start;
+    write_end = MPI_Wtime();
+    write_total += write_end - write_start;
     if (err != sptw::SP_None) {
       fprintf(stderr, "Rank %d: Error writing chunk!\n", rank);
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
     if (i % 10 == 0) {
-      printf("<Rank %d wrote (%zd of %zd)>  ",
+      printf("<Rank %d wrote (%zd of %zd) in %f %f %f>  ",
              rank,
              i,
-             partitions.size());
+             partitions.size(),
+             read_end - read_start,
+             write_end - write_start,
+             resample_end - resample_start);
       fflush(stdout);
     }
     delete in_chunk;
