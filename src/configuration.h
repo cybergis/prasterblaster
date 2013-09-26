@@ -103,6 +103,10 @@ struct Configuration {
    * Tile size
    */
   int tile_size;
+  /**
+   * Name of timing information file
+   */
+  string timing_filename;
 };
 }
 

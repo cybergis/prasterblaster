@@ -30,6 +30,7 @@ struct option longopts[] = {
   {"partitioner", required_argument, NULL, 'q'},
   {"layout", required_argument, NULL, 'y'},
   {"tile-size", required_argument, NULL, 'x'},
+  {"timing-file", required_argument, NULL, 'c'},
   {0, 0, 0, 0}
 };
 
@@ -46,7 +47,8 @@ Configuration::Configuration(int argc, char *argv[]) {
   partitioner = "pixel";
   layout = "tiled";
   tile_size = 1024;
-  while ((c = getopt_long(argc, argv, "p:r:f:n:q:y:x", longopts, NULL)) != -1) {
+  timing_filename = "";
+  while ((c = getopt_long(argc, argv, "p:r:f:n:q:y:x:c", longopts, NULL)) != -1) {
     switch (c) {
       case 0:
         // getopt_long() set a variable, just keep going
@@ -79,12 +81,14 @@ Configuration::Configuration(int argc, char *argv[]) {
       case 'x':
         tile_size = strtol(optarg, NULL, 10);
         break;
+      case 'c':
+        timing_filename = optarg;
+        break;
       default:
         fprintf(stderr, "%s: option '-%c' is invalid: ignored\n",
                 argv[0], optopt);
         break;
     }
-
     if (argc > 2) {
       output_filename = argv[argc-1];
       input_filename = argv[argc-2];

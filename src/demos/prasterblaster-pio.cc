@@ -17,6 +17,7 @@
 ///
 ///
 
+#include <algorithm>
 #include <vector>
 
 #include "src/configuration.h"
@@ -68,31 +69,79 @@ prasterblaster-pio.cc.
 </p>
  */
 namespace librasterblaster {
+int simplerandom(int i) {
+  return std::rand()%i;
+}
 
 std::vector<Area> TilePartition(int rank,
                                 int process_count,
                                 PTIFF *tiff_file,
                                 int tiles_per_partition) {
-  std::vector<Area> parts = PartitionBySize(rank,
-                                            process_count,
-                                            tiff_file->tiles_down,
-                                            tiff_file->tiles_across,
-                                            tiles_per_partition);
-  //  Now convert the tile partitions into raster coordinates
-  for (int i = 0; i < parts.size(); ++i) {
-    parts.at(i).ul.x *= tiff_file->block_x_size;
-    parts.at(i).ul.y *= tiff_file->block_y_size;
+  vector<Area> gparts;
+  const int rows_per_partition = tiles_per_partition / tiff_file->tiles_across;
+  int extra_rows = tiles_per_partition % tiff_file->tiles_across;
+  const int partitions_per_row = tiff_file->tiles_across / tiles_per_partition;
+  int extra_tiles = tiff_file->tiles_across % tiles_per_partition;
+  printf("Beginning the loop!\n");
+  if (rows_per_partition > 0) {
+    printf("rows!\n");
+    for (int i = 0; i < tiff_file->tiles_down; i += rows_per_partition) {
+      int prows = rows_per_partition - 1;
+      if (extra_rows > 0) {
+        prows++;
+        i++;
+        extra_rows--;
+      }
+      gparts.push_back(Area(0, i, tiff_file->tiles_across-1, i+prows));
+    }
+  } else {
+    printf("columns!\n");
+    for (int i = 0; i < tiff_file->tiles_down; ++i) {
+      for (int j = 0, tilei = 0; j < process_count; ++j) {
+        int ptiles = tiles_per_partition - 1;
+        if (j / extra_tiles == 0) {
+          ptiles += extra_tiles % process_count;
+        }
+        gparts.push_back(Area(tilei, i, tilei+ptiles, i));
+        tilei += ptiles + 1;
+      }
+    }
 
-    parts.at(i).lr.x += 1;
-    parts.at(i).lr.x *= tiff_file->block_x_size;
-    parts.at(i).lr.x -= 1;
+  }
+  printf("BEAT THE LOOP!\n\n");
+  std::vector<Area> partitions;
+  // Sort the partition for better file locality
+  std::sort(gparts.begin(), gparts.end(), partition_compare);
 
-    parts.at(i).lr.y += 1;
-    parts.at(i).lr.y *= tiff_file->block_y_size;
-    parts.at(i).lr.y -= 1;
+  // Now we shuffle the partitions for load balancing.
+  // All processes should generate the same shuffle.
+  for (size_t i = 0; i < gparts.size()-process_count; i += process_count) {
+    vector<Area>::iterator beg = gparts.begin() + i;
+    vector<Area>::iterator end = beg + process_count - 1;
+    std::random_shuffle(beg, end, simplerandom);
   }
 
-  return parts;
+  for (size_t i = 0; i < gparts.size(); ++i) {
+    if (i % process_count == rank) {
+      partitions.push_back(gparts.at(i));
+    }
+  }
+
+  //  Now convert the tile partitions into raster coordinates
+  for (int i = 0; i < partitions.size(); ++i) {
+    partitions.at(i).ul.x *= tiff_file->block_x_size;
+    partitions.at(i).ul.y *= tiff_file->block_y_size;
+
+    partitions.at(i).lr.x += 1;
+    partitions.at(i).lr.x *= tiff_file->block_x_size;
+    partitions.at(i).lr.x -= 1;
+
+    partitions.at(i).lr.y += 1;
+    partitions.at(i).lr.y *= tiff_file->block_y_size;
+    partitions.at(i).lr.y -= 1;
+  }
+
+  return partitions;
 }
 
 /** Main function for the prasterblasterpio program */
@@ -293,31 +342,47 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
 
   // Report runtimes
   end_time = MPI_Wtime();
-  double runtimes[4] = { end_time - start_time,
+  double runtimes[5] = { end_time - start_time,
+                         prelude_end - loop_start,
                          read_total,
-                         write_total,
-                         resample_total};
-  std::vector<double> process_runtimes(process_count*4);
+                         resample_total,
+                         write_total };
+  std::vector<double> process_runtimes(process_count*5);
   MPI_Gather(runtimes,
-             4,
+             5,
              MPI_DOUBLE,
              &(process_runtimes[0]),
-             4,
+             5,
              MPI_DOUBLE,
              0,
              MPI_COMM_WORLD);
 
+  FILE *timing_file = stdout;
   if (rank == 0) {
-    printf("\nRank\t  Total Runtime\t  Read I/O\t  Write I/O\t  Resampling\n");
-    for (unsigned int i = 0; i < process_runtimes.size(); i+=4) {
-      printf("%4u\t| %.4fs\t| %.4fs\t| %.4fs\t| %.4fs\n",
-             i/4,
-             process_runtimes.at(i),
-             process_runtimes.at(i+1),
-             process_runtimes.at(i+2),
-             process_runtimes.at(i+3));
+    if (conf.timing_filename != "") {
+      timing_file = fopen(conf.timing_filename.c_str(), "w");
+      if (timing_file == NULL) {
+        fprintf(stderr, "Error creating timing output file");
+        timing_file = stdout;
+      }
+    }
+
+    fprintf(timing_file, "process,total,minbox,read,resample,write\n");
+    for (unsigned int i = 0; i < process_runtimes.size(); i+=5) {
+      fprintf(timing_file, "%u,%.4f,%.4f,%.4f,%.4f,%.4f\n",
+              i/5,
+              process_runtimes.at(i),
+              process_runtimes.at(i+1),
+              process_runtimes.at(i+2),
+              process_runtimes.at(i+3),
+              process_runtimes.at(i+4));
     }
   }
+
+  if (rank == 0 && conf.timing_filename != "") {
+    fclose(timing_file);
+  }
+
   return PRB_NOERROR;
 }
 }
