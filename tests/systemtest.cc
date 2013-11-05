@@ -18,6 +18,8 @@
 
 #include <vector>
 
+#include <mpi.h>
+
 #include "gtest/gtest.h"
 #include "src/configuration.h"
 #include "src/quadtree.h"
@@ -30,6 +32,38 @@
 using librasterblaster::Configuration;
 
 namespace {
+class MinimalistPrinter : public ::testing::EmptyTestEventListener {
+  // Called before a test starts.
+  virtual void OnTestStart(const ::testing::TestInfo& test_info) {
+    int rank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank == 0) {
+      printf("*** Test %s.%s starting.\n",
+             test_info.test_case_name(), test_info.name());
+    }
+  }
+
+  // Called after a failed assertion or a SUCCEED() invocation.
+  virtual void OnTestPartResult(
+      const ::testing::TestPartResult& test_part_result) {
+    int rank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank == 0) {
+      printf("%s in %s:%d\n%s\n",
+             test_part_result.failed() ? "*** Failure" : "Success",
+             test_part_result.file_name(),
+             test_part_result.line_number(),
+             test_part_result.summary());
+    }
+  }
+
+  // Called after a test ends.
+  virtual void OnTestEnd(const ::testing::TestInfo& test_info) {
+    printf("*** Test %s.%s ending.\n",
+           test_info.test_case_name(), test_info.name());
+  }
+};
+
 // The fixture for system testing
 class RasterTest : public ::testing::Test {
  protected:
@@ -144,8 +178,13 @@ TEST_F(RasterTest, NLCD) {
 int main(int argc, char **argv) {
   MPI_Init(&argc, &argv);
 
+  ::testing::TestEventListeners& listeners =
+        ::testing::UnitTest::GetInstance()->listeners();
+  delete listeners.Release(listeners.default_result_printer());
+  listeners.Append(new MinimalistPrinter);
   ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-
+  int ret = RUN_ALL_TESTS();
   MPI_Finalize();
+
+  return ret;
 }
