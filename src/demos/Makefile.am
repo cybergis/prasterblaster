@@ -12,7 +12,7 @@ top_prasterblasterpio_LDADD = ../librasterblaster.la libsptw.la
 
 top_rastercompare_SOURCES = rastercompare.cc
 top_rastercompare_CPPFLAGS = -I..
-top_rastercompare_LDFLAGS = $(all_libraries)
+top_rastercompare_LDFLAGS = $(all_libraries) ../librasterblaster.la libsptw.la
 
 AM_CXXFLAGS = -W -Wall -Wextra -Wcast-align \
 	-Wpointer-arith -Wsign-compare -g\

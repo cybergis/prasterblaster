@@ -30,6 +30,8 @@
 #include "src/demos/sptw.h"
 
 using librasterblaster::Configuration;
+using librasterblaster::PRB_NOERROR;
+using librasterblaster::rastercompare;
 
 namespace {
 class MinimalistPrinter : public ::testing::EmptyTestEventListener {
@@ -108,6 +110,11 @@ TEST_F(RasterTest, Veg1Deg) {
   conf.fillvalue = "32";
 
   int ret = prasterblasterpio(conf);
+  ASSERT_EQ(PRB_NOERROR, ret);
+
+  int raster_compare_ret = rastercompare("tests/testdata/veg_mollweide_1deg.tif", 
+                                         "tests/testoutput/veg_mollweide_1deg.tif");
+  ASSERT_EQ(0, raster_compare_ret);
 }
 
 TEST_F(RasterTest, Veg1DegRobin) {
@@ -144,6 +151,11 @@ TEST_F(RasterTest, HoldNorm30Min) {
   conf.fillvalue = "32";
 
   int ret = prasterblasterpio(conf);
+  ASSERT_EQ(PRB_NOERROR, ret);
+
+  int raster_compare_ret = rastercompare("tests/testdata/holdnorm_geographic_30min.tif", 
+                                         "tests/testoutput/holdnorm_mollweide_30min.tif");
+  ASSERT_EQ(0, raster_compare_ret);
 }
 
 TEST_F(RasterTest, GLC30sec) {
@@ -156,6 +168,11 @@ TEST_F(RasterTest, GLC30sec) {
   conf.fillvalue = "32";
 
   int ret = prasterblasterpio(conf);
+  ASSERT_EQ(PRB_NOERROR, ret);
+
+  int raster_compare_ret = rastercompare("tests/testdata/glc_geographic_30sec.tif", 
+                                         "tests/testoutput/glc_geographic_30sec.tif");
+  ASSERT_EQ(0, raster_compare_ret);
 }
 
 TEST_F(RasterTest, NLCD) {

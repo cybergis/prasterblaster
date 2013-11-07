@@ -21,6 +21,7 @@
 #include "src/utils.h"
 
 namespace librasterblaster {
+int rastercompare(string control_filename, string test_filename);
 PRB_ERROR prasterblasterpio(librasterblaster::Configuration conf);
 }
 
