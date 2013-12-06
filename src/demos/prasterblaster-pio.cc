@@ -260,7 +260,7 @@ std::vector<Area> TilePartition(int rank,
 /** Main function for the prasterblasterpio program */
 PRB_ERROR prasterblasterpio(Configuration conf) {
   RasterChunk *in_chunk, *out_chunk;
-  double start_time, end_time;
+  double start_time, end_time, preloop_time;
 
   start_time = MPI_Wtime();
 
@@ -358,12 +358,13 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
            static_cast<unsigned long>(partitions.size()),
            conf.partition_size);
   }
-  double read_start, read_end, read_total;
+  double read_total, misc_start, misc_total;
   double write_start, write_end, write_total;
   double resample_start, resample_end, resample_total;
-  double loop_start, prelude_end, prologue_end;
+  double loop_start, prelude_end, minbox_total;
 
-  read_total = write_total = resample_total = 0.0;
+  read_total = write_total = resample_total = misc_total = minbox_total = 0.0;
+  preloop_time = MPI_Wtime() - start_time;
 
   // Now we loop through the returned partitions
   for (size_t i = 0; i < partitions.size(); ++i) {
@@ -378,17 +379,17 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     in_chunk = RasterChunk::CreateRasterChunk(input_raster,
                                               gdal_output_raster,
                                               partitions.at(i));
-    prelude_end = MPI_Wtime();
-    read_start = MPI_Wtime();
+    minbox_total += MPI_Wtime() - loop_start;
+
     PRB_ERROR chunk_err = RasterChunk::ReadRasterChunk(input_raster, in_chunk);
     if (chunk_err != PRB_NOERROR) {
       fprintf(stderr, "Error reading input chunk!\n");
       MPI_Abort(MPI_COMM_WORLD, 1);
       return PRB_IOERROR;
     }
-    read_end = MPI_Wtime();
-    read_total += read_end - read_start;
+    read_total += MPI_Wtime() - prelude_end;
 
+    misc_start = MPI_Wtime();
     // We want a RasterChunk for the output area but we area going to generate
     // the pixel values not read them from the file so we use
     // CreateRasterChunk
@@ -402,6 +403,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
               partitions[i].lr.y);
       return PRB_BADARG;
     }
+    misc_total += MPI_Wtime() - misc_start;
 
     // Now we call ReprojectChunk with the RasterChunk pair and the desired
     // resampler. ReprojectChunk performs the reprojection/resampling and fills
@@ -422,50 +424,53 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     SPTW_ERROR err;
     err = sptw::write_rasterchunk(output_raster,
                                   out_chunk);
-    write_end = MPI_Wtime();
-    write_total += write_end - write_start;
     if (err != sptw::SP_None) {
       fprintf(stderr, "Rank %d: Error writing chunk!\n", rank);
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
+    write_end = MPI_Wtime();
+    write_total += write_end - write_start;
 
+    misc_start = MPI_Wtime();
     delete in_chunk;
     delete out_chunk;
-    prologue_end = MPI_Wtime();
 
     if (i % 10 == 0) {
-      printf("<Rank %d wrote (%zd of %zd) in %f %f %f %f %f>  ",
+      printf("<Rank %d wrote (%zd of %zd)> ",
              rank,
              i,
-             partitions.size(),
-             prelude_end - loop_start,
-             read_end - read_start,
-             write_end - write_start,
-             resample_end - resample_start,
-             prologue_end - loop_start);
+             partitions.size());
       fflush(stdout);
     }
+    misc_total += MPI_Wtime() - misc_start;
   }
   printf("Rank %d done\n", rank);
   // Clean up
+  write_start = MPI_Wtime();
   close_raster(output_raster);
+  write_total += MPI_Wtime() - write_start;
+
+  misc_start = MPI_Wtime();
   output_raster = NULL;
   delete gdal_output_raster;
   delete input_raster;
+  misc_total += MPI_Wtime() - misc_start;
 
   // Report runtimes
   end_time = MPI_Wtime();
-  double runtimes[5] = { end_time - start_time,
-                         prelude_end - loop_start,
+  double runtimes[7] = { end_time - start_time,
+                         preloop_time,
+                         minbox_total,
                          read_total,
                          resample_total,
-                         write_total };
-  std::vector<double> process_runtimes(process_count*5);
+                         write_total,
+                         misc_total };
+  std::vector<double> process_runtimes(process_count*7);
   MPI_Gather(runtimes,
-             5,
+             7,
              MPI_DOUBLE,
              &(process_runtimes[0]),
-             5,
+             7,
              MPI_DOUBLE,
              0,
              MPI_COMM_WORLD);
@@ -480,15 +485,17 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
       }
     }
 
-    fprintf(timing_file, "process,total,minbox,read,resample,write\n");
-    for (unsigned int i = 0; i < process_runtimes.size(); i+=5) {
-      fprintf(timing_file, "%u,%.4f,%.4f,%.4f,%.4f,%.4f\n",
-              i/5,
+    fprintf(timing_file, "process,total,preloop,minbox,read,resample,write,misc\n");
+    for (unsigned int i = 0; i < process_runtimes.size(); i+=7) {
+      fprintf(timing_file, "%u,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",
+              i/7,
               process_runtimes.at(i),
               process_runtimes.at(i+1),
               process_runtimes.at(i+2),
               process_runtimes.at(i+3),
-              process_runtimes.at(i+4));
+              process_runtimes.at(i+4),
+              process_runtimes.at(i+5),
+              process_runtimes.at(i+6));
     }
   }
 
