@@ -381,6 +381,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
                                               partitions.at(i));
     minbox_total += MPI_Wtime() - loop_start;
 
+    prelude_end = MPI_Wtime();
     PRB_ERROR chunk_err = RasterChunk::ReadRasterChunk(input_raster, in_chunk);
     if (chunk_err != PRB_NOERROR) {
       fprintf(stderr, "Error reading input chunk!\n");
