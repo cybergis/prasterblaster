@@ -178,10 +178,74 @@ std::vector<Area> PartitionBySize(int rank,
   }
 
   for (size_t i = 0; i < leaves.size(); ++i) {
-    if (i % process_count == rank) {
+    if (i % process_count == static_cast<unsigned int>(rank)) {
       partitions.push_back(leaves.at(i));
     }
   }
+  return partitions;
+}
+
+std::vector<Area> PartitionTile(int rank,
+                                int process_count,
+                                int64_t row_count,
+                                int64_t column_count,
+                                int64_t tile_width,
+                                int64_t tile_height,
+                                int maximum_partition_size)
+{
+ // Seed the psuedorandom generator. This _must_ be the same on all processes.
+  std::srand(42);
+
+  int tiles_per_partition = maximum_partition_size / (tile_width * tile_height);
+  if (tiles_per_partition < 1) {
+    tiles_per_partition = 1;
+  }
+  std::vector<Area> partitions;
+  const int tiles_across = (column_count / tile_width) + ((column_count % tile_width == 0) ? 0 : 1);
+  const int tiles_down = (row_count / tile_height) + ((row_count % tile_height == 0) ? 0 : 1);
+
+  QuadTree qt(tiles_down,
+              tiles_across,
+              tiles_per_partition);
+
+  vector<Area> leaves = qt.collectLeaves();
+
+  // Now we shuffle the partitions for load balancing.
+  // All processes should generate the same shuffle.
+  for (size_t i = 0; i < leaves.size()-process_count; i += process_count) {
+    vector<Area>::iterator beg = leaves.begin() + i;
+    vector<Area>::iterator end = beg + process_count - 1;
+    std::random_shuffle(beg, end, simplerandom);
+  }
+
+  for (size_t i = 0; i < leaves.size(); ++i) {
+    if (i % process_count == static_cast<unsigned int>(rank)) {
+      partitions.push_back(leaves.at(i));
+    }
+  }
+
+  for (size_t i = 0; i < partitions.size(); ++i) {
+    partitions.at(i).ul.x *= tile_width;
+    partitions.at(i).ul.y *= tile_height;
+    partitions.at(i).ul.y += tile_height - 1;
+    partitions.at(i).lr.x *= tile_width;
+    partitions.at(i).lr.x += tile_width - 1;
+    partitions.at(i).lr.y *= tile_height;
+
+
+    if (partitions.at(i).lr.x > column_count) {
+      partitions.at(i).lr.x = column_count - 1;
+    }
+
+    if (partitions.at(i).ul.y > row_count) {
+      partitions.at(i).ul.y = row_count - 1;
+    }
+  }
+
+ // Sort the partition for better file locality
+  std::sort(partitions.begin(), partitions.end(), partition_compare);
+
+
   return partitions;
 }
 
@@ -364,12 +428,26 @@ Area RasterMinbox2(string source_projection,
   source_area.lr.y = source_area.lr.x = -DBL_MAX;
   source_area.units = UNDEF;
 
-  int step = 1;
+  int row_space = destination_row_count / 10;
+  if (row_space < 3) {
+    row_space = destination_row_count;
+  }
 
-  for (int x = destination_raster_area.ul.x;
-       x <= destination_raster_area.lr.x; x+=step) {
-    for (int y = destination_raster_area.ul.y;
-         y <= destination_raster_area.lr.y; ++y) {
+  int column_space = destination_column_count / 10;
+  if (column_space < 3) {
+    column_space = destination_column_count;
+  }
+
+  for (int y = destination_raster_area.ul.y;
+       y <= destination_raster_area.lr.y; ++y) {
+    for (int x = destination_raster_area.ul.x;
+         x <= destination_raster_area.lr.x; ++x) {
+      if (y > row_space
+          && y < destination_column_count - row_space
+          && x > column_space
+          && x < destination_column_count - column_space) {
+    }
+
       c.x = x;
       c.y = y;
 

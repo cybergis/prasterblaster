@@ -25,10 +25,6 @@ using librasterblaster::prasterblasterpio;
 using librasterblaster::RasterChunk;
 
 int main(int argc, char *argv[]) {
-  int rank = 0;
-  int process_count = 0;
-  RasterChunk *in_chunk, *out_chunk;
-
   // Give MPI_Init first run at the command-line arguments
   MPI_Init(&argc, &argv);
 

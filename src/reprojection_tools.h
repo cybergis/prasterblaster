@@ -74,6 +74,14 @@ std::vector<Area> PartitionBySize(int rank,
                                   int column_count,
                                   int maximum_partition_size);
 
+std::vector<Area> PartitionTile(int rank,
+                                int process_count,
+                                int64_t row_count,
+                                int64_t column_count,
+                                int64_t tile_width,
+                                int64_t tile_height,
+    int maximum_partition_size);
+
 void SearchAndUpdate(Area input_area,
                      string input_srs,
                      string output_srs,

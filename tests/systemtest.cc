@@ -61,8 +61,12 @@ class MinimalistPrinter : public ::testing::EmptyTestEventListener {
 
   // Called after a test ends.
   virtual void OnTestEnd(const ::testing::TestInfo& test_info) {
-    printf("*** Test %s.%s ending.\n",
-           test_info.test_case_name(), test_info.name());
+    int rank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank == 0) {
+      printf("*** Test %s.%s ending.\n",
+             test_info.test_case_name(), test_info.name());
+    }
   }
 };
 
@@ -73,7 +77,7 @@ class RasterTest : public ::testing::Test {
   // is empty.
 
   RasterTest() {
-    // You can do set-up work for each test here.
+          // You can do set-up work for each test here.
   }
 
   virtual ~RasterTest() {
@@ -95,14 +99,14 @@ class RasterTest : public ::testing::Test {
     // before the destructor).
   }
 
-  // Objects declared here can by used by all tests in fixture
+  // Objects Declared here can by used by all tests in fixture
   int rank;
   int process_count;
 };
 
 TEST_F(RasterTest, Veg1Deg) {
   Configuration conf;
-  conf.partition_size = 21600;
+  conf.partition_size = 1;
   conf.input_filename = "tests/testdata/veg_geographic_1deg.tif";
   conf.output_filename = "tests/testoutput/veg_mollweide_1deg.tif";
   conf.resampler = librasterblaster::MIN;
@@ -119,7 +123,7 @@ TEST_F(RasterTest, Veg1Deg) {
 
 TEST_F(RasterTest, Veg1DegRobin) {
   Configuration conf;
-  conf.partition_size = 21600;
+  conf.partition_size = 1;
   conf.input_filename = "tests/testdata/veg_geographic_1deg.tif";
   conf.output_filename = "tests/testoutput/veg_robinson_1deg.tif";
   conf.resampler = librasterblaster::MIN;
@@ -131,7 +135,7 @@ TEST_F(RasterTest, Veg1DegRobin) {
 
 TEST_F(RasterTest, Veg1DegSinusoidal) {
   Configuration conf;
-  conf.partition_size = 21600;
+  conf.partition_size = 1;
   conf.input_filename = "tests/testdata/veg_geographic_1deg.tif";
   conf.output_filename = "tests/testoutput/veg_sinosoidal_1deg.tif";
   conf.resampler = librasterblaster::MIN;
@@ -143,7 +147,7 @@ TEST_F(RasterTest, Veg1DegSinusoidal) {
 
 TEST_F(RasterTest, HoldNorm30Min) {
   Configuration conf;
-  conf.partition_size = 21600;
+  conf.partition_size = 1;
   conf.input_filename = "tests/testdata/holdnorm_geographic_30min.tif";
   conf.output_filename = "tests/testoutput/holdnorm_mollweide_30min.tif";
   conf.resampler = librasterblaster::MIN;
@@ -160,12 +164,13 @@ TEST_F(RasterTest, HoldNorm30Min) {
 
 TEST_F(RasterTest, GLC30sec) {
   Configuration conf;
-  conf.partition_size = 2166400;
+  conf.partitioner = "tile";
+  conf.partition_size = 32;
   conf.input_filename = "tests/testdata/glc_geographic_30sec.tif";
   conf.output_filename = "tests/testoutput/glc_mollweide_30sec.tif";
   conf.resampler = librasterblaster::MIN;
   conf.output_srs = "+proj=moll +a=6370997 +b=6370997";
-  conf.fillvalue = "32";
+  conf.fillvalue = "8";
 
   int ret = prasterblasterpio(conf);
   ASSERT_EQ(PRB_NOERROR, ret);
@@ -177,7 +182,7 @@ TEST_F(RasterTest, GLC30sec) {
 
 TEST_F(RasterTest, NLCD) {
   Configuration conf;
-  conf.partition_size = 2160000;
+  conf.partition_size = 64;
   conf.input_filename =
       "tests/testdata/nlcd2006_landcover_4-20-11_se5.tif";
   conf.output_filename =

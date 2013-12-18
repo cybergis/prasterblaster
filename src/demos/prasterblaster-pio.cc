@@ -20,6 +20,8 @@
 #include <algorithm>
 #include <vector>
 
+#include <sys/time.h>
+
 #include "src/configuration.h"
 #include "src/quadtree.h"
 #include "src/reprojection_tools.h"
@@ -189,11 +191,16 @@ int rastercompare(string control_filename, string test_filename) {
 std::vector<Area> TilePartition(int rank,
                                 int process_count,
                                 PTIFF *tiff_file,
-                                int tiles_per_partition) {
+                                int max_partition_size) {
+  int64_t tiles_per_partition = (tiff_file->block_x_size * tiff_file->block_y_size
+                                 * tiff_file->band_type_size)
+                                 / 1024 / 1024 / max_partition_size;
+  if (tiles_per_partition < 1) {
+    tiles_per_partition = 1;
+  }
   vector<Area> gparts;
   const int rows_per_partition = tiles_per_partition / tiff_file->tiles_across;
   int extra_rows = tiles_per_partition % tiff_file->tiles_across;
-  const int partitions_per_row = tiff_file->tiles_across / tiles_per_partition;
   int extra_tiles = tiff_file->tiles_across % tiles_per_partition;
   printf("Beginning the loop!\n");
   if (rows_per_partition > 0) {
@@ -221,7 +228,7 @@ std::vector<Area> TilePartition(int rank,
     }
 
   }
-  printf("BEAT THE LOOP!\n\n");
+
   std::vector<Area> partitions;
   // Sort the partition for better file locality
   std::sort(gparts.begin(), gparts.end(), partition_compare);
@@ -235,13 +242,13 @@ std::vector<Area> TilePartition(int rank,
   }
 
   for (size_t i = 0; i < gparts.size(); ++i) {
-    if (i % process_count == rank) {
+    if (i % process_count == static_cast<unsigned int>(rank)) {
       partitions.push_back(gparts.at(i));
     }
   }
 
   //  Now convert the tile partitions into raster coordinates
-  for (int i = 0; i < partitions.size(); ++i) {
+  for (size_t i = 0; i < partitions.size(); ++i) {
     partitions.at(i).ul.x *= tiff_file->block_x_size;
     partitions.at(i).ul.y *= tiff_file->block_y_size;
 
@@ -342,10 +349,16 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
 
   vector<Area> partitions;
   if (conf.partitioner == "tile") {
-    partitions = TilePartition(rank,
+    int partition_size_pixels = (conf.partition_size * 1024 * 1024)
+        / output_raster->band_type_size
+        / output_raster->band_count;
+    partitions = PartitionTile(rank,
                                process_count,
-                               output_raster,
-                               conf.partition_size);
+                               output_raster->y_size,
+                               output_raster->x_size,
+                               output_raster->block_x_size,
+                               output_raster->block_y_size,
+                               partition_size_pixels);
   } else {
     partitions = PartitionBySize(rank,
                                  process_count,
@@ -485,6 +498,30 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
         timing_file = stdout;
       }
     }
+    double averages[7] = { 0.0 };
+
+    for (unsigned int i = 0; i < process_runtimes.size(); i+=7) {
+      averages[i % 7] += process_runtimes[i];
+    }
+
+    for (unsigned int i = 0; i < 7; i++) {
+      averages[i] /= process_count;
+    }
+
+    struct timeval time;
+    gettimeofday(&time, NULL);
+    fprintf(timing_file, "FOO\n\n");
+    fprintf(timing_file, "finish_time,process_count,total,preloop,minbox,read,resample,write,misc\n");
+    fprintf(timing_file, "%lld,%d,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",
+            (long long)time.tv_sec,
+            process_count,
+            averages[0],
+            averages[1],
+            averages[2],
+            averages[3],
+            averages[4],
+            averages[5],
+            averages[6]);
 
     fprintf(timing_file, "process,total,preloop,minbox,read,resample,write,misc\n");
     for (unsigned int i = 0; i < process_runtimes.size(); i+=7) {
@@ -498,8 +535,8 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
               process_runtimes.at(i+5),
               process_runtimes.at(i+6));
     }
+    fprintf(timing_file, "\nBAR\n");
   }
-
   if (rank == 0 && conf.timing_filename != "") {
     fclose(timing_file);
   }

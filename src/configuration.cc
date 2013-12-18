@@ -44,7 +44,7 @@ Configuration::Configuration(int argc, char *argv[]) {
   partition_size = -1;
   std::string arg = "";
   resampler = NEAREST;
-  partitioner = "pixel";
+  partitioner = "tile";
   layout = "tiled";
   tile_size = 1024;
   timing_filename = "";

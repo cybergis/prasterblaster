@@ -175,8 +175,6 @@ PTIFF* open_raster(string filename) {
   // Attempt to read TileWidth tag. If not found we assume file to have strips
   // instead.
   int64_t *offset = NULL;
-  int64_t image_width = -1;
-  int64_t image_height = -1;
   int64_t tiles_per_image = -1;
   int64_t *tiff_offsets = NULL;
 
@@ -306,9 +304,7 @@ SPTW_ERROR write_subset(PTIFF *tiff_file,
                         RasterChunk *chunk,
                         Area raster_subset) {
   const double tile_x_beginning = (raster_subset.ul.x / tiff_file->block_x_size) * tiff_file->block_x_size;
-  const double tile_y_beginning = (raster_subset.ul.y / tiff_file->block_y_size) * tiff_file->block_y_size;
   const double tile_x_end = tile_x_beginning + tiff_file->block_x_size - 1;
-  const double tile_y_end = tile_y_beginning + tiff_file->block_y_size - 1;
 
   MPI_Status status;
   int pixel_offset;
@@ -348,7 +344,6 @@ SPTW_ERROR write_subset(PTIFF *tiff_file,
   } else {
 
     // Write subset row by row
-    const int row_count = raster_subset.lr.y - raster_subset.ul.y;
     for (int i = raster_subset.ul.y; i <= raster_subset.lr.y; ++i) {
       ChunkArea.ul = chunk->RasterToChunk(librasterblaster::Coordinate(raster_subset.ul.x, i, librasterblaster::UNDEF));
       ChunkArea.lr = chunk->RasterToChunk(librasterblaster::Coordinate(raster_subset.lr.x, i, librasterblaster::UNDEF));
@@ -394,8 +389,6 @@ SPTW_ERROR write_rasterchunk(PTIFF *ptiff,
     // Finally write the tile-bound subset
     write_subset(ptiff, chunk, subset);
   }
-  SPTW_ERROR err = SP_None;
-  unsigned char *pixels = NULL;
   return SP_None;
 }
 }
