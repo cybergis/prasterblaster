@@ -106,7 +106,8 @@ class RasterTest : public ::testing::Test {
 
 TEST_F(RasterTest, Veg1Deg) {
   Configuration conf;
-  conf.partition_size = 1;
+  conf.partition_size = 2000;
+  conf.partitioner = "pixel";
   conf.input_filename = "tests/testdata/veg_geographic_1deg.tif";
   conf.output_filename = "tests/testoutput/veg_mollweide_1deg.tif";
   conf.resampler = librasterblaster::MIN;
@@ -116,14 +117,17 @@ TEST_F(RasterTest, Veg1Deg) {
   int ret = prasterblasterpio(conf);
   ASSERT_EQ(PRB_NOERROR, ret);
 
-  int raster_compare_ret = rastercompare("tests/testdata/veg_mollweide_1deg.tif", 
-                                         "tests/testoutput/veg_mollweide_1deg.tif");
+  if (rank == 0) {
+    int raster_compare_ret = rastercompare("tests/testdata/veg_mollweide_1deg.tif", 
+                                           "tests/testoutput/veg_mollweide_1deg.tif");
   ASSERT_EQ(0, raster_compare_ret);
+  }
 }
 
 TEST_F(RasterTest, Veg1DegRobin) {
   Configuration conf;
-  conf.partition_size = 1;
+  conf.partitioner = "pixel";
+  conf.partition_size = 2000;
   conf.input_filename = "tests/testdata/veg_geographic_1deg.tif";
   conf.output_filename = "tests/testoutput/veg_robinson_1deg.tif";
   conf.resampler = librasterblaster::MIN;
@@ -135,7 +139,8 @@ TEST_F(RasterTest, Veg1DegRobin) {
 
 TEST_F(RasterTest, Veg1DegSinusoidal) {
   Configuration conf;
-  conf.partition_size = 1;
+  conf.partitioner = "pixel";
+  conf.partition_size = 2000;
   conf.input_filename = "tests/testdata/veg_geographic_1deg.tif";
   conf.output_filename = "tests/testoutput/veg_sinosoidal_1deg.tif";
   conf.resampler = librasterblaster::MIN;
@@ -147,7 +152,8 @@ TEST_F(RasterTest, Veg1DegSinusoidal) {
 
 TEST_F(RasterTest, HoldNorm30Min) {
   Configuration conf;
-  conf.partition_size = 1;
+  conf.partitioner = "pixel";
+  conf.partition_size = 2500;
   conf.input_filename = "tests/testdata/holdnorm_geographic_30min.tif";
   conf.output_filename = "tests/testoutput/holdnorm_mollweide_30min.tif";
   conf.resampler = librasterblaster::MIN;
@@ -157,9 +163,11 @@ TEST_F(RasterTest, HoldNorm30Min) {
   int ret = prasterblasterpio(conf);
   ASSERT_EQ(PRB_NOERROR, ret);
 
-  int raster_compare_ret = rastercompare("tests/testdata/holdnorm_geographic_30min.tif", 
-                                         "tests/testoutput/holdnorm_mollweide_30min.tif");
+  if (rank == 0) {
+    int raster_compare_ret = rastercompare("tests/testdata/holdnorm_geographic_30min.tif", 
+                                           "tests/testoutput/holdnorm_mollweide_30min.tif");
   ASSERT_EQ(0, raster_compare_ret);
+  }
 }
 
 TEST_F(RasterTest, GLC30sec) {
@@ -175,9 +183,11 @@ TEST_F(RasterTest, GLC30sec) {
   int ret = prasterblasterpio(conf);
   ASSERT_EQ(PRB_NOERROR, ret);
 
-  int raster_compare_ret = rastercompare("tests/testdata/glc_geographic_30sec.tif", 
-                                         "tests/testoutput/glc_geographic_30sec.tif");
+  if (rank == 0) {
+    int raster_compare_ret = rastercompare("tests/testdata/glc_geographic_30sec.tif", 
+                                           "tests/testoutput/glc_geographic_30sec.tif");
   ASSERT_EQ(0, raster_compare_ret);
+  }
 }
 
 TEST_F(RasterTest, NLCD) {
