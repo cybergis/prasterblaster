@@ -500,7 +500,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     }
     double averages[7] = { 0.0 };
 
-    for (unsigned int i = 0; i < process_runtimes.size(); i+=7) {
+    for (unsigned int i = 0; i < process_runtimes.size(); i++) {
       averages[i % 7] += process_runtimes[i];
     }
 
