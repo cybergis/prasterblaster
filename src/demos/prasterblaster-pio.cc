@@ -309,13 +309,10 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     printf("prasterblaster-pio: Beginning reprojection task\n");
     printf("\tInput File: %s, Output File: %s\n",
            conf.input_filename.c_str(), conf.output_filename.c_str());
-    printf("\tInput Projection: %s\n\tOutput Projection: %s\n",
-           wkt, conf.output_srs.c_str());
-    printf("\tProcess Count: %d\n", process_count);
     OGRFree(wkt);
 
     // Now we have to create the output raster
-    printf("Creating output raster...\n");
+    printf("Creating output raster...");
     double gt[6];
     input_raster->GetGeoTransform(gt);
     PRB_ERROR err = librasterblaster::CreateOutputRaster(input_raster,
@@ -327,7 +324,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
       return PRB_IOERROR;
     }
 
-    printf("Output raster created...\n");
+    printf("done\n");
   }
 
   // Wait for rank 0 to finish creating the file
@@ -449,16 +446,19 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     delete in_chunk;
     delete out_chunk;
 
-    if (i % 10 == 0) {
-      printf("<Rank %d wrote (%zd of %zd)> ",
-             rank,
-             i,
-             partitions.size());
+    if (rank == 0 && i % 10 == 0) {
+      printf(" %d%% ",
+             (int)((i*100) / partitions.size()));
+
       fflush(stdout);
     }
     misc_total += MPI_Wtime() - misc_start;
   }
-  printf("Rank %d done\n", rank);
+
+  if (rank == 0) {
+    printf(" 100%%\n");
+  }
+
   // Clean up
   write_start = MPI_Wtime();
   close_raster(output_raster);
@@ -490,14 +490,13 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
              MPI_COMM_WORLD);
 
   FILE *timing_file = stdout;
-  if (rank == 0) {
-    if (conf.timing_filename != "") {
-      timing_file = fopen(conf.timing_filename.c_str(), "w");
-      if (timing_file == NULL) {
-        fprintf(stderr, "Error creating timing output file");
-        timing_file = stdout;
-      }
+  if (rank == 0 && conf.timing_filename != "") {
+    timing_file = fopen(conf.timing_filename.c_str(), "w");
+    if (timing_file == NULL) {
+      fprintf(stderr, "Error creating timing output file");
+      timing_file = stdout;
     }
+
     double averages[7] = { 0.0 };
 
     for (unsigned int i = 0; i < process_runtimes.size(); i++) {
@@ -510,7 +509,6 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
 
     struct timeval time;
     gettimeofday(&time, NULL);
-    fprintf(timing_file, "FOO\n\n");
     fprintf(timing_file, "finish_time,process_count,total,preloop,minbox,read,resample,write,misc\n");
     fprintf(timing_file, "%lld,%d,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",
             (long long)time.tv_sec,
@@ -535,7 +533,6 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
               process_runtimes.at(i+5),
               process_runtimes.at(i+6));
     }
-    fprintf(timing_file, "\nBAR\n");
   }
   if (rank == 0 && conf.timing_filename != "") {
     fclose(timing_file);

@@ -202,7 +202,8 @@ PTIFF* open_raster(string filename) {
     }
     ptiff->first_strip_offset = *offset;
     ptiff->tiles_across = 1;
-    ptiff->tiles_down = 1;
+    ptiff->tiles_down = ptiff->y_size;
+    ptiff->block_y_size = ptiff->x_size;
   }
 
   ptiff->first_strip_offset = *offset;
