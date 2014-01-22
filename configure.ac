@@ -20,7 +20,32 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 
 AC_LANG([C++])
-	 	
+
+AC_ARG_WITH([gdal-config], 
+	[AS_HELP_STRING([--with-gdal-config=FILE], [specify an alternative gdal-config file])], 
+	[GDAL_CONFIG="$withval"], [GDAL_CONFIG=""])
+if test -z $GDAL_CONFIG;
+then
+	AC_PATH_PROG([GDAL_CONFIG], [gdal-config])
+	if test -z $GDAL_CONFIG; 
+	then
+		AC_MSG_ERROR([could not find gdal-config from libgdal within the current path. You may need to try re-running configure with a --with-gdal-config parameter.])
+	fi
+	
+else
+	if test -f $GDAL_CONFIG; then
+		AC_MSG_RESULT([Using user-specified gdal-config file: $GDAL_CONFIG])
+	else
+		AC_MSG_ERROR([the user-specified gdal-config file $GDAL_CONFIG does not exist])
+	fi
+fi
+
+GDAL_CPPFLAGS="`$GDAL_CONFIG --cflags`"
+GDAL_CXXFLAGS="`$GDAL_CONFIG --libs`"
+
+AC_SUBST([GDAL_CPPFLAGS])
+AC_SUBST([GDAL_CXXFLAGS])
+
 AC_ARG_WITH(gdal-incdir,
   AS_HELP_STRING( [--with-gdal-incdir=path],
   [Specify the path to the GDAL includes]),
@@ -40,8 +65,7 @@ AC_ARG_WITH(tiff-libdir,
   AS_HELP_STRING( [--with-tiff-libdir=path],
   [Specify the path to the tiff shared library file]),
   [TIFF_CXXFLAGS="-L$withval -Wl,-R$withval"], [])
-#AC_SUBST(GDAL_CPPFLAGS)
-#AC_SUBST(GDAL_CFLAGS)
+
 CPPFLAGS="${CPPFLAGS} ${GDAL_CPPFLAGS} ${TIFF_CPPFLAGS}"
 CXXFLAGS="${CXXFLAGS} ${GDAL_CXXFLAGS} ${TIFF_CXXFLAGS}"
 
