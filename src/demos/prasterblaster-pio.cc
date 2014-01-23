@@ -53,10 +53,10 @@ USAGE:
 \endhtmlonly
 
 \verbatim
-prasterblasterpio [--t_srs target_srs] [--s_srs source_srs] 
-                  [-r resampling_method] [-n partition_size]
-                  [--dstnodata no_data_value]
-                  source_file destination_file
+prasterblaster [--t_srs target_srs] [--s_srs source_srs] 
+               [-r resampling_method] [-n partition_size]
+               [--dstnodata no_data_value]
+               source_file destination_file
 
 \endverbatim
 
@@ -189,7 +189,7 @@ std::vector<Area> TilePartition(int rank,
                                 int max_partition_size) {
   int64_t tiles_per_partition = (tiff_file->block_x_size * tiff_file->block_y_size
                                  * tiff_file->band_type_size)
-                                 / 1024 / 1024 / max_partition_size;
+                                 / tiff_file->block_x_size / tiff_file->block_y_size / max_partition_size;
   if (tiles_per_partition < 1) {
     tiles_per_partition = 1;
   }
@@ -278,7 +278,12 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   GDALAllRegister();
 
   if (conf.input_filename == "" || conf.output_filename == "") {
-    fprintf(stderr, "Specify an input and output filename\n");
+    printf("USAGE:\n"
+           "prasterblaster [--t_srs target_srs] [--s_srs source_srs]\n"
+           "               [-r resampling_method] [-n partition_size]\n"
+           "               [--dstnodata no_data_value]\n"
+           "               [--timing-file filename]\n"
+           "               source_file destination_file\n");
     return PRB_BADARG;
   }
 
@@ -311,6 +316,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     double gt[6];
     input_raster->GetGeoTransform(gt);
     PRB_ERROR err = librasterblaster::CreateOutputRaster(input_raster,
+                                                         conf.tile_size,
                                                          conf.output_filename,
                                                          gt[1],
                                                          conf.output_srs);
@@ -341,7 +347,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
 
   vector<Area> partitions;
   if (conf.partitioner == "tile") {
-    int partition_size_pixels = (conf.partition_size * 1024 * 1024)
+    int partition_size_pixels = (conf.partition_size * conf.tile_size * conf.tile_size)
         / output_raster->band_type_size
         / output_raster->band_count;
     partitions = PartitionTile(rank,

@@ -37,6 +37,10 @@ struct option longopts[] = {
 Configuration::Configuration() {
   resampler = NEAREST;
   partition_size = -1;
+  tile_size = 1024;
+  layout = "tiled";
+  partitioner = "tile";
+  timing_filename = "";
 }
 
 Configuration::Configuration(int argc, char *argv[]) {
@@ -79,7 +83,7 @@ Configuration::Configuration(int argc, char *argv[]) {
         layout = optarg;
         break;
       case 'x':
-        tile_size = strtol(optarg, NULL, 10);
+        tile_size = static_cast<int>(strtol(optarg, NULL, 10));
         break;
       case 'c':
         timing_filename = optarg;

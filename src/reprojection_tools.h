@@ -66,6 +66,7 @@ int simplerandom(int i);
  *
  */
 PRB_ERROR CreateOutputRaster(GDALDataset *in,
+                             int output_tile_size,
                              string output_filename,
                              double output_pixel_size,
                              string output_srs);

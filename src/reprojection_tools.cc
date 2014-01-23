@@ -28,6 +28,7 @@
 #include <vector>
 #include <ctime>
 #include <cstdlib>
+#include <sstream>
 
 #include "src/rastercoordtransformer.h"
 #include "src/quadtree.h"
@@ -38,6 +39,7 @@
 
 namespace librasterblaster {
 PRB_ERROR CreateOutputRaster(GDALDataset *in,
+                             int output_tile_size,
                              string output_filename,
                              double output_pixel_size,
                              string output_srs) {
@@ -82,14 +84,17 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
     return PRB_BADARG;
   }
 
+  std::stringstream ts;
+  ts << output_tile_size;
+
   // Set driver options
   char **options = NULL;
   options = CSLSetNameValue(options, "INTERLEAVE", "PIXEL");
   options = CSLSetNameValue(options, "BIGTIFF", "YES");
   options = CSLSetNameValue(options, "TILED", "YES");
   options = CSLSetNameValue(options, "COMPRESS", "NONE");
-  options = CSLSetNameValue(options, "BLOCKXSIZE", "1024");
-  options = CSLSetNameValue(options, "BLOCKYSIZE", "1024");
+  options = CSLSetNameValue(options, "BLOCKXSIZE", ts.str().c_str());
+  options = CSLSetNameValue(options, "BLOCKYSIZE", ts.str().c_str());
 
   GDALDataset *output =
       driver->Create(output_filename.c_str(),
