@@ -28,6 +28,8 @@
 
 /// Container namespace for librasterblaster project
 namespace librasterblaster {
+int simplerandom(int i);
+
 #define GEN_RESAMPLER_CASES(C_PIXEL_TYPE)   \
         switch (resampler) {               \
         case MIN: \

@@ -71,11 +71,6 @@ prasterblaster-pio.cc.
 </p>
  */
 namespace librasterblaster {
-int simplerandom(int i) {
-  return std::rand()%i;
-}
-
-
 int rastercompare(string control_filename, string test_filename) {
   const double delta = 0.001;
   GDALAllRegister();
