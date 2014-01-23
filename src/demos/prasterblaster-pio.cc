@@ -447,10 +447,9 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     delete in_chunk;
     delete out_chunk;
 
-    if (rank == 0 && i % 10 == 0) {
+    if (rank == 0) {
       printf(" %d%% ",
              (int)((i*100) / partitions.size()));
-
       fflush(stdout);
     }
     misc_total += MPI_Wtime() - misc_start;
@@ -491,11 +490,13 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
              MPI_COMM_WORLD);
 
   FILE *timing_file = stdout;
-  if (rank == 0 && conf.timing_filename != "") {
-    timing_file = fopen(conf.timing_filename.c_str(), "w");
-    if (timing_file == NULL) {
-      fprintf(stderr, "Error creating timing output file");
-      timing_file = stdout;
+  if (rank == 0) {
+    if (conf.timing_filename != "") {
+      timing_file = fopen(conf.timing_filename.c_str(), "w");
+      if (conf.timing_filename != "" && timing_file == NULL) {
+        fprintf(stderr, "Error creating timing output file");
+        timing_file = stdout;
+      }
     }
 
     double averages[7] = { 0.0 };
