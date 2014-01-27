@@ -38,6 +38,131 @@ using librasterblaster::RasterChunk;
 using librasterblaster::Area;
 
 namespace sptw {
+/*
+ * Return size of TIFFDataType in bytes
+ */
+
+int get_type_size(TIFFDataType type)
+{
+  switch(type)
+  {
+    case 0:
+    case TIFF_BYTE:
+    case TIFF_ASCII:
+    case TIFF_SBYTE:
+    case TIFF_UNDEFINED:
+      return 1;
+    case TIFF_SHORT:
+    case TIFF_SSHORT:
+      return 2;
+    case TIFF_LONG:
+    case TIFF_SLONG:
+    case TIFF_FLOAT:
+    case TIFF_IFD:
+      return 4;
+    case TIFF_RATIONAL:
+    case TIFF_SRATIONAL:
+    case TIFF_DOUBLE:
+    case TIFF_LONG8:
+    case TIFF_SLONG8:
+    case TIFF_IFD8:
+      return 8;
+    default:
+      return 0; /* unknown type */
+  }
+}
+
+int64_t parse_int64(uint8_t buffer, bool big_endian) {
+  if (big_endian) {
+    return (buffer[7]<<56 | buffer[6]<<48 | buffer[5]<<40 | buffer[4]<<32
+            | buffer[3]<<24 | buffer[2]<<16 | buffer[1]<<8 | buffer[0]<<0);
+  }  else {
+    return (buffer[0]<<56 | buffer[1]<<48 | buffer[2]<<40 | buffer[3]<<32
+            | buffer[4]<<24 | buffer[5]<<16 | buffer[6]<<8 | buffer[7]<<0);
+  }
+}
+
+int16_t parse_int16(uint8_t buffer, bool big_endian) {
+  if (big_endian)
+    return (buffer[1]<<0 | buffer[0]<<8);
+  else
+    return (buffer[0]<<0 | buffer[1]<<8);
+}
+
+SPTW_ERROR populate_tile_offsets(PTIFF tiff_file,
+                                 int64_t tile_size,
+                                 int64_t tile_alignment) {
+  MPI_Status status;
+  bool big_endian = false;   // Is tiff file big endian?
+
+  // Read endianess of file
+  uint8_t endian_flag[2] = { 0x49, 0x49 };
+  MPI_File_read_at(tiff_file, 0, endian_flag, 2, MPI_BYTE, &status);
+  if (endian_flag[0] == 0x4d) {
+    big_endian == true;
+  }
+
+  // Check tiff version, should be 0x002b for BigTiff
+  uint8_t version_data[2];
+  int16_t version = 0;
+  MPI_File_read_at(tiff_file, 2, version_data, 2, MPI_BYTE, &status);
+
+  if (big_endian)
+    version = (version_data[1]<<0 | version_data[0]<<8);
+  else
+    version = (version_data[0]<<0 | version_data[1]<<8);
+
+  if (version_data != 0x002b) {
+    // Wrong Tiff version !
+    return SPTW_BADARG;
+  }
+
+  // Read offset to first directory
+  uint8_t dbuf[8];
+  int64_t doffset = 0;
+  MPI_File_read_at(tiff_file, 8, dbuff, 8, MPI_BYTE, &status);
+  doffset = parse_int64(dbuf, big_endian);
+
+  // Read number of directory entries
+  uint8_t entry_buffer[8];
+  int64_t entry_count = 0;
+  MPI_File_read_at(tiff_file, doffset, entry_buffer, 8, MPI_BYTE, &status);
+  entry_count = parse_int64(entry_buffer, big_endian);
+
+  entry_offset = doffset + sizeof(int64_t); // directory offset + sizeof directory count
+
+  for (int64_t i = 0; i<entry_count; ++i) {
+    // Read identifying tag of directory entry
+    uint8_t tag_buffer[2];
+    MPI_File_read_at(tiff_file, entry_offset, tag_buffer, 2, MPI_BYTE, &status);
+    int16_t entry_tag = parse_int16(tag_buffer, big_endian);
+
+    // Read type of directory entry
+    uint8_t type_buffer[2];
+    MPI_File_read_at(tiff_file, entry_offset+2, type_buffer, 2, MPI_BYTE, &status);
+    int16_t entry_type = parse_int16(type_buffer, big_endian);
+
+    // Read count of elements in entry
+    uint8_t count_buffer[8];
+    MPI_File_read_at(tiff_file, entry_offset+4, count_buffer, 8, MPI_BYTE, &status);
+    int64_t element_count = parse_int64(count_buffer, big_endian);
+
+    // Read entry data
+    uint8_t data_buffer[8];
+    MPI_File_read_at(tiff_file, entry_offset+12, data_buffer, 8, MPI_BYTE, &status);
+    int64_t entry_data = parse_int64(data_buffer, big_endian);
+
+    // Check if directory type is TIFFTAG_TILEOFFSETS
+    if (entry_type = TIFFTAG_TILEOFFSETS) {
+
+    } else { // Update entry_offset to offset of next directory entry
+        entry_offset = entry_offset + 20;
+      }
+    }
+  }
+}
+
+
 SPTW_ERROR create_raster(string filename,
                          int64_t x_size,
                          int64_t y_size,
