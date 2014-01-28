@@ -193,6 +193,11 @@ SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file,
   int64_t entry_count = read_int64(tiff_file, doffset, big_endian);
   int64_t entry_offset = doffset + sizeof(int64_t); // directory offset + sizeof directory count
 
+  int64_t tile_count = 0;
+  const int64_t tile_size_bytes = tiff_file->block_x_size * tiff_file->block_y_size
+      * tiff_file->band_count * tiff_file->band_type_size;
+  int64_t first_tile_offset = 0;
+
   for (int64_t i = 0; i<entry_count; ++i) {
     // Read identifying tag of directory entry
     uint8_t tag_buffer[2];
@@ -210,14 +215,12 @@ SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file,
     // Read entry data
     int64_t entry_data = read_int64(tiff_file, entry_offset+12, big_endian);
 
-    const int64_t tile_count = tiff_file->tiles_across + tiff_file->tiles_down;
-    const int64_t tile_size_bytes = tiff_file->block_x_size * tiff_file->block_y_size 
-        * tiff_file->band_count * tiff_file->band_type_size;
-
     // Check if directory type is TIFFTAG_TILEOFFSETS
     if (entry_tag == TIFFTAG_TILEOFFSETS) {
       // Read location of first_offset
       int64_t first_offset = read_int64(tiff_file, entry_data, big_endian);
+      first_tile_offset = first_offset;
+      tile_count = element_count;
 
       for (int64_t j = 1; j < element_count; ++j) {
         write_int64(tiff_file, entry_data+(sizeof(int64_t)*j), first_offset+(tile_size_bytes*j), big_endian);
@@ -230,6 +233,10 @@ SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file,
     entry_offset += 20;
   }
 
+  // Calculate end of file and write to it
+  uint8_t buffer[100];
+  int64_t file_size = (tile_count * tile_size_bytes) + first_tile_offset;
+  MPI_File_write_at(tiff_file->fh, file_size-8, buffer, 8, MPI_BYTE, &status);
   return SP_None;
 }
 
