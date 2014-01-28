@@ -90,7 +90,7 @@ struct PTIFF {
   int64_t tiles_down;
 };
 
-SPTW_ERROR populate_tile_offsets(PTIFF tiff_file,
+SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file,
                                  int64_t tile_size,
                                  int64_t tile_alignment);
 

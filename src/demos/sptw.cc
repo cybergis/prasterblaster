@@ -72,24 +72,95 @@ int get_type_size(TIFFDataType type)
   }
 }
 
-int64_t parse_int64(uint8_t buffer, bool big_endian) {
+int64_t parse_int64(uint8_t *buffer, bool big_endian) {
+  int64_t result = 0;
+  int64_t temp = 0;
+
   if (big_endian) {
-    return (buffer[7]<<56 | buffer[6]<<48 | buffer[5]<<40 | buffer[4]<<32
-            | buffer[3]<<24 | buffer[2]<<16 | buffer[1]<<8 | buffer[0]<<0);
+    temp = buffer[0];
+    result |= temp<<56;
+    temp = buffer[1];
+    result |= temp<<48;
+    temp = buffer[2];
+    result |= temp<<40;
+    temp = buffer[3];
+    result |= temp<<32;
+    temp = buffer[4];
+    result |= temp<<24;
+    temp = buffer[5];
+    result |= temp<<16;
+    temp = buffer[6];
+    result |= temp<<8;
+    temp = buffer[7];
+    result |= temp<<0;
   }  else {
-    return (buffer[0]<<56 | buffer[1]<<48 | buffer[2]<<40 | buffer[3]<<32
-            | buffer[4]<<24 | buffer[5]<<16 | buffer[6]<<8 | buffer[7]<<0);
+    temp = buffer[7];
+    result |= temp<<56;
+    temp = buffer[6];
+    result |= temp<<48;
+    temp = buffer[5];
+    result |= temp<<40;
+    temp = buffer[4];
+    result |= temp<<32;
+    temp = buffer[3];
+    result |= temp<<24;
+    temp = buffer[2];
+    result |= temp<<16;
+    temp = buffer[1];
+    result |= temp<<8;
+    temp = buffer[0];
+    result |= temp<<0;
   }
+
+  return result;
 }
 
-int16_t parse_int16(uint8_t buffer, bool big_endian) {
+int export_int64(int64_t num, uint8_t *buffer, bool big_endian) {
+  if (big_endian) {
+    buffer[0] = (num>>56);
+    buffer[1] = (num>>48);
+    buffer[2] = (num>>40);
+    buffer[3] = (num>>32);
+    buffer[4] = (num>>24);
+    buffer[5] = (num>>16);
+    buffer[6] = (num>>8);
+    buffer[7] = (num>>0);
+  } else {
+    buffer[7] = (num>>56);
+    buffer[6] = (num>>48);
+    buffer[5] = (num>>40);
+    buffer[4] = (num>>32);
+    buffer[3] = (num>>24);
+    buffer[2] = (num>>16);
+    buffer[1] = (num>>8);
+    buffer[0] = (num>>0);
+
+  }
+  return 0;
+}
+
+
+int16_t parse_int16(uint8_t *buffer, bool big_endian) {
   if (big_endian)
     return (buffer[1]<<0 | buffer[0]<<8);
   else
     return (buffer[0]<<0 | buffer[1]<<8);
 }
 
-SPTW_ERROR populate_tile_offsets(PTIFF tiff_file,
+int64_t read_int64(PTIFF *tiff_file, int64_t offset, bool big_endian) {
+  uint8_t read_buffer[8];
+  MPI_File_read_at(tiff_file->fh, offset,  read_buffer, sizeof(int64_t), MPI_BYTE, NULL);
+  return parse_int64(read_buffer, big_endian);
+}
+
+int write_int64(PTIFF *tiff_file, int64_t offset, int64_t value, bool big_endian) {
+  uint8_t buffer[8];
+  export_int64(value, buffer, big_endian);
+  MPI_File_write_at(tiff_file->fh, offset, buffer, sizeof(int64_t), MPI_BYTE, NULL);
+  return 0;
+}
+
+SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file,
                                  int64_t tile_size,
                                  int64_t tile_alignment) {
   MPI_Status status;
@@ -97,70 +168,71 @@ SPTW_ERROR populate_tile_offsets(PTIFF tiff_file,
 
   // Read endianess of file
   uint8_t endian_flag[2] = { 0x49, 0x49 };
-  MPI_File_read_at(tiff_file, 0, endian_flag, 2, MPI_BYTE, &status);
+  MPI_File_read_at(tiff_file->fh, 0, endian_flag, 2, MPI_BYTE, &status);
   if (endian_flag[0] == 0x4d) {
-    big_endian == true;
+    big_endian = true;
   }
 
   // Check tiff version, should be 0x002b for BigTiff
   uint8_t version_data[2];
   int16_t version = 0;
-  MPI_File_read_at(tiff_file, 2, version_data, 2, MPI_BYTE, &status);
+  MPI_File_read_at(tiff_file->fh, 2, version_data, 2, MPI_BYTE, &status);
 
-  if (big_endian)
-    version = (version_data[1]<<0 | version_data[0]<<8);
-  else
-    version = (version_data[0]<<0 | version_data[1]<<8);
+  version = parse_int16(version_data, big_endian);
 
-  if (version_data != 0x002b) {
+  if (version != 0x002b) {
     // Wrong Tiff version !
-    return SPTW_BADARG;
+    return SP_BadArg;
   }
 
   // Read offset to first directory
-  uint8_t dbuf[8];
   int64_t doffset = 0;
-  MPI_File_read_at(tiff_file, 8, dbuff, 8, MPI_BYTE, &status);
-  doffset = parse_int64(dbuf, big_endian);
+  doffset = read_int64(tiff_file, 8, big_endian);
 
   // Read number of directory entries
-  uint8_t entry_buffer[8];
-  int64_t entry_count = 0;
-  MPI_File_read_at(tiff_file, doffset, entry_buffer, 8, MPI_BYTE, &status);
-  entry_count = parse_int64(entry_buffer, big_endian);
-
-  entry_offset = doffset + sizeof(int64_t); // directory offset + sizeof directory count
+  int64_t entry_count = read_int64(tiff_file, doffset, big_endian);
+  int64_t entry_offset = doffset + sizeof(int64_t); // directory offset + sizeof directory count
 
   for (int64_t i = 0; i<entry_count; ++i) {
     // Read identifying tag of directory entry
     uint8_t tag_buffer[2];
-    MPI_File_read_at(tiff_file, entry_offset, tag_buffer, 2, MPI_BYTE, &status);
+    MPI_File_read_at(tiff_file->fh, entry_offset, tag_buffer, 2, MPI_BYTE, &status);
     int16_t entry_tag = parse_int16(tag_buffer, big_endian);
 
     // Read type of directory entry
     uint8_t type_buffer[2];
-    MPI_File_read_at(tiff_file, entry_offset+2, type_buffer, 2, MPI_BYTE, &status);
+    MPI_File_read_at(tiff_file->fh, entry_offset+2, type_buffer, 2, MPI_BYTE, &status);
     int16_t entry_type = parse_int16(type_buffer, big_endian);
 
     // Read count of elements in entry
-    uint8_t count_buffer[8];
-    MPI_File_read_at(tiff_file, entry_offset+4, count_buffer, 8, MPI_BYTE, &status);
-    int64_t element_count = parse_int64(count_buffer, big_endian);
+    int64_t element_count = read_int64(tiff_file, entry_offset+4, big_endian);
 
     // Read entry data
-    uint8_t data_buffer[8];
-    MPI_File_read_at(tiff_file, entry_offset+12, data_buffer, 8, MPI_BYTE, &status);
-    int64_t entry_data = parse_int64(data_buffer, big_endian);
+    int64_t entry_data = read_int64(tiff_file, entry_offset+12, big_endian);
+
+    const int64_t tile_count = tiff_file->tiles_across + tiff_file->tiles_down;
+    const int64_t tile_size_bytes = tiff_file->block_x_size * tiff_file->block_y_size 
+        * tiff_file->band_count * tiff_file->band_type_size;
 
     // Check if directory type is TIFFTAG_TILEOFFSETS
-    if (entry_type = TIFFTAG_TILEOFFSETS) {
+    if (entry_tag == TIFFTAG_TILEOFFSETS) {
+      // Read location of first_offset
+      int64_t first_offset = read_int64(tiff_file, entry_data, big_endian);
 
-    } else { // Update entry_offset to offset of next directory entry
-        entry_offset = entry_offset + 20;
+      for (int64_t j = 1; j < element_count; ++j) {
+        write_int64(tiff_file, entry_data+(sizeof(int64_t)*j), first_offset+(tile_size_bytes*j), big_endian);
+      }
+    } else if (entry_tag == TIFFTAG_TILEBYTECOUNTS) {
+      for (int64_t j = 1; j < element_count; ++j) {
+        write_int64(tiff_file, entry_data+(sizeof(int64_t)*j), tile_size_bytes, big_endian);
       }
     }
+    entry_offset += 20;
   }
+
+  return SP_None;
 }
+
 
 
 SPTW_ERROR create_raster(string filename,

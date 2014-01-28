@@ -23,6 +23,7 @@
 #include <ogr_spatialref.h>
 #include <gdal.h>
 #include <gdal_priv.h>
+#include <tiffio.h>
 
 #include <algorithm>
 #include <vector>
@@ -71,10 +72,19 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
                                   output_srs);
   CPLFree(srs_str);
 
-  int64_t num_rows = static_cast<int64_t>(ceil(out_area.ul.y - out_area.lr.y)
-                              / in_transform[1]);
-  int64_t num_cols = static_cast<int64_t>(ceil(out_area.lr.x - out_area.ul.x)
-                              / in_transform[1]);
+  // Calculate Output Pixel Size
+  double pixel_size_down = (out_area.ul.y - out_area.lr.y) / in->GetRasterYSize();
+  double pixel_size_across = (out_area.lr.x - out_area.ul.x) / in->GetRasterXSize();
+  double pixel_size = pixel_size_down;
+
+  if (pixel_size_across > pixel_size) {
+    pixel_size = pixel_size_across;
+  }
+
+  int64_t num_rows = static_cast<int64_t>(ceil(out_area.ul.y - out_area.lr.y))
+      / pixel_size;
+  int64_t num_cols = static_cast<int64_t>(ceil(out_area.lr.x - out_area.ul.x))
+      / pixel_size;
 
   GDALAllRegister();
   GDALDriver *driver = GetGDALDriverManager()->GetDriverByName("GTiff");
@@ -95,6 +105,7 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   options = CSLSetNameValue(options, "COMPRESS", "NONE");
   options = CSLSetNameValue(options, "BLOCKXSIZE", ts.str().c_str());
   options = CSLSetNameValue(options, "BLOCKYSIZE", ts.str().c_str());
+  options = CSLSetNameValue(options, "SPARSE_OK", "YES");
 
   GDALDataset *output =
       driver->Create(output_filename.c_str(),
@@ -129,6 +140,40 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   out_sr.SetFromUserInput(output_srs.c_str());
   out_sr.exportToWkt(&wkt);
   output->SetProjection(wkt);
+
+
+  double *data = new double(sizeof(double) * 4 * in->GetRasterCount());
+
+  output->RasterIO(GF_Write,
+                   0,
+                   0,
+                   1,
+                   1,
+                   data,
+                   1,
+                   1,
+                   in->GetRasterBand(1)->GetRasterDataType(),
+                   in->GetRasterCount(),
+                   NULL,
+                   0,
+                   0,
+                   0);
+
+  output->RasterIO(GF_Write,
+                   num_cols-1,
+                   num_rows-1,
+                   1,
+                   1,
+                   data,
+                   1,
+                   1,
+                   in->GetRasterBand(1)->GetRasterDataType(),
+                   in->GetRasterCount(),
+                   NULL,
+                   0,
+                   0,
+                   0);
+  delete data;
 
   OGRFree(wkt);
   CSLDestroy(options);

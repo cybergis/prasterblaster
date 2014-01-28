@@ -325,6 +325,14 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
       return PRB_IOERROR;
     }
 
+    // Now populate tile offsets
+    PTIFF* out_raster = open_raster(conf.output_filename);
+    SPTW_ERROR sperr = populate_tile_offsets(out_raster, conf.tile_size, 0);
+    if (sperr != sptw::SP_None) {
+      fprintf(stderr, "\nError populating tile offsets\n");
+    }
+    close_raster(out_raster);
+
     printf("done\n");
   }
 
