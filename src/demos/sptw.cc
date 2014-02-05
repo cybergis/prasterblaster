@@ -191,11 +191,12 @@ SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file,
 
   // Read number of directory entries
   int64_t entry_count = read_int64(tiff_file, doffset, big_endian);
-  int64_t entry_offset = doffset + sizeof(int64_t); // directory offset + sizeof directory count
+  // directory offset + sizeof directory count
+  int64_t entry_offset = doffset + sizeof(int64_t);
 
   int64_t tile_count = 0;
-  const int64_t tile_size_bytes = tiff_file->block_x_size * tiff_file->block_y_size
-      * tiff_file->band_count * tiff_file->band_type_size;
+  const int64_t tile_size_bytes = tile_size * tile_size * tiff_file->band_count
+      * tiff_file->band_type_size;
   int64_t first_tile_offset = 0;
 
   for (int64_t i = 0; i<entry_count; ++i) {
@@ -203,11 +204,6 @@ SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file,
     uint8_t tag_buffer[2];
     MPI_File_read_at(tiff_file->fh, entry_offset, tag_buffer, 2, MPI_BYTE, &status);
     int16_t entry_tag = parse_int16(tag_buffer, big_endian);
-
-    // Read type of directory entry
-    uint8_t type_buffer[2];
-    MPI_File_read_at(tiff_file->fh, entry_offset+2, type_buffer, 2, MPI_BYTE, &status);
-    int16_t entry_type = parse_int16(type_buffer, big_endian);
 
     // Read count of elements in entry
     int64_t element_count = read_int64(tiff_file, entry_offset+4, big_endian);
@@ -223,7 +219,10 @@ SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file,
       tile_count = element_count;
 
       for (int64_t j = 1; j < element_count; ++j) {
-        write_int64(tiff_file, entry_data+(sizeof(int64_t)*j), first_offset+(tile_size_bytes*j), big_endian);
+        write_int64(tiff_file,
+            entry_data+(sizeof(int64_t)*j),
+            first_offset+(tile_size_bytes*j),
+            big_endian);
       }
     } else if (entry_tag == TIFFTAG_TILEBYTECOUNTS) {
       for (int64_t j = 1; j < element_count; ++j) {

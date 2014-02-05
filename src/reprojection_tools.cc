@@ -72,19 +72,10 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
                                   output_srs);
   CPLFree(srs_str);
 
-  // Calculate Output Pixel Size
-  double pixel_size_down = (out_area.ul.y - out_area.lr.y) / in->GetRasterYSize();
-  double pixel_size_across = (out_area.lr.x - out_area.ul.x) / in->GetRasterXSize();
-  double pixel_size = pixel_size_down;
-
-  if (pixel_size_across > pixel_size) {
-    pixel_size = pixel_size_across;
-  }
-
-  int64_t num_rows = static_cast<int64_t>(ceil(out_area.ul.y - out_area.lr.y))
-      / pixel_size;
-  int64_t num_cols = static_cast<int64_t>(ceil(out_area.lr.x - out_area.ul.x))
-      / pixel_size;
+  int64_t num_rows = static_cast<int64_t>(ceil(out_area.ul.y - out_area.lr.y)
+                                          / in_transform[1]);
+  int64_t num_cols = static_cast<int64_t>(ceil(out_area.lr.x - out_area.ul.x)
+                                          / in_transform[1]);
 
   GDALAllRegister();
   GDALDriver *driver = GetGDALDriverManager()->GetDriverByName("GTiff");
