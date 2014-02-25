@@ -40,10 +40,9 @@
 
 namespace librasterblaster {
 PRB_ERROR CreateOutputRaster(GDALDataset *in,
-                             int output_tile_size,
                              string output_filename,
-                             double output_pixel_size,
-                             string output_srs) {
+                             string output_srs,
+                             int output_tile_size) {
   OGRSpatialReference in_srs;
   OGRSpatialReference out_srs;
   OGRErr err;
@@ -66,16 +65,53 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   in_srs.exportToProj4(&srs_str);
   Area out_area = ProjectedMinbox(ul,
                                   srs_str,
-                                  output_pixel_size,
+                                  in_transform[1],
                                   in->GetRasterYSize(),
                                   in->GetRasterXSize(),
                                   output_srs);
   CPLFree(srs_str);
 
-  int64_t num_rows = static_cast<int64_t>(ceil(out_area.ul.y - out_area.lr.y)
-                                          / in_transform[1]);
-  int64_t num_cols = static_cast<int64_t>(ceil(out_area.lr.x - out_area.ul.x)
-                                          / in_transform[1]);
+  // Compute the distance, in the output projected coordinate units, from the
+  // top corner of the transformed input space to the bottom corner of the
+  // transformed input.
+  const double delta_x = out_area.lr.x - out_area.ul.x;
+  const double delta_y = out_area.lr.y - out_area.ul.y;
+  const double diagonal_dist = sqrt(delta_x * delta_x + delta_y * delta_y);
+
+  // Use this distance to compute a pixel size
+  const double in_x_size = in->GetRasterBand(1)->GetXSize();
+  const double in_y_size = in->GetRasterBand(1)->GetYSize();
+  const double output_pixel_size = diagonal_dist
+      / sqrt(in_x_size * in_x_size + in_y_size * in_y_size);
+
+  const int64_t num_cols = static_cast<int64_t>(
+      0.5 + ((out_area.lr.x - out_area.ul.x) / output_pixel_size));
+  const int64_t num_rows = static_cast<int64_t>(
+      0.5 + ((out_area.ul.y - out_area.lr.y) / output_pixel_size));
+  printf("Output pixel size: %f rows %lld, cols %lld\n", output_pixel_size, num_rows, num_cols);
+
+
+  PRB_ERROR result = CreateOutputRasterFile(in,
+                                            output_filename,
+                                            output_srs,
+                                            num_cols,
+                                            num_rows,
+                                            output_pixel_size,
+                                            out_area,
+                                            output_tile_size);
+  return result;
+}
+
+PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
+                                 string output_filename,
+                                 string output_srs,
+                                 int64_t output_columns,
+                                 int64_t output_rows,
+                                 double output_pixel_size,
+                                 Area output_projected_area,
+                                 int output_tile_size) {
+  double in_transform[6];
+  in->GetGeoTransform(in_transform);
 
   GDALAllRegister();
   GDALDriver *driver = GetGDALDriverManager()->GetDriverByName("GTiff");
@@ -100,8 +136,8 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
 
   GDALDataset *output =
       driver->Create(output_filename.c_str(),
-                     num_cols,
-                     num_rows,
+                     output_columns,
+                     output_rows,
                      in->GetRasterCount(),
                      in->GetRasterBand(1)->GetRasterDataType(),
                      options);
@@ -118,12 +154,12 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   }
 
   // Setup georeferencing
-  double out_t[6] = { out_area.ul.x,
-                      in_transform[1],
+  double out_t[6] = { output_projected_area.ul.x,
+                      output_pixel_size,
                       0.0,
-                      out_area.ul.y,
+                      output_projected_area.ul.y,
                       0.0,
-                      in_transform[5] };
+                      -output_pixel_size };
 
   output->SetGeoTransform(out_t);
   OGRSpatialReference out_sr;
@@ -133,7 +169,7 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   output->SetProjection(wkt);
 
 
-  double *data = new double(sizeof(double) * 4 * in->GetRasterCount());
+  double *data = new double(sizeof(*data) * 4 * in->GetRasterCount());
 
   output->RasterIO(GF_Write,
                    0,
@@ -151,8 +187,8 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
                    0);
 
   output->RasterIO(GF_Write,
-                   num_cols-1,
-                   num_rows-1,
+                   output_columns-1,
+                   output_rows-1,
                    1,
                    1,
                    data,

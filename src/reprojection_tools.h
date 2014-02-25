@@ -28,7 +28,9 @@
 
 /// Container namespace for librasterblaster project
 namespace librasterblaster {
+/** \cond DOXYHIDE **/
 int simplerandom(int i);
+/** \cond DOXYHIDE **/
 
 #define GEN_RESAMPLER_CASES(C_PIXEL_TYPE)   \
         switch (resampler) {               \
@@ -55,22 +57,34 @@ int simplerandom(int i);
 
 
 /**
- * @brief
+ * @brief Creates and output raster based on a input and a new projection
+ * 
  * This function creates a new raster file at the path
  * output_filename, with projection specified by output_srs. The
  * minbox of in is calculated with the new projection.
  *
  * @param in The GDALDataset that represents the input file.
  * @param output_filename The path the new raster will be created at.
+ * @param output_tile_size Size in pixels of one dimension of the tiles of the output raster
+ * @param output_pixel_size Side of square in meters of projected coordinates that each pixel represents
  * @param output_srs The Proj.4 specification of  projection and projection parameters.
  *
  */
 PRB_ERROR CreateOutputRaster(GDALDataset *in,
-                             int output_tile_size,
                              string output_filename,
-                             double output_pixel_size,
-                             string output_srs);
+                             string output_srs,
+                             int output_tile_size);
+PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
+                                 string output_filename,
+                                 string output_srs,
+                                 int64_t output_columns,
+                                 int64_t output_rows,
+                                 double output_pixel_size,
+                                 Area output_projected_area,
+                                 int output_tile_size);
+/** \cond DOXYHIDE **/
 bool partition_compare(Area a, Area b);
+/** \endcond **/
 std::vector<Area> PartitionBySize(int rank,
                                   int process_count,
                                   int row_count,
@@ -84,7 +98,7 @@ std::vector<Area> PartitionTile(int rank,
                                 int64_t tile_width,
                                 int64_t tile_height,
     int maximum_partition_size);
-
+/** \cond DOXYHIDE **/
 void SearchAndUpdate(Area input_area,
                      string input_srs,
                      string output_srs,
@@ -92,14 +106,23 @@ void SearchAndUpdate(Area input_area,
                      double input_uly,
                      double input_pixel_size,
                      Area *output_area);
-
+/** \endcond **/
 Area ProjectedMinbox(Coordinate input_ul_corner,
                      string input_srs,
                      double input_pixel_size,
                      int input_row_count,
                      int input_column_count,
                      string output_srs);
-
+/**
+ * @brief RasterMinbox finds the equivalent minbox in the source raster of the
+ *        given area in the destination raster
+ *
+ * @param source Dataset in which you want a minbox
+ * @param destination Dataset which you are providing an area for
+ * @param destination_raster_area Area in destination that you want mapped 
+ *        to a minbox in source
+ *
+ */
 Area RasterMinbox(GDALDataset *source,
                   GDALDataset *destination,
                   Area destination_raster_area);
@@ -130,7 +153,7 @@ bool ReprojectChunk(RasterChunk *source,
                     RasterChunk *destination,
                     string fillvalue,
                     RESAMPLER resampler);
-
+/** @cond DOXYHIDE **/
 template <class pixelType>
 bool ReprojectChunkType(RasterChunk *source,
                         RasterChunk *destination,
@@ -213,6 +236,7 @@ bool ReprojectChunkType(RasterChunk *source,
 
   return true;
 }
+/** @endcond **/
 }
 
 
