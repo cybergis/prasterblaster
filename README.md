@@ -78,6 +78,13 @@ the demo program by calling make.
 
     make
 
+To run the included tests run:
+
+    make check
+
+If any of the tests fail something is wrong and prasterblaster will
+not function correctly.
+
 To build the documentation use:
 
     make doc

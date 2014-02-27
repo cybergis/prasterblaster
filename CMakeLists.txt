@@ -56,3 +56,6 @@ if(DOXYGEN_FOUND)
     COMMENT "Generating API documentation with Doxygen" VERBATIM
     )
 endif(DOXYGEN_FOUND)
+
+# add a target to run the 'tests' binary
+add_custom_target(check ./tests)
