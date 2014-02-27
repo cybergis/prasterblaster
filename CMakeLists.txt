@@ -40,7 +40,7 @@ target_link_libraries (prasterblasterpio sptw rasterblaster prasterblaster ${PRO
 
 add_subdirectory (src/gtest/)
 
-add_executable (tests tests/check-reprojection_tools.cc)
+add_executable (tests tests/check_reprojection_tools.cc)
 add_executable (systemtest tests/systemtest.cc src/demos/prasterblaster-pio.cc)
 
 target_link_libraries(tests gtest gtest_main rasterblaster sptw ${GDAL_LIBRARY} ${PROJ_LIBRARY})
