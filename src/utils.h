@@ -30,13 +30,13 @@ enum PRB_ERROR {
 };
 
 enum ProjUnit {
-  UNDEF=-1,
-  RADIAN=0, //Radians
-  FEET, //Feet
-  METER, //Meters
-  SECOND, //Seconds
-  DEGREE, //Decimal Degrees
-  INT_FEET //International Feet
+  UNDEF = -1,
+  RADIAN = 0,  //  Radians
+  FEET,        //  Feet
+  METER,       //  Meters
+  SECOND,      //  Seconds
+  DEGREE,      //  Decimal Degrees
+  INT_FEET     //  International Feet
 };
 
 /*! Coordinate struct
@@ -48,17 +48,17 @@ struct Coordinate {
   /*! Default Constructor
     0's all attributes.
   */
-  Coordinate():x(0.0), y(0.0), units(UNDEF) {};
+  Coordinate():x(0.0), y(0.0), units(UNDEF) {}
   /*! Full Constructor
     Sets all attributes in the Coordinate according to the parameters.
   */
-  Coordinate( double xx, double yy, ProjUnit uunits )
-      : x(xx), y(yy), units(uunits){};
+  Coordinate(double xx, double yy, ProjUnit uunits)
+      : x(xx), y(yy), units(uunits) {}
 
   /*! Copy Constructor
     Sets all attributes to equal those in Coordinate c.
   */
-  Coordinate( const Coordinate &c ): x(c.x), y(c.y), units(c.units){};
+  Coordinate(const Coordinate &c): x(c.x), y(c.y), units(c.units) {}
 
   double x;
   double y;
@@ -73,7 +73,7 @@ struct Area {
   /** 
    * @brief This constructor initializes points to zero.
    */
- Area():ul(), lr(), units(UNDEF) {}
+  Area():ul(), lr(), units(UNDEF) {}
   /// A constructor
   /**
    * @brief This constructor allows both coordinates to be given initial values.

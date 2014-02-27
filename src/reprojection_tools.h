@@ -85,6 +85,13 @@ PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
 /** \cond DOXYHIDE **/
 bool partition_compare(Area a, Area b);
 /** \endcond **/
+std::vector<Area> BlockPartition(int rank,
+                                 int process_count,
+                                 int row_count,
+                                 int column_count,
+                                 int tile_size,
+                                 int partition_size);
+
 std::vector<Area> PartitionBySize(int rank,
                                   int process_count,
                                   int row_count,
@@ -97,7 +104,7 @@ std::vector<Area> PartitionTile(int rank,
                                 int64_t column_count,
                                 int64_t tile_width,
                                 int64_t tile_height,
-    int maximum_partition_size);
+                                int maximum_partition_size);
 /** \cond DOXYHIDE **/
 void SearchAndUpdate(Area input_area,
                      string input_srs,
@@ -183,7 +190,8 @@ bool ReprojectChunkType(RasterChunk *source,
 
       pixelArea = rt.Transform(temp1);
 
-      if (pixelArea.ul.x == -1.0 || (pixelArea.ul.x > source->column_count_)) {
+      if (pixelArea.ul.x == -1.0 || (pixelArea.ul.x > source->column_count_ - 1)
+          || (pixelArea.lr.y > source->row_count_ - 1)) {
         // The pixel is outside of the projected area
         reinterpret_cast<pixelType*>(destination->pixels_)
             [chunk_x + chunk_y * destination->column_count_] = fillvalue;

@@ -88,8 +88,6 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
       0.5 + ((out_area.lr.x - out_area.ul.x) / output_pixel_size));
   const int64_t num_rows = static_cast<int64_t>(
       0.5 + ((out_area.ul.y - out_area.lr.y) / output_pixel_size));
-  printf("Output pixel size: %f rows %lld, cols %lld\n", output_pixel_size, num_rows, num_cols);
-
 
   PRB_ERROR result = CreateOutputRasterFile(in,
                                             output_filename,
@@ -228,6 +226,71 @@ bool partition_compare(Area a, Area b) {
   return false;
 }
 
+std::vector<Area> BlockPartition(int rank,
+                                 int process_count,
+                                 int row_count,
+                                 int column_count,
+                                 int tile_size,
+                                 int partition_size) {
+  const int64_t partition_height = sqrt(partition_size);
+  const int64_t partition_width = partition_size / partition_height;
+
+  const int64_t tiles_down = (row_count + tile_size - 1) / tile_size;
+  const int64_t tiles_across = (column_count + tile_size - 1) / tile_size;
+
+  const int64_t partitions_down = (tiles_down + partition_height - 1) / partition_height;
+  const int64_t partitions_across = (tiles_across + partition_width - 1) / partition_width;
+
+  std::vector<Area> blocks;
+  Area p;
+
+  for (int64_t y = 0; y < partitions_down; ++y) {
+    for (int64_t x = 0; x < partitions_across; ++x) {
+      p.ul.x = x * partition_width;
+      p.ul.y = y * partition_height;
+      p.lr.x = p.ul.x + partition_width - 1;
+      p.lr.y = p.ul.y + partition_height - 1;
+      blocks.push_back(p);
+    }
+  }
+
+  // Now we shuffle the partitions for load balancing.
+  // All processes should generate the same shuffle.
+  std::srand(42);
+  std::random_shuffle(blocks.begin(), blocks.end(), simplerandom);
+
+  std::vector<Area> partitions;
+  for (size_t i = 0; i < blocks.size(); ++i) {
+    if (i % process_count == static_cast<unsigned int>(rank)) {
+      partitions.push_back(blocks.at(i));
+    }
+  }
+
+  // Now scale the partitions by the tile size and verify they are within the
+  // image bounds.
+  for (size_t i = 0; i < partitions.size(); ++i) {
+    partitions.at(i).ul.x *= tile_size;
+    partitions.at(i).ul.y *= tile_size;
+
+    partitions.at(i).lr.x *= tile_size;
+    partitions.at(i).lr.y *= tile_size;
+
+    partitions.at(i).lr.x += tile_size - 1;
+    partitions.at(i).lr.y += tile_size - 1;
+
+    if (partitions.at(i).lr.x > column_count) {
+      partitions.at(i).lr.x = column_count - 1;
+    }
+
+    if (partitions.at(i).lr.y > row_count) {
+      partitions.at(i).lr.y = row_count - 1;
+    }
+  }
+  return partitions;
+}
+
+
+
 std::vector<Area> PartitionBySize(int rank,
                                   int process_count,
                                   int row_count,
@@ -273,13 +336,11 @@ std::vector<Area> PartitionTile(int rank,
  // Seed the psuedorandom generator. This _must_ be the same on all processes.
   std::srand(42);
 
-  int tiles_per_partition = maximum_partition_size / (tile_width * tile_height);
-  if (tiles_per_partition < 1) {
-    tiles_per_partition = 1;
-  }
+  int tiles_per_partition = maximum_partition_size;
+
   std::vector<Area> partitions;
-  const int tiles_across = (column_count / tile_width) + ((column_count % tile_width == 0) ? 0 : 1);
-  const int tiles_down = (row_count / tile_height) + ((row_count % tile_height == 0) ? 0 : 1);
+  const int tiles_across = (column_count + tile_width - 1) / tile_width;
+  const int tiles_down  = (row_count + tile_height - 1) / tile_height;
 
   QuadTree qt(tiles_down,
               tiles_across,
@@ -289,11 +350,7 @@ std::vector<Area> PartitionTile(int rank,
 
   // Now we shuffle the partitions for load balancing.
   // All processes should generate the same shuffle.
-  for (size_t i = 0; i < leaves.size()-process_count; i += process_count) {
-    vector<Area>::iterator beg = leaves.begin() + i;
-    vector<Area>::iterator end = beg + process_count - 1;
-    std::random_shuffle(beg, end, simplerandom);
-  }
+  std::random_shuffle(leaves.begin(), leaves.end(), simplerandom);
 
   for (size_t i = 0; i < leaves.size(); ++i) {
     if (i % process_count == static_cast<unsigned int>(rank)) {
@@ -308,7 +365,6 @@ std::vector<Area> PartitionTile(int rank,
     partitions.at(i).lr.x *= tile_width;
     partitions.at(i).lr.x += tile_width - 1;
     partitions.at(i).lr.y *= tile_height;
-
 
     if (partitions.at(i).lr.x > column_count) {
       partitions.at(i).lr.x = column_count - 1;
@@ -363,10 +419,13 @@ void SearchAndUpdate(Area input_area,
       if (temp.y > output_area->ul.y) {
         output_area->ul.y = temp.y;
       }
-      if (temp.x > output_area->lr.x)
+      if (temp.x > output_area->lr.x) {
         output_area->lr.x = temp.x;
-      if (temp.y < output_area->lr.y)
+      }
+
+      if (temp.y < output_area->lr.y) {
         output_area->lr.y = temp.y;
+      }
     }
   }
 
@@ -384,7 +443,9 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
   Area ia;
   // Projected Area
   Area output_area;
-  const int buffer = 2;
+  const int buffer = 10;
+  const int row_buffer = buffer > input_row_count ? input_row_count : buffer;
+  const int column_buffer = buffer > input_column_count ? input_column_count : buffer;
 
   output_area.ul.x = output_area.lr.y = DBL_MAX;
   output_area.ul.y = output_area.lr.x = -DBL_MAX;
@@ -392,8 +453,8 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
   // Check the top of the raster
   ia.ul.x = 0;
   ia.lr.x = input_column_count - 1;
-  ia.ul.y = buffer;
-  ia.lr.y = 0;
+  ia.ul.y = input_row_count - 1;
+  ia.lr.y = input_row_count - row_buffer - 1;
 
   SearchAndUpdate(ia,
                   input_srs,
@@ -406,8 +467,8 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
   // Check the bottom of the raster
   ia.ul.x = 0;
   ia.lr.x = input_column_count - 1;
-  ia.ul.y = input_row_count - 1;
-  ia.lr.y = input_row_count - 1 - buffer;
+  ia.ul.y = input_row_count - row_buffer - 1;
+  ia.lr.y = input_row_count - 1;
 
   SearchAndUpdate(ia,
                   input_srs,
@@ -419,7 +480,7 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
 
   // Check Left
   ia.ul.x = 0;
-  ia.lr.x = buffer;
+  ia.lr.x = column_buffer;
   ia.ul.y = input_row_count - 1;
   ia.lr.y = 0;
 
@@ -432,7 +493,7 @@ Area ProjectedMinbox(Coordinate input_ul_corner,
                   &output_area);
 
   // Check right
-  ia.ul.x = input_column_count - buffer - 1;
+  ia.ul.x = input_column_count - column_buffer - 1;
   ia.lr.x = input_column_count - 1;
   ia.ul.y = input_row_count - 1;
   ia.lr.y = 0;
@@ -535,10 +596,10 @@ Area RasterMinbox2(string source_projection,
       }
 
       // Check that calculated minbox in within destination raster space.
-      if ((temp.ul.x < -0.01) || (temp.ul.x > destination_column_count)
-          || (temp.ul.y < 0.0) || (temp.ul.y > destination_row_count)
+      if ((temp.ul.x < -0.01) || (temp.ul.x > destination_column_count - 1)
+          || (temp.ul.y < 0.0) || (temp.ul.y > destination_row_count - 1)
           || (temp.lr.x > destination_column_count - 1) || (temp.lr.x < 0.0)
-          || (temp.lr.y > destination_row_count -1) || (temp.lr.y < 0.0)) {
+          || (temp.lr.y > destination_row_count - 1) || (temp.lr.y < 0.0)) {
         temp.ul.x = -1.0;
         continue;
         printf("\n\nSearch Area: %f %f %f %f\n",

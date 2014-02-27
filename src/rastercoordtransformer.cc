@@ -124,7 +124,7 @@ Transform(Coordinate source, bool area_check) {
   src_to_geo->Transform(1, &temp2.x, &temp2.y);
   geo_to_src->Transform(1, &temp2.x, &temp2.y);
 
-  if (area_check && (fabs(temp1.y - temp2.y) > 0.01)
+  if ((area_check && (fabs(temp1.y - temp2.y) > 0.01))
       || fabs(temp1.x - temp2.x) > 0.01) {
     // Point is outside defined projection area, return no-value
     value.ul.x = -1.0;
@@ -158,19 +158,22 @@ Transform(Coordinate source, bool area_check) {
   value.ul = temp1;
   value.lr = temp2;
 
+  // Check that entries are valid
+  if (value.ul.x < 0.0
+      || value.lr.x < 0.0
+      || value.ul.y < 0.0
+      || value.lr.y < 0.0) {
+    value.ul.x = -1.0;
+    value.lr.x = -1.0;
+    return value;
+  }
+
   // Now validate and round pixel values
   // Truncate values
   value.ul.x = floor(fabs(value.ul.x));
   value.ul.y = floor(fabs(value.ul.y));
   value.lr.x = floor(fabs(value.lr.x));
   value.lr.y = floor(fabs(value.lr.y));
-
-  // Check that entries are valid
-  if (value.ul.x < 0.0 ||
-      value.lr.x < 0.0) {
-    value.ul.x = -1.0;
-    value.lr.x = -1.0;
-  }
 
   if (value.ul.x > value.lr.x) {
     value.lr.x = value.ul.x;

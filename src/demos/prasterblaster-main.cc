@@ -23,7 +23,30 @@
 using librasterblaster::Configuration;
 using librasterblaster::prasterblasterpio;
 using librasterblaster::RasterChunk;
+/*! \page prasterblasterpio
 
+\htmlonly
+USAGE:
+\endhtmlonly
+
+\verbatim
+prasterblaster [--t_srs target_srs] [--s_srs source_srs]
+               [-r resampling_method] [-n partition_size]
+               [--dstnodata no_data_value]
+               source_file destination_file
+
+\endverbatim
+
+\section prasterblasterpio_description DESCRIPTION
+
+<p>
+
+The prasterblasterpio demo program implements parallel raster reprojection and
+demonstrates the use of librasterblaster. The implementation can be found in
+prasterblaster-pio.cc.
+
+</p>
+ */
 int main(int argc, char *argv[]) {
   // Give MPI_Init first run at the command-line arguments
   MPI_Init(&argc, &argv);

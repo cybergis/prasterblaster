@@ -17,10 +17,10 @@
 ///
 ///
 
+#include <sys/time.h>
+
 #include <algorithm>
 #include <vector>
-
-#include <sys/time.h>
 
 #include "src/configuration.h"
 #include "src/quadtree.h"
@@ -30,7 +30,7 @@
 #include "src/utils.h"
 
 using librasterblaster::Area;
-using librasterblaster::PartitionBySize;
+using librasterblaster::BlockPartition;
 using librasterblaster::RasterChunk;
 using librasterblaster::Configuration;
 using librasterblaster::PRB_ERROR;
@@ -38,8 +38,6 @@ using librasterblaster::PRB_BADARG;
 using librasterblaster::PRB_NOERROR;
 
 using sptw::PTIFF;
-using sptw::write_subrow;
-using sptw::write_rasterchunk;
 using sptw::open_raster;
 using sptw::SPTW_ERROR;
 
@@ -71,14 +69,34 @@ prasterblaster-pio.cc.
 </p>
  */
 namespace librasterblaster {
+PRB_ERROR write_rasterchunk(PTIFF *ptiff,
+                             RasterChunk *chunk) {
+  Area write_area;
+  write_area.ul = chunk->ChunkToRaster(
+      librasterblaster::Coordinate(0.0, 0.0, librasterblaster::UNDEF));
+  write_area.lr = chunk->ChunkToRaster(
+      librasterblaster::Coordinate(chunk->column_count_-1,
+                                   chunk->row_count_-1,
+                                   librasterblaster::UNDEF));
+  sptw::write_area(ptiff,
+                   chunk->pixels_,
+                   write_area.ul.x,
+                   write_area.ul.y,
+                   write_area.lr.x,
+                   write_area.lr.y);
+  return PRB_NOERROR;
+}
+
 int rastercompare(string control_filename, string test_filename) {
   const double delta = 0.001;
   GDALAllRegister();
 
   GDALDataset *control =
-      static_cast<GDALDataset*>(GDALOpen(control_filename.c_str(), GA_ReadOnly));
+      static_cast<GDALDataset*>(GDALOpen(control_filename.c_str(),
+                                         GA_ReadOnly));
   GDALDataset *test =
-      static_cast<GDALDataset*>(GDALOpen(test_filename.c_str(), GA_ReadOnly));
+      static_cast<GDALDataset*>(GDALOpen(test_filename.c_str(),
+                                         GA_ReadOnly));
 
   if (control == NULL) {
     fprintf(stderr, "Error opening control raster!\n");
@@ -114,9 +132,11 @@ int rastercompare(string control_filename, string test_filename) {
   double *control_pixels, *test_pixels;
 
   control_pixels = new double[band_count
-                               * control->GetRasterXSize() * sizeof(double)];
+                              * control->GetRasterXSize()
+                              * sizeof(*control_pixels)];
   test_pixels = new double[band_count
-                            * control->GetRasterXSize() * sizeof(double)];
+                           * control->GetRasterXSize()
+                           * sizeof(*test_pixels)];
 
   // Loop over rows of blocks
   //   Loop over columns of blocks
@@ -155,7 +175,9 @@ int rastercompare(string control_filename, string test_filename) {
                    0,
                    0,
                    0);
-    if (memcmp(control_pixels, test_pixels, x_size * sizeof(double)) != 0) {
+    if (memcmp(control_pixels,
+               test_pixels,
+               x_size * sizeof(*control_pixels)) != 0) {
       for (int x = 0; x < x_size; ++x) {
         if (fabs(control_pixels[x] - test_pixels[x]) > delta) {
           printf("Values at (%d, %d) are too different! %f vs %f\n",
@@ -187,9 +209,11 @@ std::vector<Area> TilePartition(int rank,
                                 int process_count,
                                 PTIFF *tiff_file,
                                 int max_partition_size) {
-  int64_t tiles_per_partition = (tiff_file->block_x_size * tiff_file->block_y_size
+  int64_t tiles_per_partition = (tiff_file->block_x_size
+                                 * tiff_file->block_y_size
                                  * tiff_file->band_type_size)
-                                 / tiff_file->block_x_size / tiff_file->block_y_size / max_partition_size;
+      / tiff_file->block_x_size
+      / tiff_file->block_y_size / max_partition_size;
   if (tiles_per_partition < 1) {
     tiles_per_partition = 1;
   }
@@ -221,7 +245,6 @@ std::vector<Area> TilePartition(int rank,
         tilei += ptiles + 1;
       }
     }
-
   }
 
   std::vector<Area> partitions;
@@ -258,6 +281,8 @@ std::vector<Area> TilePartition(int rank,
 
   return partitions;
 }
+
+
 
 /** Main function for the prasterblasterpio program */
 PRB_ERROR prasterblasterpio(Configuration conf) {
@@ -316,20 +341,20 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     double gt[6];
     input_raster->GetGeoTransform(gt);
     PRB_ERROR err = librasterblaster::CreateOutputRaster(input_raster,
-                                                         conf.tile_size,
                                                          conf.output_filename,
-                                                         gt[1],
-                                                         conf.output_srs);
+                                                         conf.output_srs,
+                                                         conf.tile_size);
     if (err != PRB_NOERROR) {
       fprintf(stderr, "Error creating raster!: %d\n", err);
       return PRB_IOERROR;
     }
-
   }
   // Now populate tile offsets
   PTIFF* out_raster = open_raster(conf.output_filename);
   if (rank == 0) {
-          SPTW_ERROR sperr = populate_tile_offsets(out_raster, conf.tile_size, 0);
+          SPTW_ERROR sperr = populate_tile_offsets(out_raster,
+                                                   conf.tile_size,
+                                                   0);
           if (sperr != sptw::SP_None) {
                   fprintf(stderr, "\nError populating tile offsets\n");
           }
@@ -347,7 +372,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   PTIFF* output_raster = open_raster(conf.output_filename);
   GDALDataset *gdal_output_raster =
       static_cast<GDALDataset*>(GDALOpen(conf.output_filename.c_str(),
-                                         GA_ReadOnly));
+                                         GA_Update));
 
   if (output_raster == NULL) {
     fprintf(stderr, "Could not open output raster\n");
@@ -356,24 +381,14 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   }
 
   vector<Area> partitions;
-  if (conf.partitioner == "tile") {
-    int partition_size_pixels = (conf.partition_size * conf.tile_size * conf.tile_size)
-        / output_raster->band_type_size
-        / output_raster->band_count;
-    partitions = PartitionTile(rank,
-                               process_count,
-                               output_raster->y_size,
-                               output_raster->x_size,
-                               output_raster->block_x_size,
-                               output_raster->block_y_size,
-                               partition_size_pixels);
-  } else {
-    partitions = PartitionBySize(rank,
-                                 process_count,
-                                 output_raster->y_size,
-                                 output_raster->x_size,
-                                 conf.partition_size);
-  }
+
+  partitions = BlockPartition(rank,
+                              process_count,
+                              output_raster->y_size,
+                              output_raster->x_size,
+                              output_raster->block_x_size,
+                              conf.partition_size);
+
   if (rank == 0) {
     printf("Typical process has %lu partitions with base size: %d\n",
            static_cast<unsigned long>(partitions.size()),
@@ -390,11 +405,13 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   // Now we loop through the returned partitions
   for (size_t i = 0; i < partitions.size(); ++i) {
     loop_start = MPI_Wtime();
+
+/*
     // Swap y-axis of partition
     double t = partitions.at(i).lr.y;
     partitions.at(i).lr.y = partitions.at(i).ul.y;
     partitions.at(i).ul.y = t;
-
+*/
     // Now we use the ProjectedRaster object we created for the input file to
     // create a RasterChunk that has the pixel values read into it.
     in_chunk = RasterChunk::CreateRasterChunk(input_raster,
@@ -443,10 +460,11 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     resample_total += resample_end - resample_start;
 
     write_start = MPI_Wtime();
-    SPTW_ERROR err;
-    err = sptw::write_rasterchunk(output_raster,
-                                  out_chunk);
-    if (err != sptw::SP_None) {
+    PRB_ERROR err;
+
+    err = write_rasterchunk(output_raster,
+                            out_chunk);
+    if (err != PRB_NOERROR) {
       fprintf(stderr, "Rank %d: Error writing chunk!\n", rank);
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
@@ -521,9 +539,10 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
 
     struct timeval time;
     gettimeofday(&time, NULL);
-    fprintf(timing_file, "finish_time,process_count,total,preloop,minbox,read,resample,write,misc\n");
+    fprintf(timing_file, "finish_time,process_count,total,preloop,minbox,read"
+            ",resample,write,misc\n");
     fprintf(timing_file, "%lld,%d,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",
-            (long long)time.tv_sec,
+            static_cast<long long>(time.tv_sec),
             process_count,
             averages[0],
             averages[1],
@@ -533,7 +552,8 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
             averages[5],
             averages[6]);
 
-    fprintf(timing_file, "process,total,preloop,minbox,read,resample,write,misc\n");
+    fprintf(timing_file, "process,total,preloop,minbox,read,resample"
+            ",write,misc\n");
     for (unsigned int i = 0; i < process_runtimes.size(); i+=7) {
       fprintf(timing_file, "%u,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",
               i/7,

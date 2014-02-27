@@ -50,61 +50,53 @@ struct Configuration {
   Configuration(int argc, char *argv[]);
 
   /**
-   * This is set to the filesystem path to the input file. The default value is
+   * @brief This is set to the filesystem path to the input file. The default value is
    * "".
    */
   string input_filename;
   /**
-   * This is set to the spatial reference system string. The default value is "".
+   * @brief This is set to the spatial reference system string. The default value is "".
    */
   string input_srs;
   /**
-   * This is set to the filesystem path to the output file. The default value is
+   * @brief This is set to the filesystem path to the output file. The default value is
    * "".
    */
   string output_filename;
   /**
-   * This is set to the spatial reference system of the output file. The default
+   * @brief This is set to the spatial reference system of the output file. The default
    * value is "".
    */
   string output_srs;
   /**
-   * This is set to the spatial reference system of the input file. The default
+   * @brief This is set to the spatial reference system of the input file. The default
    * value is "".
    */
   string source_srs;
   /**
-   * This is set to the resampler method specified by the user. The default
+   * @brief This is set to the resampler method specified by the user. The default
    * value is NEAREST.
    */
   RESAMPLER resampler;
   /**
-   * This is set to the fillvalue specified by the user.
+   * @brief This is set to the fillvalue specified by the user.
    */
   string fillvalue;
   /**
-   * Value to set in nodata areas of the raster. The interpretation of this
+   * @brief Value to set in nodata areas of the raster. The interpretation of this
    * string will depend on the pixel type.
    */
   string nodata_value;
   /**
-   * The maximum size of output raster partitions. The default value is 0;
+   * @brief The maximum size of output raster partitions. The default value is 0;
    */
   int partition_size;
   /**
-   * Decomposition method to use: "pixel" or "tile"
-   */
-  string partitioner;
-  /**
-   * File layout: striped or tiled
-   */
-  string layout;
-  /**
-   * Tile size
+   * @brief Tile size
    */
   int tile_size;
   /**
-   * Name of timing information file
+   * @brief Name of timing information file
    */
   string timing_filename;
 };

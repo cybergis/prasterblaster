@@ -24,14 +24,18 @@
 #include "src/utils.h"
 
 namespace librasterblaster {
-
+/**
+ * @brief Supported resampling algorithms
+ *
+ */
 enum RESAMPLER {
-  NEAREST,
-  MIN,
-  MAX,
-  MEAN,
+  NEAREST, /** @brief Nearest-neighbor */
+  MIN,     /** @brief Minimum value */
+  MAX,     /** @brief Maximum value */
+  MEAN,    /** @brief Arithmetic mean */
 };
 
+/** @cond DOXYHIDE */
 template <typename T>
 T Max(RasterChunk *input,
       Area pixel_area) {
@@ -120,7 +124,7 @@ T Bilinear(Coordinate input_ul,
            T* input_pixels) {
 }
 }
-
+/** @cond DOXYHIDE */
 
 #endif  // SRC_RESAMPLER_H_
 

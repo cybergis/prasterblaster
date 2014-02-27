@@ -112,24 +112,33 @@ SPTW_ERROR create_tiled_raster(string filename,
                                int64_t tile_size);
 PTIFF* open_raster(string filename);
 SPTW_ERROR close_raster(PTIFF *ptiff);
-/**
- * @brief Writes in parallel one or more rows to raster in a sequentially
- * consistent way.
- *
- * @param ptiff Pointer to PTIFF struct representing the open file.
- */
-SPTW_ERROR write_rows(PTIFF *ptiff,
-                      void *buffer,
-                      int64_t first_row,
-                      int64_t last_row);
-SPTW_ERROR write_subrow(PTIFF *ptiff,
-                        void *buffer,
-                        int64_t row,
-                        int64_t first_column,
-                        int64_t last_column);
 
-SPTW_ERROR write_rasterchunk(PTIFF *ptiff,
-                             librasterblaster::RasterChunk *chunk);
+/**
+ * @brief
+ * This function writes the given buffer to the open PTIFF. The
+ * area to be written is specified by the bounding box, in y-down,
+ * raster coordinates. The bounding box coordinates are inclusive,
+ * the point (lr_x, lr_y) will be written.
+ *
+ * @param ptiff The open PTIFF file to be written to
+ * @param data buffer containing, row-wise, pixel interleaved data to be
+ *        written to the file
+ * @param ul_x Upper-left, inclusive, y-down, x coordinate of the area to be
+ *             written
+ * @param ul_y Upper-left, inclusive, y-down, y coordinate of the area to be
+ *             written
+ * @param lr_x Lower-right, inclusive, y-down, x coordinate of the area to be
+ *             written
+ * @param _y Lower-right, inclusive, y-down, y coordinate of the area to be
+ *             written
+ *
+ */
+SPTW_ERROR write_area(PTIFF *ptiff,
+                      void *data,
+                      int64_t ul_x,
+                      int64_t ul_y,
+                      int64_t lr_x,
+                      int64_t lr_y);
 }
 
 #endif  // SRC_DEMOS_SPTW_H_

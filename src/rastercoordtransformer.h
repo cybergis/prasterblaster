@@ -30,12 +30,12 @@
 
 using std::string;
 
-/// Raster Coordinate transformation class
-/*
-  This class implements the transformation of raster coordinates between two raster spaces with different projections and scales.
- */
 
 namespace librasterblaster {
+/// Raster Coordinate transformation class
+/*
+ * This class implements the transformation of raster coordinates between two raster spaces with different projections and scales.
+ */
 class RasterCoordTransformer {
  public:
   // ! A constructor
@@ -91,7 +91,7 @@ class RasterCoordTransformer {
             string destination_projection,
             Coordinate destination_ul,
             double destination_pixel_size);
-  
+
   OGRCoordinateTransformation *ctrans, *src_to_geo, *geo_to_src;
   Area maximum_geographic_area_;
   Coordinate source_ul_;

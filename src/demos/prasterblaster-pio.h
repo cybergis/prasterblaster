@@ -17,11 +17,41 @@
 #ifndef SRC_DEMOS_PRASTERBLASTER_PIO_H_
 #define SRC_DEMOS_PRASTERBLASTER_PIO_H_
 
+#include <string>
+
 #include "src/configuration.h"
+#include "src/demos/sptw.h"
 #include "src/utils.h"
 
 namespace librasterblaster {
+/**
+ * @brief write_rasterchunk writes chunk to the PTIFF ptiff using the sptw library
+ *
+ * @param ptiff PTIFF target for output
+ * @param chunk RasterChunk to be written to file
+ *
+ */
+PRB_ERROR write_rasterchunk(sptw::PTIFF *ptiff,
+                            RasterChunk *chunk);
+/**
+ * @brief rastercompare takes two raster files and compares the pixels,
+ * verifying they are within a certain delta
+ *
+ * @param control_filename filename of a known good raster
+ *
+ * @param test_filename filename of a raster to be compared to control_filename
+ *
+ */
 int rastercompare(string control_filename, string test_filename);
+
+/**
+ * @brief prasterblasterpio performs a complete, potentially parallel, raster
+ * reprojection job using the parameters specified by conf.
+ *
+ * @param conf Configuration class that describes the reprojection task
+ *
+ *
+ */
 PRB_ERROR prasterblasterpio(librasterblaster::Configuration conf);
 }
 

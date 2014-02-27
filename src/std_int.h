@@ -19,7 +19,7 @@
 #define SRC_STD_INT_H_
 
 #ifndef HAVE_CONFIG_H
-#include "../config.h"
+//#include "../config.h"
 #endif
 
 #if HAVE_STDINT_H == 0
