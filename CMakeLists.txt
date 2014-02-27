@@ -1,6 +1,12 @@
 cmake_minimum_required (VERSION 2.8)
 project (pRasterBlaster)
 
+# set release build as default
+if (NOT CMAKE_BUILD_TYPE)
+		message(STATUS "No build type selected, default to Release")
+		set(CMAKE_BUILD_TYPE "Release")
+	endif()
+
 # set path to additional CMake modules
 set (CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
@@ -15,25 +21,38 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wcast-align -Wpointer
 
 find_package (GDAL)
 find_package (Proj)
+find_package (TIFF 4.0)
 
 if (NOT PROJ_FOUND OR NOT GDAL_FOUND)
   message (SEND_ERROR "Some dependencies were not found!")
 endif (NOT PROJ_FOUND OR NOT GDAL_FOUND)
 
-include_directories (${GDAL_INCLUDE_DIR} ${PROJ_INCLUDE_DIR})
+include_directories (${GDAL_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/src/gdal/gdal-1.9.2/frmts/gtiff/libtiff/)
 
-add_library (sptw src/demos/sptw.cc)
-add_library (rasterblaster src/configuration.cc src/quadtree.cc src/rastercoordtransformer.cc 
+add_library (sptw SHARED src/demos/sptw.cc)
+add_library (rasterblaster SHARED src/configuration.cc src/quadtree.cc src/rastercoordtransformer.cc 
   src/reprojection_tools.cc src/rasterchunk.cc)
+add_library (prasterblaster SHARED src/demos/prasterblaster-pio.cc)
+target_link_libraries (prasterblaster rasterblaster sptw)
 
-add_executable (prasterblaster src/demos/prasterblaster-pio.cc src/demos/prasterblaster-main.cc)
-target_link_libraries (prasterblaster sptw rasterblaster ${PROJ_LIBRARY} ${GDAL_LIBRARY})
+add_executable (prasterblasterpio src/demos/prasterblaster-main.cc)
+target_link_libraries (prasterblasterpio sptw rasterblaster prasterblaster ${PROJ_LIBRARY} ${GDAL_LIBRARY} ${TIFF_LIBRARY})
 
 add_subdirectory (src/gtest/)
 
-add_executable (tests tests/check_gdal.cc tests/check-rastercoordtransformer.cc tests/check-reprojection_tools.cc)
+add_executable (tests tests/check-reprojection_tools.cc)
 add_executable (systemtest tests/systemtest.cc src/demos/prasterblaster-pio.cc)
 
-target_link_libraries(tests gtest gtest_main ${GDAL_LIBRARY} ${PROJ_LIBRARY})
+target_link_libraries(tests gtest gtest_main rasterblaster sptw ${GDAL_LIBRARY} ${PROJ_LIBRARY})
 target_link_libraries(systemtest rasterblaster sptw gtest ${GDAL_LIBRARY} ${PROJ_LIBRARY})
 
+# add a target to generate API documentation with Doxygen
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+  add_custom_target(doc
+    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating API documentation with Doxygen" VERBATIM
+    )
+endif(DOXYGEN_FOUND)
