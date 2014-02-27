@@ -106,8 +106,6 @@ class RasterTest : public ::testing::Test {
 
 TEST_F(RasterTest, Veg1Deg) {
   Configuration conf;
-  conf.partition_size = 2000;
-  conf.partitioner = "pixel";
   conf.input_filename = "tests/testdata/veg_geographic_1deg.tif";
   conf.output_filename = "tests/testoutput/veg_mollweide_1deg.tif";
   conf.resampler = librasterblaster::MIN;
@@ -126,8 +124,6 @@ TEST_F(RasterTest, Veg1Deg) {
 
 TEST_F(RasterTest, Veg1DegRobin) {
   Configuration conf;
-  conf.partitioner = "pixel";
-  conf.partition_size = 2000;
   conf.input_filename = "tests/testdata/veg_geographic_1deg.tif";
   conf.output_filename = "tests/testoutput/veg_robinson_1deg.tif";
   conf.resampler = librasterblaster::MIN;
@@ -139,68 +135,10 @@ TEST_F(RasterTest, Veg1DegRobin) {
 
 TEST_F(RasterTest, Veg1DegSinusoidal) {
   Configuration conf;
-  conf.partitioner = "pixel";
-  conf.partition_size = 2000;
   conf.input_filename = "tests/testdata/veg_geographic_1deg.tif";
   conf.output_filename = "tests/testoutput/veg_sinosoidal_1deg.tif";
   conf.resampler = librasterblaster::MIN;
   conf.output_srs = "+proj=sinu +lon_0=0.0 +a=6370997 +b=6370997";
-  conf.fillvalue = "32";
-
-  int ret = prasterblasterpio(conf);
-}
-
-TEST_F(RasterTest, HoldNorm30Min) {
-  Configuration conf;
-  conf.partitioner = "pixel";
-  conf.partition_size = 2500;
-  conf.input_filename = "tests/testdata/holdnorm_geographic_30min.tif";
-  conf.output_filename = "tests/testoutput/holdnorm_mollweide_30min.tif";
-  conf.resampler = librasterblaster::MIN;
-  conf.output_srs = "+proj=moll +a=6370997 +b=6370997";
-  conf.fillvalue = "32";
-
-  int ret = prasterblasterpio(conf);
-  ASSERT_EQ(PRB_NOERROR, ret);
-
-  if (rank == 0) {
-    int raster_compare_ret = rastercompare("tests/testdata/holdnorm_geographic_30min.tif", 
-                                           "tests/testoutput/holdnorm_mollweide_30min.tif");
-  ASSERT_EQ(0, raster_compare_ret);
-  }
-}
-
-TEST_F(RasterTest, GLC30sec) {
-  Configuration conf;
-  conf.partitioner = "tile";
-  conf.partition_size = 32;
-  conf.input_filename = "tests/testdata/glc_geographic_30sec.tif";
-  conf.output_filename = "tests/testoutput/glc_mollweide_30sec.tif";
-  conf.resampler = librasterblaster::MIN;
-  conf.output_srs = "+proj=moll +a=6370997 +b=6370997";
-  conf.fillvalue = "8";
-
-  int ret = prasterblasterpio(conf);
-  ASSERT_EQ(PRB_NOERROR, ret);
-
-  if (rank == 0) {
-    int raster_compare_ret = rastercompare("tests/testdata/glc_geographic_30sec.tif", 
-                                           "tests/testoutput/glc_geographic_30sec.tif");
-  ASSERT_EQ(0, raster_compare_ret);
-  }
-}
-
-TEST_F(RasterTest, NLCD) {
-  Configuration conf;
-  conf.partition_size = 64;
-  conf.input_filename =
-      "tests/testdata/nlcd2006_landcover_4-20-11_se5.tif";
-  conf.output_filename =
-      "tests/testoutput/nlcd2006_landcover_4-20-11_se5_mollweide.tif";
-  conf.resampler = librasterblaster::MIN;
-  conf.output_srs =
-      "+proj=moll +lat_1=29.5 +lat_2=45.5 "
-      "+lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83";
   conf.fillvalue = "32";
 
   int ret = prasterblasterpio(conf);
