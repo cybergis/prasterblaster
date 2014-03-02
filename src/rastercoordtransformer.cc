@@ -28,7 +28,6 @@
 
 #include "src/reprojection_tools.h"
 #include "src/resampler.h"
-#include "src/quadtree.h"
 
 namespace librasterblaster {
 RasterCoordTransformer::

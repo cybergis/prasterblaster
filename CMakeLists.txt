@@ -30,7 +30,7 @@ endif (NOT PROJ_FOUND OR NOT GDAL_FOUND)
 include_directories (${GDAL_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/src/gdal/gdal-1.9.2/frmts/gtiff/libtiff/)
 
 add_library (sptw SHARED src/demos/sptw.cc)
-add_library (rasterblaster SHARED src/configuration.cc src/quadtree.cc src/rastercoordtransformer.cc 
+add_library (rasterblaster SHARED src/configuration.cc src/rastercoordtransformer.cc 
   src/reprojection_tools.cc src/rasterchunk.cc)
 add_library (prasterblaster SHARED src/demos/prasterblaster-pio.cc)
 target_link_libraries (prasterblaster rasterblaster sptw)

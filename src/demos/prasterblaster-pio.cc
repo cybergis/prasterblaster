@@ -23,11 +23,12 @@
 #include <vector>
 
 #include "src/configuration.h"
-#include "src/quadtree.h"
 #include "src/reprojection_tools.h"
 
 #include "src/demos/sptw.h"
 #include "src/utils.h"
+
+using std::vector;
 
 using librasterblaster::Area;
 using librasterblaster::BlockPartition;
@@ -204,85 +205,6 @@ int rastercompare(string control_filename, string test_filename) {
     return 1;
   }
 }
-
-std::vector<Area> TilePartition(int rank,
-                                int process_count,
-                                PTIFF *tiff_file,
-                                int max_partition_size) {
-  int64_t tiles_per_partition = (tiff_file->block_x_size
-                                 * tiff_file->block_y_size
-                                 * tiff_file->band_type_size)
-      / tiff_file->block_x_size
-      / tiff_file->block_y_size / max_partition_size;
-  if (tiles_per_partition < 1) {
-    tiles_per_partition = 1;
-  }
-  vector<Area> gparts;
-  const int rows_per_partition = tiles_per_partition / tiff_file->tiles_across;
-  int extra_rows = tiles_per_partition % tiff_file->tiles_across;
-  int extra_tiles = tiff_file->tiles_across % tiles_per_partition;
-  printf("Beginning the loop!\n");
-  if (rows_per_partition > 0) {
-    printf("rows!\n");
-    for (int i = 0; i < tiff_file->tiles_down; i += rows_per_partition) {
-      int prows = rows_per_partition - 1;
-      if (extra_rows > 0) {
-        prows++;
-        i++;
-        extra_rows--;
-      }
-      gparts.push_back(Area(0, i, tiff_file->tiles_across-1, i+prows));
-    }
-  } else {
-    printf("columns!\n");
-    for (int i = 0; i < tiff_file->tiles_down; ++i) {
-      for (int j = 0, tilei = 0; j < process_count; ++j) {
-        int ptiles = tiles_per_partition - 1;
-        if (j / extra_tiles == 0) {
-          ptiles += extra_tiles % process_count;
-        }
-        gparts.push_back(Area(tilei, i, tilei+ptiles, i));
-        tilei += ptiles + 1;
-      }
-    }
-  }
-
-  std::vector<Area> partitions;
-  // Sort the partition for better file locality
-  std::sort(gparts.begin(), gparts.end(), partition_compare);
-
-  // Now we shuffle the partitions for load balancing.
-  // All processes should generate the same shuffle.
-  for (size_t i = 0; i < gparts.size()-process_count; i += process_count) {
-    vector<Area>::iterator beg = gparts.begin() + i;
-    vector<Area>::iterator end = beg + process_count - 1;
-    std::random_shuffle(beg, end, simplerandom);
-  }
-
-  for (size_t i = 0; i < gparts.size(); ++i) {
-    if (i % process_count == static_cast<unsigned int>(rank)) {
-      partitions.push_back(gparts.at(i));
-    }
-  }
-
-  //  Now convert the tile partitions into raster coordinates
-  for (size_t i = 0; i < partitions.size(); ++i) {
-    partitions.at(i).ul.x *= tiff_file->block_x_size;
-    partitions.at(i).ul.y *= tiff_file->block_y_size;
-
-    partitions.at(i).lr.x += 1;
-    partitions.at(i).lr.x *= tiff_file->block_x_size;
-    partitions.at(i).lr.x -= 1;
-
-    partitions.at(i).lr.y += 1;
-    partitions.at(i).lr.y *= tiff_file->block_y_size;
-    partitions.at(i).lr.y -= 1;
-  }
-
-  return partitions;
-}
-
-
 
 /** Main function for the prasterblasterpio program */
 PRB_ERROR prasterblasterpio(Configuration conf) {

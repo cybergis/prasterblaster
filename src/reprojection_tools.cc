@@ -32,7 +32,6 @@
 #include <sstream>
 
 #include "src/rastercoordtransformer.h"
-#include "src/quadtree.h"
 #include "src/resampler.h"
 #include "src/std_int.h"
 #include "src/utils.h"

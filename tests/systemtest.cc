@@ -22,7 +22,6 @@
 
 #include "gtest/gtest.h"
 #include "src/configuration.h"
-#include "src/quadtree.h"
 #include "src/reprojection_tools.h"
 #include "src/resampler.h"
 #include "src/demos/prasterblaster-pio.h"
