@@ -17,7 +17,6 @@
 
 #include "src/demos/sptw.h"
 
-#include <endian.h>
 #include <fcntl.h>
 #include <gdal_priv.h>
 #include <cpl_string.h>
