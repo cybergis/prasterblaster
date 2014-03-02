@@ -10,17 +10,31 @@ cd $OLDDIR
 mkdir $PRBROOT/src/gdal
 cd $PRBROOT/src/gdal/
 
+
+if command -v gmake 2>/dev/null; then
+    MAKE=gmake
+else
+    MAKE=make
+fi
+
+if command -v wget 2>/dev/null; then
+    WGET="wget -c"
+else
+    WGET="ftp -C"
+fi
+
 # Build proj4
-wget -c http://download.osgeo.org/proj/proj-4.8.0.tar.gz
+$WGET http://download.osgeo.org/proj/proj-4.8.0.tar.gz
 rm -rf proj-4.8.0
 tar xfz proj-4.8.0.tar.gz
 cd proj-4.8.0
-./configure --prefix=$PRBROOT/src/gdal/ --without-jni
-make -j2 install
+./configure --prefix=$PRBROOT/src/gdal/ --without-jni --without-mutex
+$MAKE -j2
+$MAKE install
 
 # Build GDAL
 cd $PRBROOT/src/gdal/
-wget -c http://download.osgeo.org/gdal/gdal-1.9.2.tar.gz
+$WGET http://download.osgeo.org/gdal/gdal-1.9.2.tar.gz
 rm -rf gdal-1.9.2
 tar xfz gdal-1.9.2.tar.gz
 cd gdal-1.9.2/
@@ -83,8 +97,10 @@ cd gdal-1.9.2/
 
 
 
-make -j2
-make install
+$MAKE -j2
+$MAKE install
 
+# Create library link if necessary
+ln -s $PRBROOT/src/gdal/lib/libgdal.so.* $PRBROOT/src/gdal/lib/libgdal.so
 
 cd $OLDDIR
