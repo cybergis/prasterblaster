@@ -348,23 +348,21 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
       fprintf(stderr, "Error creating raster!: %d\n", err);
       return PRB_IOERROR;
     }
-  }
-  // Now populate tile offsets
-  PTIFF* out_raster = open_raster(conf.output_filename);
-  if (rank == 0) {
-          SPTW_ERROR sperr = populate_tile_offsets(out_raster,
-                                                   conf.tile_size,
-                                                   0);
-          if (sperr != sptw::SP_None) {
-                  fprintf(stderr, "\nError populating tile offsets\n");
-          }
+
+    // Now populate tile offsets
+    PTIFF* out_raster = open_raster(conf.output_filename);
+    SPTW_ERROR sperr = populate_tile_offsets(out_raster,
+					     conf.tile_size,
+					     0);
+    if (sperr != sptw::SP_None) {
+      fprintf(stderr, "\nError populating tile offsets\n");
+    }
+    close_raster(out_raster);
     printf("done\n");
   }
 
   // Wait for rank 0 to finish creating the file
   MPI_Barrier(MPI_COMM_WORLD);
-
-  close_raster(out_raster);
 
   // Now open the new output file as a ProjectedRaster object. This object will
   // only be used to read metadata. It will _not_ be used to write to the output
