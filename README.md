@@ -42,10 +42,10 @@ libRasterBlaster Setup and Installation
 
 ### Pre-install steps
 
-libRasterBlaster depends on GDAL so go to http://gdal.org and sources
-or binaries for your system. Alternatively you can use your system's
-package manager to install libgdal. Whatever method you use ensure
-that libgdal is compiled with bigtiff and proj4 support.
+libRasterBlaster depends on GDAL so go to http://gdal.org and fetch
+the sources or binaries for your system. Alternatively you can use
+your system's package manager to install libgdal. Whatever method you
+use ensure that libgdal is compiled with bigtiff and proj4 support.
 
 
 ### Compiling and Testing
