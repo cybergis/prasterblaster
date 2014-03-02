@@ -14,7 +14,7 @@ set (CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 set (CMAKE_PREFIX_PATH ${CMAKE_SOURCE_DIR}/src/gdal/ ${CMAKE_PREFIX_PATH})
 
 # add src subdirectories to include path
-include_directories ("${CMAKE_SOURCE_DIR}")
+include_directories ("${CMAKE_SOURCE_DIR}" ${CMAKE_SOURCE_DIR}/src/gtest/include/)
 
 # Set CXXFLAGS
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wcast-align -Wpointer-arith -Wsign-compare -Wformat=2 -Wno-format-y2k  -Wmissing-braces -Wparentheses -Wtrigraphs -Wstrict-aliasing=2")
