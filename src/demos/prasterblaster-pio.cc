@@ -431,17 +431,26 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
              MPI_DOUBLE,
              0,
              MPI_COMM_WORLD);
+  double averages[7] = { 0.0 };
+
+  for (unsigned int i = 0; i < process_runtimes.size(); i++) {
+    averages[i % 7] += process_runtimes[i];
+  }
+
+  for (unsigned int i = 0; i < 7; i++) {
+    averages[i] /= process_count;
+  }
   if (rank == 0) {
     printf("Runtimes, in seconds\n");
     printf("Total  Pre-loop Minbox Read   Resample Write  Misc\n");
     printf("%.4f %.4f   %.4f %.4f %.4f   %.4f %.4f\n",
-           runtimes[0],
-           runtimes[1],
-           runtimes[2],
-           runtimes[3],
-           runtimes[4],
-           runtimes[5],
-           runtimes[6]);
+           averages[0],
+           averages[1],
+           averages[2],
+           averages[3],
+           averages[4],
+           averages[5],
+           averages[6]);
   }
 
   FILE *timing_file = stdout;
@@ -452,16 +461,6 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
         fprintf(stderr, "Error creating timing output file");
         timing_file = stdout;
       }
-    }
-
-    double averages[7] = { 0.0 };
-
-    for (unsigned int i = 0; i < process_runtimes.size(); i++) {
-      averages[i % 7] += process_runtimes[i];
-    }
-
-    for (unsigned int i = 0; i < 7; i++) {
-      averages[i] /= process_count;
     }
 
     struct timeval time;
