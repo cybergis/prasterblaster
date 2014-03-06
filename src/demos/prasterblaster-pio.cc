@@ -270,26 +270,27 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
       fprintf(stderr, "Error creating raster!: %d\n", err);
       return PRB_IOERROR;
     }
-
-    // Now populate tile offsets
-    PTIFF* out_raster = open_raster(conf.output_filename);
-    SPTW_ERROR sperr = populate_tile_offsets(out_raster,
-					     conf.tile_size,
-					     0);
-    if (sperr != sptw::SP_None) {
-      fprintf(stderr, "\nError populating tile offsets\n");
-    }
-    close_raster(out_raster);
-    printf("done\n");
   }
 
   // Wait for rank 0 to finish creating the file
+  MPI_Barrier(MPI_COMM_WORLD);
+  PTIFF* output_raster = open_raster(conf.output_filename);
+  if (rank == 0) {
+    SPTW_ERROR sperr = populate_tile_offsets(output_raster,
+                                             conf.tile_size,
+                                             0);
+    if (sperr != sptw::SP_None) {
+      fprintf(stderr, "\nError populating tile offsets\n");
+    }
+    printf("done\n");
+  }
+  close_raster(output_raster);
+  output_raster = open_raster(conf.output_filename);
   MPI_Barrier(MPI_COMM_WORLD);
 
   // Now open the new output file as a ProjectedRaster object. This object will
   // only be used to read metadata. It will _not_ be used to write to the output
   // file.
-  PTIFF* output_raster = open_raster(conf.output_filename);
   GDALDataset *gdal_output_raster =
       static_cast<GDALDataset*>(GDALOpen(conf.output_filename.c_str(),
                                          GA_Update));
@@ -326,12 +327,6 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   for (size_t i = 0; i < partitions.size(); ++i) {
     loop_start = MPI_Wtime();
 
-/*
-    // Swap y-axis of partition
-    double t = partitions.at(i).lr.y;
-    partitions.at(i).lr.y = partitions.at(i).ul.y;
-    partitions.at(i).ul.y = t;
-*/
     // Now we use the ProjectedRaster object we created for the input file to
     // create a RasterChunk that has the pixel values read into it.
     in_chunk = RasterChunk::CreateRasterChunk(input_raster,
