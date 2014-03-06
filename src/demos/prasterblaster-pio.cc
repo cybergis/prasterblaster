@@ -431,9 +431,21 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
              MPI_DOUBLE,
              0,
              MPI_COMM_WORLD);
+  if (rank == 0) {
+    printf("Runtimes, in seconds\n");
+    printf("Total  Pre-loop Minbox Read   Resample Write  Misc\n");
+    printf("%.4f %.4f   %.4f %.4f %.4f   %.4f %.4f\n",
+           runtimes[0],
+           runtimes[1],
+           runtimes[2],
+           runtimes[3],
+           runtimes[4],
+           runtimes[5],
+           runtimes[6]);
+  }
 
   FILE *timing_file = stdout;
-  if (rank == 0) {
+  if (rank == 0 && conf.timing_filename != "") {
     if (conf.timing_filename != "") {
       timing_file = fopen(conf.timing_filename.c_str(), "w");
       if (conf.timing_filename != "" && timing_file == NULL) {
