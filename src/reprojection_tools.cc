@@ -256,7 +256,7 @@ std::vector<Area> BlockPartition(int rank,
   // Now we shuffle the partitions for load balancing.
   // All processes should generate the same shuffle.
   std::srand(42);
-  std::random_shuffle(blocks.begin(), blocks.end(), simplerandom);
+//  std::random_shuffle(blocks.begin(), blocks.end(), simplerandom);
 
   std::vector<Area> partitions;
   for (size_t i = 0; i < blocks.size(); ++i) {
