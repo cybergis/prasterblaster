@@ -142,25 +142,6 @@ partition is only assigned to one process. This ensures all write
 accesses are nonconflicting and that sequential consistency is
 maintained.
 
-### Possible improvements
-
-SPTW achieves sequential consistency but it is almost certainly not
-optimal. Possble improvements include:
-
-#### Collective Operations
-
-Currently all file writes are done with non-collective operations. MPI
-I/O supports collective calls in which use a shared file pointer and
-file accesses are coordinated among processes.
-
-#### Using MPI I/O for read operations
-
-SPTW is only used to write the output file in the prasterblasterpio
-demo program. The file reads are done with the standard POSIX I/O
-functions. The use of collective reads may be more efficient.
-
-
-
 
 Background information and terminology
 --------------------------------------
