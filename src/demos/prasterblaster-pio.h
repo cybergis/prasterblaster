@@ -33,16 +33,6 @@ namespace librasterblaster {
  */
 PRB_ERROR write_rasterchunk(sptw::PTIFF *ptiff,
                             RasterChunk *chunk);
-/**
- * @brief rastercompare takes two raster files and compares the pixels,
- * verifying they are within a certain delta
- *
- * @param control_filename filename of a known good raster
- *
- * @param test_filename filename of a raster to be compared to control_filename
- *
- */
-int rastercompare(string control_filename, string test_filename);
 
 /**
  * @brief prasterblasterpio performs a complete, potentially parallel, raster
