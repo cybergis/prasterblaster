@@ -337,6 +337,7 @@ SPTW_ERROR create_tiled_raster(string filename,
   options = CSLSetNameValue(options, "TILED", "YES");
   options = CSLSetNameValue(options, "BLOCKXSIZE", ts.str().c_str());
   options = CSLSetNameValue(options, "BLOCKYSIZE", ts.str().c_str());
+  options = CSLSetNameValue(options, "SPARSE_OK", "YES");
 
   ds = gtiff_driver->Create(filename.c_str(),
                             x_size,

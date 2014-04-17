@@ -15,10 +15,10 @@
  *
  */
 
-
 #include <vector>
 
 #include <mpi.h>
+#include <unistd.h>
 
 #include "gtest/gtest.h"
 #include "src/configuration.h"
@@ -28,9 +28,13 @@
 
 #include "src/demos/sptw.h"
 
+#include "tests/rastercompare.h"
+
 using librasterblaster::Configuration;
 using librasterblaster::PRB_NOERROR;
-using librasterblaster::rastercompare;
+
+#define STR_EXPAND(tok) #tok
+#define STR(tok) STR_EXPAND(tok)
 
 namespace {
 class MinimalistPrinter : public ::testing::EmptyTestEventListener {
@@ -69,82 +73,49 @@ class MinimalistPrinter : public ::testing::EmptyTestEventListener {
   }
 };
 
-// The fixture for system testing
-class RasterTest : public ::testing::Test {
- protected:
-  // You can remove any or all of the following functions if its body
-  // is empty.
-
-  RasterTest() {
-          // You can do set-up work for each test here.
-  }
-
-  virtual ~RasterTest() {
-    // You can do clean-up work that doesn't throw exceptions here.
-  }
-
-  // If the constructor and destructor are not enough for setting up
-  // and cleaning up each test, you can define the following methods:
-
-  virtual void SetUp() {
-    // Code here will be called immediately after the constructor (right
-    // before each test).
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &process_count);
-  }
-
-  virtual void TearDown() {
-    // Code here will be called immediately after each test (right
-    // before the destructor).
-  }
-
-  // Objects Declared here can by used by all tests in fixture
-  int rank;
-  int process_count;
-};
-
-TEST_F(RasterTest, Veg1Deg) {
+TEST(SystemTest, GLOBALVEG) {
+  const int gold_count = 12;
+  const std::string golden_rasters[] = { "aea", "cea", "eck4", "eck6", "gall",
+                                         "gnom", "laea", "merc", "mill",
+                                         "moll", "sinu", "vandg"};
   Configuration conf;
-  conf.input_filename = "tests/testdata/veg_geographic_1deg.tif";
-  conf.output_filename = "tests/testoutput/veg_mollweide_1deg.tif";
-  conf.resampler = librasterblaster::MIN;
-  conf.output_srs = "+proj=moll +a=6370997 +b=6370997";
-  conf.fillvalue = "32";
 
-  int ret = prasterblasterpio(conf);
-  ASSERT_EQ(PRB_NOERROR, ret);
+  GDALAllRegister();
 
-  if (rank == 0) {
-    int raster_compare_ret = rastercompare("tests/testdata/veg_mollweide_1deg.tif", 
-                                           "tests/testoutput/veg_mollweide_1deg.tif");
-  ASSERT_EQ(0, raster_compare_ret);
+  for (unsigned int i = 0; i < gold_count; ++i) {
+    const std::string gold_name = STR(__PRB_SRC_DIR__) "/tests/testdata/veg_" + golden_rasters[i] + ".tif";
+    const std::string test_name = STR(__PRB_SRC_DIR__) "/tests/testdata/veg_test_" + golden_rasters[i] + ".tif";
+
+    // Open golden raster to extract metadata
+    GDALDataset *golden = static_cast<GDALDataset*>(GDALOpen(gold_name.c_str(),
+                                                             GA_ReadOnly));
+
+    if (golden == NULL) {
+      printf("%s\n", gold_name.c_str());
+    }
+    ASSERT_TRUE(golden != NULL);
+
+    conf.input_filename = STR(__PRB_SRC_DIR__) "/tests/testdata/veg.tif";
+    conf.output_filename = test_name;
+    conf.resampler = librasterblaster::MIN;
+    conf.output_srs = golden->GetProjectionRef();
+    conf.tile_size = 16;
+    conf.partition_size = 1;
+
+    GDALClose(golden);
+
+    int ret = prasterblasterpio(conf);
+    ASSERT_EQ(PRB_NOERROR, ret);
+
+    int raster_compare_ret = rastercompare(gold_name, test_name);
+
+    ASSERT_EQ(0, raster_compare_ret);
+    unlink(test_name.c_str());
   }
-}
-
-TEST_F(RasterTest, Veg1DegRobin) {
-  Configuration conf;
-  conf.input_filename = "tests/testdata/veg_geographic_1deg.tif";
-  conf.output_filename = "tests/testoutput/veg_robinson_1deg.tif";
-  conf.resampler = librasterblaster::MIN;
-  conf.output_srs = "+proj=robin +a=6370997 +b=6370997";
-  conf.fillvalue = "32";
-
-  int ret = prasterblasterpio(conf);
-}
-
-TEST_F(RasterTest, Veg1DegSinusoidal) {
-  Configuration conf;
-  conf.input_filename = "tests/testdata/veg_geographic_1deg.tif";
-  conf.output_filename = "tests/testoutput/veg_sinosoidal_1deg.tif";
-  conf.resampler = librasterblaster::MIN;
-  conf.output_srs = "+proj=sinu +lon_0=0.0 +a=6370997 +b=6370997";
-  conf.fillvalue = "32";
-
-  int ret = prasterblasterpio(conf);
 }
 }  // namespace
 
-int main(int argc, char **argv) {
+int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
 
   ::testing::TestEventListeners& listeners =

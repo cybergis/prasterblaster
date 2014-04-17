@@ -17,7 +17,7 @@ set (CMAKE_PREFIX_PATH ${CMAKE_SOURCE_DIR}/src/gdal/ ${CMAKE_PREFIX_PATH})
 include_directories ("${CMAKE_SOURCE_DIR}" ${CMAKE_SOURCE_DIR}/src/gtest/include/)
 
 # Set CXXFLAGS
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wcast-align -Wpointer-arith -Wsign-compare -Wformat=2 -Wno-format-y2k  -Wmissing-braces -Wparentheses -Wtrigraphs -Wstrict-aliasing=2")
+set (CMAKE_CXX_FLAGS "-D__PRB_SRC_DIR__=${CMAKE_SOURCE_DIR} ${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wcast-align -Wpointer-arith -Wsign-compare -Wformat=2 -Wno-format-y2k  -Wmissing-braces -Wparentheses -Wtrigraphs -Wstrict-aliasing=2")
 
 find_package (GDAL)
 find_package (Proj)
@@ -40,11 +40,9 @@ target_link_libraries (prasterblasterpio sptw rasterblaster prasterblaster ${PRO
 
 add_subdirectory (src/gtest/)
 
-add_executable (tests tests/check_reprojection_tools.cc)
-add_executable (systemtest tests/systemtest.cc src/demos/prasterblaster-pio.cc)
+add_executable (tests tests/systemtest.cc tests/check_reprojection_tools.cc tests/rastercompare.cc)
 
-target_link_libraries(tests gtest gtest_main rasterblaster sptw ${GDAL_LIBRARY} ${PROJ_LIBRARY})
-target_link_libraries(systemtest rasterblaster sptw gtest ${GDAL_LIBRARY} ${PROJ_LIBRARY})
+target_link_libraries(tests gtest rasterblaster sptw prasterblaster ${GDAL_LIBRARY} ${PROJ_LIBRARY})
 
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen 1.8)
@@ -58,4 +56,5 @@ if(DOXYGEN_FOUND)
 endif(DOXYGEN_FOUND)
 
 # add a target to run the 'tests' binary
-add_custom_target(check ./tests)
+add_custom_target(check ./tests
+                  DEPENDS tests)
