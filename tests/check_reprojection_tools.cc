@@ -47,6 +47,7 @@ TEST(BlockPartition, SmallRasterManyProcesses) {
 		     column_count,
 		     tile_size,
 		     partition_size);
+  SUCCEED();
 }
 
 TEST(BlockPartition, BigRasterManyProcesses) {
@@ -62,6 +63,7 @@ TEST(BlockPartition, BigRasterManyProcesses) {
 				       tile_size,
 				       partition_size);
   ASSERT_EQ(1, p.size());
+  SUCCEED();
 }
 
 TEST(BlockPartition, HugeRasterManyProcesses) {
@@ -77,6 +79,6 @@ TEST(BlockPartition, HugeRasterManyProcesses) {
 				       tile_size,
 				       partition_size);
   ASSERT_NE(1, p.size());
-
+  SUCCEED();
 }
 

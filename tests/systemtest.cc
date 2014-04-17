@@ -37,42 +37,6 @@ using librasterblaster::PRB_NOERROR;
 #define STR(tok) STR_EXPAND(tok)
 
 namespace {
-class MinimalistPrinter : public ::testing::EmptyTestEventListener {
-  // Called before a test starts.
-  virtual void OnTestStart(const ::testing::TestInfo& test_info) {
-    int rank = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if (rank == 0) {
-      printf("*** Test %s.%s starting.\n",
-             test_info.test_case_name(), test_info.name());
-    }
-  }
-
-  // Called after a failed assertion or a SUCCEED() invocation.
-  virtual void OnTestPartResult(
-      const ::testing::TestPartResult& test_part_result) {
-    int rank = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if (rank == 0) {
-      printf("%s in %s:%d\n%s\n",
-             test_part_result.failed() ? "*** Failure" : "Success",
-             test_part_result.file_name(),
-             test_part_result.line_number(),
-             test_part_result.summary());
-    }
-  }
-
-  // Called after a test ends.
-  virtual void OnTestEnd(const ::testing::TestInfo& test_info) {
-    int rank = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if (rank == 0) {
-      printf("*** Test %s.%s ending.\n",
-             test_info.test_case_name(), test_info.name());
-    }
-  }
-};
-
 TEST(SystemTest, GLOBALVEG) {
   const int gold_count = 12;
   const std::string golden_rasters[] = { "aea", "cea", "eck4", "eck6", "gall",
@@ -91,7 +55,7 @@ TEST(SystemTest, GLOBALVEG) {
                                                              GA_ReadOnly));
 
     if (golden == NULL) {
-      printf("%s\n", gold_name.c_str());
+      ADD_FAILURE() << "Failed to open golden raster: " + gold_name;
     }
     ASSERT_TRUE(golden != NULL);
 
@@ -112,16 +76,12 @@ TEST(SystemTest, GLOBALVEG) {
     ASSERT_EQ(0, raster_compare_ret);
     unlink(test_name.c_str());
   }
+  SUCCEED();
 }
 }  // namespace
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
-
-  ::testing::TestEventListeners& listeners =
-        ::testing::UnitTest::GetInstance()->listeners();
-  delete listeners.Release(listeners.default_result_printer());
-  listeners.Append(new MinimalistPrinter);
   ::testing::InitGoogleTest(&argc, argv);
   int ret = RUN_ALL_TESTS();
   MPI_Finalize();
