@@ -60,6 +60,19 @@ struct Coordinate {
   */
   Coordinate(const Coordinate &c): x(c.x), y(c.y), units(c.units) {}
 
+  Coordinate& operator=(const Coordinate &c) {
+    this->x = c.x;
+    this->y = c.y;
+    this->units = c.units;
+    return *this;
+  }
+
+  bool operator==(const Coordinate &c) {
+    return (x == c.x && y == c.y && units == c.units);
+  }
+
+  bool operator!=(const Coordinate &c) { return !(*this == c); }
+
   double x;
   double y;
   ProjUnit units;
