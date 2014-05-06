@@ -17,6 +17,7 @@
 //
 
 #include <gdal.h>
+#include <string.h>
 
 #include "src/reprojection_tools.h"
 #include "src/rasterchunk.h"
@@ -73,6 +74,123 @@ RasterChunk* RasterChunk::CreateRasterChunk(GDALDataset *input_raster,
                               input_raster,
                               output_area);
   return CreateRasterChunk(input_raster, in_area);
+}
+
+RasterChunk::RasterChunk(const RasterChunk &s) {
+  projection_ = s.projection_;
+  raster_location_ = s.raster_location_;
+  ul_projected_corner_ = s.ul_projected_corner_;
+  pixel_size_ = s.pixel_size_;
+  row_count_ = s.row_count_;
+  column_count_ = s.column_count_;
+  pixel_type_ = s.pixel_type_;
+  band_count_ = s.band_count_;
+  memcpy(geotransform_, s.geotransform_, 6*sizeof(double));
+
+  size_t pixel_buffer_size = static_cast<size_t>(row_count_)
+      * static_cast<size_t>(column_count_)
+      * static_cast<size_t>(GDALGetDataTypeSize(pixel_type_)/8)
+      * static_cast<size_t>(band_count_);
+
+  memcpy(pixels_, s.pixels_, pixel_buffer_size);
+}
+
+RasterChunk& RasterChunk::operator=(const RasterChunk &s) {
+  if (this == &s) {
+    return *this;
+  }
+  projection_ = s.projection_;
+  raster_location_ = s.raster_location_;
+  ul_projected_corner_ = s.ul_projected_corner_;
+  pixel_size_ = s.pixel_size_;
+  row_count_ = s.row_count_;
+  column_count_ = s.column_count_;
+  pixel_type_ = s.pixel_type_;
+  band_count_ = s.band_count_;
+  memcpy(geotransform_, s.geotransform_, 6*sizeof(double));
+
+  size_t pixel_buffer_size = static_cast<size_t>(row_count_)
+      * static_cast<size_t>(column_count_)
+      * static_cast<size_t>(GDALGetDataTypeSize(pixel_type_)/8)
+      * static_cast<size_t>(band_count_);
+
+  memcpy(pixels_, s.pixels_, pixel_buffer_size);
+
+  return *this;
+}
+
+bool RasterChunk::operator==(const RasterChunk &s) {
+
+  // Maybe do some sort of normalization with the projections before
+  // comparing. For now do a character-by-character comparison.
+  if (projection_ != s.projection_
+      || raster_location_ != s.raster_location_
+      || ul_projected_corner_ != s.ul_projected_corner_
+      || pixel_size_ != s.pixel_size_
+      || row_count_ != s.row_count_
+      || column_count_ != s.column_count_
+      || pixel_type_ != s.pixel_type_
+      || band_count_ != s.band_count_) {
+    return false;
+  }
+
+  for (int i = 0; i < 6; ++i) {
+    if (geotransform_[i] != s.geotransform_[i]) {
+      return false;
+    }
+  }
+  // Ignore pixel values for now
+  return true;
+}
+
+bool RasterChunk::operator!=(const RasterChunk &s) {
+  if (*this == s) {
+    return false;
+  }
+
+  return true;
+}
+
+bool RasterChunk::operator<(const RasterChunk &s) {
+  if (raster_location_.x < s.raster_location_.x
+      || raster_location_.y < s.raster_location_.y) {
+    return true;
+  }
+
+  return false;
+}
+
+bool RasterChunk::operator>(const RasterChunk &s) {
+  if (raster_location_.x > s.raster_location_.x
+      || raster_location_.y > s.raster_location_.y) {
+    return true;
+  }
+
+  return false;
+}
+
+bool RasterChunk::operator<=(const RasterChunk &s) {
+  if (*this == s) {
+    return true;
+  }
+
+  if (*this < s) {
+    return true;
+  }
+
+  return false;
+}
+
+bool RasterChunk::operator>=(const RasterChunk &s) {
+  if (*this == s) {
+    return true;
+  }
+
+  if (*this > s) {
+    return true;
+  }
+
+  return false;
 }
 
 PRB_ERROR RasterChunk::ReadRasterChunk(GDALDataset *ds, RasterChunk *chunk) {
