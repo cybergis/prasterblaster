@@ -38,6 +38,9 @@ target_link_libraries (prasterblaster rasterblaster sptw)
 add_executable (prasterblasterpio src/demos/prasterblaster-main.cc)
 target_link_libraries (prasterblasterpio sptw rasterblaster prasterblaster ${PROJ_LIBRARY} ${GDAL_LIBRARY} ${TIFF_LIBRARY})
 
+add_executable (prasterblaster-simple src/demos/prasterblaster-simple.cc)
+target_link_libraries (prasterblaster-simple rasterblaster prasterblaster ${PROJ_LIBRARY} ${GDAL_LIBRARY} ${TIFF_LIBRARY})
+
 add_subdirectory (src/gtest/)
 
 add_executable (tests tests/systemtest.cc tests/check_reprojection_tools.cc tests/rastercompare.cc)
