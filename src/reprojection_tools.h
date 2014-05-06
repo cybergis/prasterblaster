@@ -57,7 +57,7 @@ int simplerandom(int i);
 
 
 /**
- * @brief Creates and output raster based on a input and a new projection
+ * @brief Creates an output raster based on a input and a new projection
  * 
  * This function creates a new raster file at the path
  * output_filename, with projection specified by output_srs. The
@@ -66,14 +66,33 @@ int simplerandom(int i);
  * @param in The GDALDataset that represents the input file.
  * @param output_filename The path the new raster will be created at.
  * @param output_tile_size Size in pixels of one dimension of the tiles of the output raster
+ * @param output_srs String with a projection specification (WKT, proj4, EPSG) suitable for
+ *        OGRSpatialReference->SetFromUserInput()
  * @param output_pixel_size Side of square in meters of projected coordinates that each pixel represents
- * @param output_srs The Proj.4 specification of  projection and projection parameters.
  *
  */
 PRB_ERROR CreateOutputRaster(GDALDataset *in,
                              string output_filename,
                              string output_srs,
                              int output_tile_size);
+/**
+ * @brief Creates an output raster based on an input raster, a new projection,
+ * and a maximum pixel dimension. This is to be used when the dimensions of the
+ * output raster are important e.g. when generating a sample output.
+ *
+ * @param in The GDALDataset that represents the input file.
+ * @param output_filename The path the new raster will be created at.
+ * @param output_srs String with a projection specification (WKT, proj4, EPSG) suitable for
+ *        OGRSpatialReference->SetFromUserInput()
+ * @param output_tile_size Size in pixels of one dimension of the tiles of the output raster.
+ *        The output raster will be at most (output_tile_size X output_tile_size) size in pixels.
+ */
+PRB_ERROR CreateOutputRaster(GDALDataset *in,
+                             string output_filename,
+                             string output_srs,
+                             int output_tile_size,
+                             int output_max_dimension);
+
 PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
                                  string output_filename,
                                  string output_srs,

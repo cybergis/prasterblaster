@@ -51,7 +51,7 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
     return PRB_BADARG;
   }
 
-  out_srs.SetFromUserInput(output_srs.c_str());
+  err = out_srs.SetFromUserInput(output_srs.c_str());
   if (err != OGRERR_NONE) {
     return PRB_BADARG;
   }
@@ -82,6 +82,66 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   const double in_y_size = in->GetRasterBand(1)->GetYSize();
   const double output_pixel_size = diagonal_dist
       / sqrt(in_x_size * in_x_size + in_y_size * in_y_size);
+
+  const int64_t num_cols = static_cast<int64_t>(
+      0.5 + ((out_area.lr.x - out_area.ul.x) / output_pixel_size));
+  const int64_t num_rows = static_cast<int64_t>(
+      0.5 + ((out_area.ul.y - out_area.lr.y) / output_pixel_size));
+
+  PRB_ERROR result = CreateOutputRasterFile(in,
+                                            output_filename,
+                                            output_srs,
+                                            num_cols,
+                                            num_rows,
+                                            output_pixel_size,
+                                            out_area,
+                                            output_tile_size);
+  return result;
+}
+
+PRB_ERROR CreateOutputRaster(GDALDataset *in,
+                             string output_filename,
+                             string output_srs,
+                             int output_tile_size,
+                             int output_max_dimension) {
+
+  OGRSpatialReference in_srs;
+  OGRSpatialReference out_srs;
+  OGRErr err;
+
+  err = in_srs.SetFromUserInput(in->GetProjectionRef());
+  if (err != OGRERR_NONE) {
+    return PRB_BADARG;
+  }
+
+  err = out_srs.SetFromUserInput(output_srs.c_str());
+  if (err != OGRERR_NONE) {
+    return PRB_BADARG;
+  }
+
+   // Determine output raster size by calculating the projected coordinate minbox
+  double in_transform[6];
+  in->GetGeoTransform(in_transform);
+  Coordinate ul(in_transform[0], in_transform[3], UNDEF);
+  char *srs_str = NULL;
+  in_srs.exportToProj4(&srs_str);
+  Area out_area = ProjectedMinbox(ul,
+                                  srs_str,
+                                  in_transform[1],
+                                  in->GetRasterYSize(),
+                                  in->GetRasterXSize(),
+                                  output_srs);
+  CPLFree(srs_str);
+
+  // Divide the both the x space and y space by the maximum output
+  // dimension. This calculates a potential pixel size. Choose the largest pixel
+  // size, that dimension (x or y) becomes output_max_dimension. The dimension
+  // not chosen is then calculated with the generated pixel size.
+
+  const double x_pixel_size = (out_area.lr.x - out_area.ul.x) / output_max_dimension;
+  const double y_pixel_size = (out_area.ul.y - out_area.lr.y) / output_max_dimension;
+
+  const double output_pixel_size = x_pixel_size > y_pixel_size ? x_pixel_size : y_pixel_size;
 
   const int64_t num_cols = static_cast<int64_t>(
       0.5 + ((out_area.lr.x - out_area.ul.x) / output_pixel_size));
