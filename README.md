@@ -1,12 +1,6 @@
 
-
-
 libRasterBlaster {#mainpage}
 ===============
-    librasterblaster is a library designed to allow the quick creation
-    of parallel raster reprojection programs. Hopefully this will
-    allow further research into I/O, partitioning, load balancing and
-    other HPC concerns with regard to map reprojection.
 
     librasterblaster is made up of components that implement different
     parts of a parallel reprojection program. The components are
@@ -16,26 +10,12 @@ libRasterBlaster {#mainpage}
     The sample implementation, demonstrating the use of
     librasterblaster is called \link prasterblasterpio \endlink.
 
-    You will probably want to create your own reprojection program
-    with some differences from the demo program. However most
-    librasterblaster based programs will have a similar structure:
-    
-    - Parse input parameters
-    - Calculate output raster area
-    - Create the output raster
-    - Partition the output raster
-    - For each output partition, 
-      * Find the matching input partition
-      * Read the matching input area
-      * Call the ReprojectChunk function to perform resampling
-
 Contents
 --------
 * libRasterBlaster setup and installation
 * Background information and terminology
-* librasterblaster algorithm
-* librasterblaster structures
 * librasterblaster API
+* SPTW
 
 libRasterBlaster Setup and Installation
 ---------------------------------------
@@ -108,40 +88,6 @@ prasterblasterpio can be run in parallel as well:
 
     mpirun -n 100 ./prasterblasterpio --t_srs +proj=moll -n 4 tests/testdata/glc_geographic_30sec.tif tests/testoutput/glc_mollweide_30sec.tif
 
-SPTW
-----
-
-The Simple Parallel Tiff Writer (SPTW) is a correct but not optimal
-implemention of tiff file output. The MPI specification imposes three
-requirements to guarantee sequential consistency:
-
-    Case 1: $fh_1 FH_1$ All operations on fh1 are sequentially consistent
-    if atomic mode is set. If nonatomic mode is set, then all operations
-    on fh1 are sequentially consistent if they are either nonconcurrent,
-    nonconflicting, or both.
-
-    Case 2: $fh_1a FH_1$ and $fh_1b FH_1$ Assume A1 is a data access
-    operation using fh1a, and A2 is a data access operation using fh1b. If
-    for any access A1, there is no access A2 that conflicts with A1, then
-    MPI guarantees sequential consistency.
-
-    However, unlike POSIX semantics, the default MPI semantics for
-    conflicting accesses do not guarantee sequential consistency. If A1
-    and A2 conflict, sequential consistency can be guaranteed by either
-    enabling atomic mode via the MPI_FILE_SET_ATOMICITY routine, or
-    meeting the condition described in Case 3 below.
-
-    Case 3: $fh_1 FH_1$ and $fh_2 FH_2$ 
-
-
-SPTW provides sequential consistency only when all write operations
-are nonconflicting, that is, each write operation accesses a distinct
-section of the raster file. In the prasterblater-pio demo program each
-pixel of the output raster is contained in only one partition and each
-partition is only assigned to one process. This ensures all write
-accesses are nonconflicting and that sequential consistency is
-maintained.
-
 
 Background information and terminology
 --------------------------------------
@@ -155,7 +101,7 @@ projected, and geographic.
 The raster space is used to address the individual pixel values in the
 raster. It is a 2D cartesian coordinate plane with (0,0) in the
 top-left corner. The y-axis grows down and the x-axis grows to the
-right. 
+right.
 
 The projected coordinate space is a cartesian plane determined by the
 map projection used. In projected coordinates (0,0) is in the center
@@ -225,7 +171,7 @@ equivalent projection coordinate. For example:
 Where is the raster coordinate (33, 150) in projected coordinates?
 
     X_proj = (X * pixel_size) + upper-left-x
-           = (33 * 30) + -2493045 
+           = (33 * 30) + -2493045
            = -2492055
 
     Y_proj = upper-left-y - (Y * pixel_size)
@@ -243,6 +189,121 @@ Finding the geographic coordinate requires a more complicated transformation, so
     -249205  326505
     98d27'56.789"W  25d57'33.691"N <-- This is the geographic coordinate
 
+libRasterBlaster API
+--------------------
+
+    librasterblaster is a library of tools to transform the map
+    projection of raster datasets, potentially using many processors
+    to speed up the computationally intensive processing required. The
+    hope is that this will allow further research into I/O,
+    partitioning, load balancing and other HPC concerns with regard to
+    map reprojection.
+
+    It is built on the MPI API for IPC and uses the GDAL library to
+    access geospatial datasets. If you aren't familiar with the GDAL
+    API check out this tutorial for a quick introduction:
+    http://www.gdal.org/gdal_tutorial.html .
+
+    The first is that you have a raster in a given projection and you
+    want a new raster with a different map projection. The new output
+    raster may be a very different shape than the input, so the extent
+    of the output raster has to be calculated. This is done with the
+    "ProjectedMinbox" function. It will return a rectangle, in the
+    output projection's coordinate system, that will contain the input
+    raster's area. This rectangular area may be proportioned very
+    differently, depending on the projections involved.
+
+
+
+    INPUT:
+    +------------------------------------------------------------------+
+    |                                       --+                        |
+    |                                  \---/  |                        |
+    |            /--------+            |\     |                        |
+    |        +---         |            |      |    ---------\          |
+    |        |            |             \      ---/          --        |
+    |        \            |             +-                     -+      |
+    |         \          /                \+                    \      |
+    |         \          |                 |                     |     |
+    |          X         |                 |                     |     |
+    |         |          /                 |                     /     |
+    |         |         /                   \                   |      |
+    |        /          |                   |                   |      |
+    |       /          /                    |                  /       |
+    |      /         --                     |                //        |
+    |     |       --/                       |            /---          |
+    |     +\   --/                         /        /----              |
+    |       --/                          \/   /-----                   |
+    |                                     ----                         |
+    +------------------------------------------------------------------+
+
+                             +---+
+                             |   |
+                             |   |
+                             |   |
+                          -\-+---+--- 
+                            -\   -/
+                              --/
+
+    OUTPUT:
+    .......................-------------------........................
+    .               ------/                   \------                .
+    .           ---/  /  --            +-----\       \---            .
+    .        --/     /     -\          \      \          \--         .
+    .      -/       /        -\         |      \            \-       .
+    .    -/         |          --       |     --\--------\    \-     .
+    .  -/          /             \       \                \     \-   .
+    . /           --              -\      -\              |       \  .
+    . |             \--             \       \              |      |  .
+    ./                 \+            X      |              |       \ .
+    .|                  |          /-       |               \      | .
+    .\                  |        /-        /+               /      / .
+    . |                 |       /        /-                /      |  .
+    . \                 /       /       /                --       /  .
+    .  -\             -/       |       |              --/       /-   .
+    .    -\         -/        /+       /           --/        /-     .
+    .      -\     -/        /-        |         --/         /-       .
+    .        --\----     /-/          |      --/         /--         .
+    .           ---\\----              \  --/        /---            .
+    .               ------\             \/    /------                .
+    .......................-------------------........................
+
+
+
+SPTW
+----
+
+The Simple Parallel Tiff Writer (SPTW) is a correct and almost optimal
+implemention of parallel tiff file output using the MPI-IO api. The
+MPI specification imposes three requirements to guarantee sequential
+consistency:
+
+    Case 1: $fh_1 FH_1$ All operations on fh1 are sequentially consistent
+    if atomic mode is set. If nonatomic mode is set, then all operations
+    on fh1 are sequentially consistent if they are either nonconcurrent,
+    nonconflicting, or both.
+
+    Case 2: $fh_1a FH_1$ and $fh_1b FH_1$ Assume A1 is a data access
+    operation using fh1a, and A2 is a data access operation using fh1b. If
+    for any access A1, there is no access A2 that conflicts with A1, then
+    MPI guarantees sequential consistency.
+
+    However, unlike POSIX semantics, the default MPI semantics for
+    conflicting accesses do not guarantee sequential consistency. If A1
+    and A2 conflict, sequential consistency can be guaranteed by either
+    enabling atomic mode via the MPI_FILE_SET_ATOMICITY routine, or
+    meeting the condition described in Case 3 below.
+
+    Case 3: $fh_1 FH_1$ and $fh_2 FH_2$
+
+
+SPTW provides sequential consistency only when all write operations
+are nonconflicting, that is, each write operation accesses a distinct
+section of the raster file. In the prasterblaterpio demo program each
+pixel of the output raster is contained in only one partition and each
+partition is only assigned to one process. This ensures all write
+accesses are nonconflicting and that sequential consistency is
+maintained.
 
 librasterblaster algorithm
 --------------------------
@@ -318,73 +379,23 @@ sptw::create_raster function.
 
 Partition the output raster into n continuous parts. For each output
 partition we then calculate the minbox of the corresponding input
-area. 
+area.
 
-The librasterblaster::RowPartition function can be used to partition
+The librasterblaster::BlockPartition function can be used to partition
 the output raster. Though many other partition techniques can be
 applied.
 
 To find the matching input raster area the function
 librasterblaster::RasterMinbox applied with the output partition.
 
-librasterblaster structures
----------------------------
 
-### librasterblaster::RasterChunk
+SPTW
+----
 
-The main structure used throughout librasterblaster is
-librasterblaster::RasterChunk. This structure represents a
-georeferenced portion of a raster. During the reprojection process, a
-pair of these is created for each unit of resampling. File I/O is also
-done at the level of a RasterChunk.
-
-RasterChunks are normally created by the
-librasterblaster::ProjectedRaster class. The user specifies the
-desired area and the ProjectedRaster object returns the initialized
-RasterChunk.
-
-
-### librasterblaster::ProjectedRaster
-
-Represents a raster with a projection and location. Used to read
-metadata, create RasterChunks, and perform serial I/O.
-
-#### librasterblaster::ProjectedRaster::create_empty_raster_chunk
-
-Raster chunks can be created by librasterblaster::ProjectedRaster in
-three ways. The first member generates a RasterChunk with metadata but
-no I/O or memory is allocated for the pixel values.
-
-#### librasterblaster::ProjectedRaster::create_allocated_raster_chunk
-
-This function creates a RasterChunk with the correct metadata and
-memory allocated for the pixel values but no I/O is performed.
-
-#### librasterblaster::ProjectedRaster::create_raster_chunk
-
-This function creates a raster chunk with pixel values read from the
-raster.
-
-
-librasterblaster API
---------------------
-
-Raster metadata and serial I/O is accessed through the
-librasterblaster::ProjectedRaster class. 
-
-Two minboxing functions are
-provided. librasterblaster::ProjectedMinbox is used to find the size
-of the minbox in projected coordinates. This is used when calculating
-the size of the output raster.
-
-The second minbox function is librasterblaster::RasterMinbox. This
-function takes a raster area and finds the minbox in another raster
-area. This is used to the matching input raster area for a output
-librasterblaster::RasterChunk.
-
-For creating rasters a helper function is provided called
-librasterblaster::CreateOutputRaster. This function takes a
-librasterblaster::ProjectedRaster object representing the input
-raster, the output filename, pixel size, and proj4 projection
-string. It then calculates the size of the output raster and creates
-the file.
+SPTW is the Simple Parallel Tiff Writer. It's a library that uses the
+MPI-IO api to allow multiple processes to consistently write a single
+raster file. All of the processes in the process group must call the
+sptw::open_raster function but once opened processes can make
+independent calls to sptw::write_area. As long as processes write to
+independent sections of the raster, sequential consistency is
+preserved. All SPTW calls must be preceded by a call to MPI_Init().
