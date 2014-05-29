@@ -396,6 +396,19 @@ SPTW is the Simple Parallel Tiff Writer. It's a library that uses the
 MPI-IO api to allow multiple processes to consistently write a single
 raster file. All of the processes in the process group must call the
 sptw::open_raster function but once opened processes can make
-independent calls to sptw::write_area. As long as processes write to
-independent sections of the raster, sequential consistency is
-preserved. All SPTW calls must be preceded by a call to MPI_Init().
+independent calls to sptw::write_area. 
+
+* As long as processes write to independent sections of the raster,
+sequential consistency is preserved.
+
+* All SPTW calls must be preceded by a call to MPI_Init().
+
+* Every process in the MPI process group must open the same file at the same time.
+
+API Examples
+------------
+
+Several examples of the API are provided. Check out
+src/demos/prasterblaster-simple.cc for an example of a simple, serial
+librasterblaster program or src/demos/prasterblaster-pio.cc for a
+fully parallel implementation which uses SPTW.
