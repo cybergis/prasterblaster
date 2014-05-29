@@ -11,9 +11,9 @@
 ///
 /// @section DESCRIPTION
 ///
-/// This file demonstrates how to use librasterblaster to implement parallel
-/// raster reprojection. This implementation uses a MPI I/O to write to a tiff
-/// file in parallel.
+/// This file demonstrates how to use librasterblaster to implement serial
+/// raster reprojection. This implementation uses GDAL through librasterblaster
+/// to write to a tiff file in a single process.
 ///
 ///
 
