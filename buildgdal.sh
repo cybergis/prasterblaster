@@ -33,7 +33,7 @@ $MAKE install
 
 # Build GDAL
 cd $PRBROOT/src/gdal/
-$WGET http://download.osgeo.org/gdal/gdal-1.11.0.tar.gz
+$WGET http://download.osgeo.org/gdal/1.11.0/gdal-1.11.0.tar.gz
 rm -rf gdal-1.11.0
 tar xfz gdal-1.11.0.tar.gz
 cd gdal-1.11.0/
@@ -93,8 +93,6 @@ cd gdal-1.11.0/
 --with-armadillo=no \
 --with-libz=internal \
 --with-grib=no
-
-
 
 $MAKE -j2
 $MAKE install
