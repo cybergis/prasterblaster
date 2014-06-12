@@ -152,7 +152,7 @@ int64_t read_int64(PTIFF *tiff_file, int64_t offset, bool big_endian) {
                    read_buffer,
                    sizeof(int64_t),
                    MPI_BYTE,
-                   NULL);
+                   MPI_STATUS_IGNORE);
   return parse_int64(read_buffer, big_endian);
 }
 
@@ -166,7 +166,7 @@ int write_int64(PTIFF *tiff_file,
                     offset, buffer,
                     sizeof(int64_t),
                     MPI_BYTE,
-                    NULL);
+                    MPI_STATUS_IGNORE);
   return 0;
 }
 
