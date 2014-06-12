@@ -27,7 +27,7 @@ if (NOT PROJ_FOUND OR NOT GDAL_FOUND)
   message (SEND_ERROR "Some dependencies were not found!")
 endif (NOT PROJ_FOUND OR NOT GDAL_FOUND)
 
-include_directories (${GDAL_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/src/gdal/gdal-1.9.2/frmts/gtiff/libtiff/)
+include_directories (${GDAL_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/src/gdal/gdal-1.11.0/frmts/gtiff/libtiff/)
 
 add_library (sptw SHARED src/demos/sptw.cc)
 add_library (rasterblaster SHARED src/configuration.cc src/rastercoordtransformer.cc 
