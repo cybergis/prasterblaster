@@ -10,7 +10,6 @@ cd $OLDDIR
 mkdir $PRBROOT/src/gdal
 cd $PRBROOT/src/gdal/
 
-
 if command -v gmake 2>/dev/null; then
     MAKE=gmake
 else
@@ -34,10 +33,10 @@ $MAKE install
 
 # Build GDAL
 cd $PRBROOT/src/gdal/
-$WGET http://download.osgeo.org/gdal/gdal-1.9.2.tar.gz
-rm -rf gdal-1.9.2
-tar xfz gdal-1.9.2.tar.gz
-cd gdal-1.9.2/
+$WGET http://download.osgeo.org/gdal/gdal-1.11.0.tar.gz
+rm -rf gdal-1.11.0
+tar xfz gdal-1.11.0.tar.gz
+cd gdal-1.11.0/
 ./configure --prefix=$PRBROOT/src/gdal/ --with-libtiff=internal --with-geotiff=internal \
 --with-jpeg=internal \
 --with-liblzma=no \
