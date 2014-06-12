@@ -21,7 +21,7 @@ set (CMAKE_CXX_FLAGS "-D__PRB_SRC_DIR__=${CMAKE_SOURCE_DIR} ${CMAKE_CXX_FLAGS} -
 
 find_package (GDAL)
 find_package (Proj)
-find_package (TIFF 4.0)
+find_package (TIFF 3.9.4)
 
 if (NOT PROJ_FOUND OR NOT GDAL_FOUND)
   message (SEND_ERROR "Some dependencies were not found!")
