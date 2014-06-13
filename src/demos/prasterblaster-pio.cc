@@ -167,6 +167,10 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     }
     printf("done\n");
   }
+
+  // Wait for tile offsets to be populated
+  MPI_Barrier(MPI_COMM_WORLD);
+  
   close_raster(output_raster);
   output_raster = open_raster(conf.output_filename);
   MPI_Barrier(MPI_COMM_WORLD);
