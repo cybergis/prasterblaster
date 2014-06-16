@@ -120,8 +120,8 @@ Transform(Coordinate source, bool area_check) {
   temp2.x = temp1.x;
   temp2.y = temp1.y;
 
-  src_to_geo->Transform(1, &temp2.x, &temp2.y);
-  geo_to_src->Transform(1, &temp2.x, &temp2.y);
+  src_to_geo->TransformEx(1, &temp2.x, &temp2.y, NULL);
+  geo_to_src->TransformEx(1, &temp2.x, &temp2.y, NULL);
 
   if ((area_check && (fabs(temp1.y - temp2.y) > 0.01))
       || fabs(temp1.x - temp2.x) > 0.01) {
@@ -140,8 +140,8 @@ Transform(Coordinate source, bool area_check) {
   temp2.x += sqrt(2 * source_pixel_size_ * source_pixel_size_);
   temp2.y -= sqrt(2 * source_pixel_size_ * source_pixel_size_);
 
-  ctrans->Transform(1, &temp1.x, &temp1.y);
-  ctrans->Transform(1, &temp2.x, &temp2.y);
+  ctrans->TransformEx(1, &temp1.x, &temp1.y, NULL);
+  ctrans->TransformEx(1, &temp2.x, &temp2.y, NULL);
 
   // temp1/temp2 now contain coords to input projection
   // Now convert to points in the raster coordinate space.
