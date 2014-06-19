@@ -110,6 +110,11 @@ Transform(Coordinate source, bool area_check) {
   Area value;
   Coordinate temp1, temp2;
 
+  // PROJ.4 will malloc a temporary Z value if one is
+  // not provided. By passing in a local variable
+  // we prevent these unnecessary allocations.
+  double unused;
+
   temp1.x = temp1.y = 0.0;
 
   value.ul = temp1;
@@ -120,8 +125,8 @@ Transform(Coordinate source, bool area_check) {
   temp2.x = temp1.x;
   temp2.y = temp1.y;
 
-  src_to_geo->TransformEx(1, &temp2.x, &temp2.y, NULL);
-  geo_to_src->TransformEx(1, &temp2.x, &temp2.y, NULL);
+  src_to_geo->TransformEx(1, &temp2.x, &temp2.y, &unused);
+  geo_to_src->TransformEx(1, &temp2.x, &temp2.y, &unused);
 
   if ((area_check && (fabs(temp1.y - temp2.y) > 0.01))
       || fabs(temp1.x - temp2.x) > 0.01) {
@@ -140,8 +145,8 @@ Transform(Coordinate source, bool area_check) {
   temp2.x += sqrt(2 * source_pixel_size_ * source_pixel_size_);
   temp2.y -= sqrt(2 * source_pixel_size_ * source_pixel_size_);
 
-  ctrans->TransformEx(1, &temp1.x, &temp1.y, NULL);
-  ctrans->TransformEx(1, &temp2.x, &temp2.y, NULL);
+  ctrans->TransformEx(1, &temp1.x, &temp1.y, &unused);
+  ctrans->TransformEx(1, &temp2.x, &temp2.y, &unused);
 
   // temp1/temp2 now contain coords to input projection
   // Now convert to points in the raster coordinate space.
