@@ -5,7 +5,7 @@ project (pRasterBlaster)
 if (NOT CMAKE_BUILD_TYPE)
 		message(STATUS "No build type selected, default to Release")
 		set(CMAKE_BUILD_TYPE "Release")
-	endif()
+endif()
 
 # set path to additional CMake modules
 set (CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
@@ -61,3 +61,8 @@ endif(DOXYGEN_FOUND)
 # add a target to run the 'tests' binary
 add_custom_target(check ./tests
                   DEPENDS tests)
+
+# Installation
+install(TARGETS prasterblasterpio sptw rasterblaster prasterblaster
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib)
