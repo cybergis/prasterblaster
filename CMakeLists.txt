@@ -27,16 +27,21 @@ if (NOT PROJ_FOUND OR NOT GDAL_FOUND)
   message (SEND_ERROR "Some dependencies were not found!")
 endif (NOT PROJ_FOUND OR NOT GDAL_FOUND)
 
+find_package(MPI REQUIRED)
+set(CMAKE_CXX_COMPILE_FLAGS ${CMAKE_CXX_COMPILE_FLAGS} ${MPI_CXX_COMPILE_FLAGS})
+set(CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS} ${MPI_CXX_LINK_FLAGS})
+include_directories(${MPI_CXX_INCLUDE_PATH})
+
 include_directories (${GDAL_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/src/gdal/gdal-1.11.0/frmts/gtiff/libtiff/)
 
 add_library (sptw SHARED src/demos/sptw.cc)
 add_library (rasterblaster SHARED src/configuration.cc src/rastercoordtransformer.cc 
   src/reprojection_tools.cc src/rasterchunk.cc)
 add_library (prasterblaster SHARED src/demos/prasterblaster-pio.cc)
-target_link_libraries (prasterblaster rasterblaster sptw)
+target_link_libraries (prasterblaster rasterblaster sptw ${MPI_CXX_LIBRARIES})
 
 add_executable (prasterblasterpio src/demos/prasterblaster-main.cc)
-target_link_libraries (prasterblasterpio sptw rasterblaster prasterblaster ${PROJ_LIBRARY} ${GDAL_LIBRARY} ${TIFF_LIBRARY})
+target_link_libraries (prasterblasterpio sptw rasterblaster prasterblaster ${PROJ_LIBRARY} ${GDAL_LIBRARY} ${TIFF_LIBRARY} ${MPI_CXX_LIBRARIES})
 
 add_executable (prasterblaster-simple src/demos/prasterblaster-simple.cc)
 target_link_libraries (prasterblaster-simple rasterblaster prasterblaster ${PROJ_LIBRARY} ${GDAL_LIBRARY} ${TIFF_LIBRARY})

@@ -33,7 +33,7 @@ use ensure that libgdal is compiled with bigtiff and proj4 support.
 Next check out the latest librasterblaster sources from the git
 repository:
 
-        git clone https://github.com/dmm/prasterblaster.git
+    git clone https://github.com/kornholi/prasterblaster.git
 
 Then change to the prasterblaster directory.
 
@@ -44,11 +44,11 @@ prasterblaster, use the buildgdal.sh script:
 
     bash buildgdal.sh
 
-Run cmake to generate the makefile. The MPI wrapper can be selected by
-setting the CXX flag.
+Run cmake to generate the makefile. The MPI implementation will be
+automatically detected by cmake.
 
     mkdir build && cd build
-    CXX=mpiCC cmake ..
+    cmake ..
 
 After running buildgdal.sh cmake should automatically
 find the local gdal library.
