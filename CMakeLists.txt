@@ -35,7 +35,7 @@ find_package(GDAL REQUIRED)
 find_package(Proj REQUIRED)
 
 if(BundleGDAL)
-    set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib/prasterblaster")
+    set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib/prasterblaster:\$ORIGIN/../lib")
 endif()
 
 # include_directories(${GDAL_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/src/gdal/gdal-1.11.0/frmts/gtiff/libtiff/)
