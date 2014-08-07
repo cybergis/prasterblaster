@@ -24,10 +24,12 @@ fi
 
 # Build proj4
 $WGET http://download.osgeo.org/proj/proj-4.8.0.tar.gz
+$WGET https://gist.githubusercontent.com/kornholi/45465df75dd2140d261a/raw/7f93f04b185a5c24329f9e585a3c8222f4ae9be4/proj-4.8.0-gridlist.patch
 rm -rf proj-4.8.0
 tar xfz proj-4.8.0.tar.gz
 cd proj-4.8.0
-./configure --prefix=$PRBROOT/src/gdal/ --without-jni --without-mutex
+patch -p1 < ../proj-4.8.0-gridlist.patch
+./configure --prefix=$PRBROOT/src/gdal/ --without-jni
 $MAKE -j2
 $MAKE install
 
