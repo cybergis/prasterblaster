@@ -23,9 +23,9 @@ set(CMAKE_CXX_FLAGS "-D__PRB_SRC_DIR__=${CMAKE_SOURCE_DIR} ${CMAKE_CXX_FLAGS} -W
 
 # MPI
 find_package(MPI REQUIRED)
-set(CMAKE_CXX_COMPILE_FLAGS ${CMAKE_CXX_COMPILE_FLAGS} ${MPI_CXX_COMPILE_FLAGS})
-set(CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS} ${MPI_CXX_LINK_FLAGS})
-include_directories(${MPI_CXX_INCLUDE_PATH})
+set(CMAKE_CXX_COMPILE_FLAGS ${CMAKE_CXX_COMPILE_FLAGS} ${MPI_COMPILE_FLAGS})
+set(CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS} ${MPI_LINK_FLAGS})
+include_directories(${MPI_INCLUDE_PATH})
 
 # 4.0 is required for BigTIFF support
 # It will be used as a backup if GDAL does not have internal libtiff
@@ -45,7 +45,7 @@ add_library(sptw SHARED src/demos/sptw.cc)
 add_library(rasterblaster SHARED src/configuration.cc src/rastercoordtransformer.cc 
   src/reprojection_tools.cc src/rasterchunk.cc)
 add_library(prasterblaster SHARED src/demos/prasterblaster-pio.cc)
-target_link_libraries(prasterblaster rasterblaster sptw ${MPI_CXX_LIBRARIES})
+target_link_libraries(prasterblaster rasterblaster sptw ${MPI_LIBRARIES})
 
 add_executable(prasterblasterpio src/demos/prasterblaster-main.cc)
 target_link_libraries(prasterblasterpio sptw rasterblaster prasterblaster ${GDAL_LIBRARY} ${PROJ_LIBRARY} ${TIFF_LIBRARY} ${MPI_CXX_LIBRARIES})
