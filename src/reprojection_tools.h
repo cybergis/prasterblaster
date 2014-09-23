@@ -74,7 +74,8 @@ int simplerandom(int i);
 PRB_ERROR CreateOutputRaster(GDALDataset *in,
                              string output_filename,
                              string output_srs,
-                             int output_tile_size);
+                             int output_tile_size,
+                             double output_ratio = 1.0f);
 /**
  * @brief Creates an output raster based on an input raster, a new projection,
  * and a maximum pixel dimension. This is to be used when the dimensions of the
@@ -91,6 +92,7 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
                              string output_filename,
                              string output_srs,
                              int output_tile_size,
+                             double output_ratio,
                              int output_max_dimension);
 
 PRB_ERROR CreateOutputRasterFile(GDALDataset *in,

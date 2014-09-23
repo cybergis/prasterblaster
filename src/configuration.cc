@@ -30,6 +30,7 @@ struct option longopts[] = {
   {"dstnodata", required_argument, NULL, 'f'},
   {"tile-size", required_argument, NULL, 'x'},
   {"timing-file", required_argument, NULL, 'c'},
+  {"output-ratio", required_argument, NULL, 'o'},
   {0, 0, 0, 0}
 };
 /** \endcode **/
@@ -39,6 +40,7 @@ Configuration::Configuration() {
   partition_size = -1;
   tile_size = 1024;
   timing_filename = "";
+  cell_dimension_ratio = 1;
 }
 
 Configuration::Configuration(int argc, char *argv[]) {
@@ -48,6 +50,7 @@ Configuration::Configuration(int argc, char *argv[]) {
   resampler = NEAREST;
   tile_size = 1024;
   timing_filename = "";
+  cell_dimension_ratio = 1;
   while ((c = getopt_long(argc,
                           argv,
                           "p:r:f:n:x:c",
@@ -80,6 +83,10 @@ Configuration::Configuration(int argc, char *argv[]) {
         break;
       case 'c':
         timing_filename = optarg;
+        break;
+      case 'o':
+        if (sscanf(optarg, "%lf", &cell_dimension_ratio) == 0)
+            cell_dimension_ratio = 1.0;
         break;
       default:
         fprintf(stderr, "%s: option '-%c' is invalid: ignored\n",

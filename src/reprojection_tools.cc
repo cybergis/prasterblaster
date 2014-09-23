@@ -41,7 +41,8 @@ namespace librasterblaster {
 PRB_ERROR CreateOutputRaster(GDALDataset *in,
                              string output_filename,
                              string output_srs,
-                             int output_tile_size) {
+                             int output_tile_size,
+                             double output_ratio) {
   OGRSpatialReference in_srs;
   OGRSpatialReference out_srs;
   OGRErr err;
@@ -80,7 +81,7 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   // Use this distance to compute a pixel size
   const double in_x_size = in->GetRasterBand(1)->GetXSize();
   const double in_y_size = in->GetRasterBand(1)->GetYSize();
-  const double output_pixel_size = diagonal_dist
+  const double output_pixel_size = output_ratio * diagonal_dist
       / sqrt(in_x_size * in_x_size + in_y_size * in_y_size);
 
   const int64_t num_cols = static_cast<int64_t>(
@@ -103,6 +104,7 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
                              string output_filename,
                              string output_srs,
                              int output_tile_size,
+                             double output_ratio,
                              int output_max_dimension) {
 
   OGRSpatialReference in_srs;
@@ -141,7 +143,8 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   const double x_pixel_size = (out_area.lr.x - out_area.ul.x) / output_max_dimension;
   const double y_pixel_size = (out_area.ul.y - out_area.lr.y) / output_max_dimension;
 
-  const double output_pixel_size = x_pixel_size > y_pixel_size ? x_pixel_size : y_pixel_size;
+  const double output_pixel_size = output_ratio *
+      (x_pixel_size > y_pixel_size ? x_pixel_size : y_pixel_size);
 
   const int64_t num_cols = static_cast<int64_t>(
       0.5 + ((out_area.lr.x - out_area.ul.x) / output_pixel_size));

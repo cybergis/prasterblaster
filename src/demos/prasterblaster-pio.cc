@@ -113,6 +113,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
            "               [--dstnodata no_data_value]\n"
            "               [--timing-file filename]\n"
            "               [--tile-size tile_size_in_pixels]\n"
+           "               [--output-ratio output_cell_dimension_ratio]\n"
            "               source_file destination_file\n");
     return PRB_BADARG;
   }
@@ -148,7 +149,8 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     PRB_ERROR err = librasterblaster::CreateOutputRaster(input_raster,
                                                          conf.output_filename,
                                                          conf.output_srs,
-                                                         conf.tile_size);
+                                                         conf.tile_size,
+                                                         conf.cell_dimension_ratio);
     if (err != PRB_NOERROR) {
       fprintf(stderr, "Error creating raster!: %d\n", err);
       return PRB_IOERROR;

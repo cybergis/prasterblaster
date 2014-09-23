@@ -99,6 +99,10 @@ struct Configuration {
    * @brief Name of timing information file
    */
   string timing_filename;
+  /**
+   * @brief 
+   */
+  double cell_dimension_ratio;
 };
 }
 
