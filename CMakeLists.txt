@@ -45,17 +45,20 @@ add_library(sptw SHARED src/demos/sptw.cc)
 add_library(rasterblaster SHARED src/configuration.cc src/rastercoordtransformer.cc 
   src/reprojection_tools.cc src/rasterchunk.cc)
 add_library(prasterblaster SHARED src/demos/prasterblaster-pio.cc)
+
+target_link_libraries(sptw ${GDAL_LIBRARY} ${MPI_LIBRARIES} ${TIFF_LIBRARY})
+target_link_libraries(rasterblaster ${GDAL_LIBRARY} ${PROJ_LIBRARY})
 target_link_libraries(prasterblaster rasterblaster sptw ${MPI_LIBRARIES})
 
 add_executable(prasterblasterpio src/demos/prasterblaster-main.cc)
-target_link_libraries(prasterblasterpio sptw rasterblaster prasterblaster ${GDAL_LIBRARY} ${PROJ_LIBRARY} ${TIFF_LIBRARY} ${MPI_CXX_LIBRARIES})
+target_link_libraries(prasterblasterpio sptw rasterblaster prasterblaster ${MPI_CXX_LIBRARIES})
 
 add_executable(prasterblaster-simple src/demos/prasterblaster-simple.cc)
-target_link_libraries(prasterblaster-simple rasterblaster prasterblaster ${GDAL_LIBRARY} ${PROJ_LIBRARY} ${TIFF_LIBRARY})
+target_link_libraries(prasterblaster-simple rasterblaster prasterblaster)
 
 add_subdirectory(src/gtest)
 add_executable(tests tests/systemtest.cc tests/check_reprojection_tools.cc tests/rastercompare.cc)
-target_link_libraries(tests gtest rasterblaster sptw prasterblaster ${GDAL_LIBRARY})
+target_link_libraries(tests gtest rasterblaster sptw prasterblaster)
 
 # Add a target to generate API documentation with Doxygen
 find_package(Doxygen 1.8)
