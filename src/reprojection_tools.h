@@ -46,6 +46,12 @@ int simplerandom(int i);
                                                    static_cast<C_PIXEL_TYPE>(fvalue), \
                                                    &(Max<C_PIXEL_TYPE>)); \
           break; \
+        case MEAN: \
+          return ReprojectChunkType<C_PIXEL_TYPE>(source, \
+                                                   destination, \
+                                                   static_cast<C_PIXEL_TYPE>(fvalue), \
+                                                   &(Mean<C_PIXEL_TYPE>)); \
+          break; \
     case NEAREST: \
     default: \
           return ReprojectChunkType<C_PIXEL_TYPE>(source, \
