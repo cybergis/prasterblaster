@@ -372,7 +372,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     for (unsigned int i = 0; i < process_runtimes.size(); i+=7) {
       fprintf(timing_file, "%u,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",
               i/7,
-              process_runtimes[i),
+              process_runtimes[i],
               process_runtimes[i+1],
               process_runtimes[i+2],
               process_runtimes[i+3],

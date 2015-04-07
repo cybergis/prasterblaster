@@ -68,7 +68,7 @@ Configuration::Configuration(int argc, char *argv[]) {
         partition_size = strtol(optarg, NULL, 10);
         break;
       case 'r':
-      arg = optarg;
+        arg = optarg;
         if (arg == "mean") {
           resampler = MEAN;
         } else if (arg == "nearest") {

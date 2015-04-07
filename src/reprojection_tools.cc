@@ -330,7 +330,7 @@ std::vector<Area> BlockPartition(int rank,
   // Now scale the partitions by the tile size and verify they are within the
   // image bounds.
   for (size_t i = 0; i < partitions.size(); ++i) {
-    auto& partition = partitions[i];
+    Area& partition = partitions[i];
 
     partition.ul.x *= tile_size;
     partition.ul.y *= tile_size;
