@@ -175,9 +175,6 @@ bool ReprojectChunkType(RasterChunk *source,
                         pixelType (*resampler)(RasterChunk*,
                                                Area)) {
   Coordinate temp1, temp2;
-  std::vector<char> inraster, outraster;
-
-
   Area pixelArea;
 
   RasterCoordTransformer rt(destination->projection_,

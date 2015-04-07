@@ -228,7 +228,6 @@ PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
   out_sr.exportToWkt(&wkt);
   output->SetProjection(wkt);
 
-
   double *data = new double(sizeof(*data) * 4 * in->GetRasterCount());
 
   output->RasterIO(GF_Write,
@@ -324,28 +323,30 @@ std::vector<Area> BlockPartition(int rank,
   std::vector<Area> partitions;
   for (size_t i = 0; i < blocks.size(); ++i) {
     if (i % process_count == static_cast<unsigned int>(rank)) {
-      partitions.push_back(blocks.at(i));
+      partitions.push_back(blocks[i]);
     }
   }
 
   // Now scale the partitions by the tile size and verify they are within the
   // image bounds.
   for (size_t i = 0; i < partitions.size(); ++i) {
-    partitions.at(i).ul.x *= tile_size;
-    partitions.at(i).ul.y *= tile_size;
+    auto& partition = partitions[i];
 
-    partitions.at(i).lr.x *= tile_size;
-    partitions.at(i).lr.y *= tile_size;
+    partition.ul.x *= tile_size;
+    partition.ul.y *= tile_size;
 
-    partitions.at(i).lr.x += tile_size - 1;
-    partitions.at(i).lr.y += tile_size - 1;
+    partition.lr.x *= tile_size;
+    partition.lr.y *= tile_size;
 
-    if (partitions.at(i).lr.x > column_count) {
-      partitions.at(i).lr.x = column_count - 1;
+    partition.lr.x += tile_size - 1;
+    partition.lr.y += tile_size - 1;
+
+    if (partition.lr.x > column_count) {
+      partition.lr.x = column_count - 1;
     }
 
-    if (partitions.at(i).lr.y > row_count) {
-      partitions.at(i).lr.y = row_count - 1;
+    if (partition.lr.y > row_count) {
+      partition.lr.y = row_count - 1;
     }
   }
   return partitions;

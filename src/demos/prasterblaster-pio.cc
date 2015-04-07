@@ -201,7 +201,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
 
   if (rank == 0) {
     printf("Typical process has %lu partitions with base size: %d\n",
-           static_cast<unsigned long>(partitions.size()),
+           partitions.size(),
            conf.partition_size);
   }
   double read_total, misc_start, misc_total;
@@ -330,7 +330,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     averages[i] /= process_count;
   }
   if (rank == 0) {
-    printf("Runtimes, in seconds\n");
+    printf("\nRuntimes in seconds:\n");
     printf("Total  Pre-loop Minbox Read   Resample Write  Misc\n");
     printf("%.4f %.4f   %.4f %.4f %.4f   %.4f %.4f\n",
            averages[0],
@@ -372,13 +372,13 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     for (unsigned int i = 0; i < process_runtimes.size(); i+=7) {
       fprintf(timing_file, "%u,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",
               i/7,
-              process_runtimes.at(i),
-              process_runtimes.at(i+1),
-              process_runtimes.at(i+2),
-              process_runtimes.at(i+3),
-              process_runtimes.at(i+4),
-              process_runtimes.at(i+5),
-              process_runtimes.at(i+6));
+              process_runtimes[i),
+              process_runtimes[i+1],
+              process_runtimes[i+2],
+              process_runtimes[i+3],
+              process_runtimes[i+4],
+              process_runtimes[i+5],
+              process_runtimes[i+6]);
     }
   }
   if (rank == 0 && conf.timing_filename != "") {

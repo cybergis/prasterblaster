@@ -47,3 +47,4 @@ clang_output_*
 html/
 latex/
 
+build/

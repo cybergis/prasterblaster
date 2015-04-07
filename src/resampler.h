@@ -46,7 +46,7 @@ T Max(RasterChunk *input,
   T temp2 = 0;
   for (int x = pixel_area.ul.x; x <= pixel_area.lr.x; ++x) {
     for (int y = pixel_area.ul.y; y <= pixel_area.lr.y; ++y) {
-      temp2 = pixels[y * input->column_count_  + x];
+      temp2 = pixels[y * input->column_count_ + x];
 
       if (temp2 > temp) {
         temp = temp2;
@@ -95,34 +95,6 @@ T Mean(RasterChunk *input,
   return temp;
 }
 
-template <typename T>
-T Median(Coordinate input_ul,
-         Coordinate input_lr,
-         int input_column_count,
-         T* input_pixels) {
-}
-
-template <typename T>
-T Mode(Coordinate input_ul,
-       Coordinate input_lr,
-       int input_column_count,
-       T* input_pixels) {
-}
-
-template <typename T>
-T Sum(Coordinate input_ul,
-      Coordinate input_lr,
-      int input_column_count,
-      T* input_pixels) {
-}
-
-
-template <typename T>
-T Bilinear(Coordinate input_ul,
-           Coordinate input_lr,
-           int input_column_count,
-           T* input_pixels) {
-}
 }
 /** @cond DOXYHIDE */
 

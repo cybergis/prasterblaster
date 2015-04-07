@@ -52,8 +52,8 @@ RasterChunk* RasterChunk::CreateRasterChunk(GDALDataset *ds, Area chunk_area) {
   temp->band_count_ = ds->GetRasterCount();
   temp->pixels_ = NULL;
 
-  size_t buffer_size = (temp->row_count_ * temp->column_count_);
-  temp->pixels_ = static_cast<unsigned char*>
+  size_t buffer_size = temp->row_count_ * temp->column_count_;
+  temp->pixels_ = static_cast<uint8_t*>
       (calloc(buffer_size, GDALGetDataTypeSize(temp->pixel_type_)/8));
 
   if (temp->pixels_ == NULL) {
@@ -87,10 +87,9 @@ RasterChunk::RasterChunk(const RasterChunk &s) {
   band_count_ = s.band_count_;
   memcpy(geotransform_, s.geotransform_, 6*sizeof(double));
 
-  size_t pixel_buffer_size = static_cast<size_t>(row_count_)
-      * static_cast<size_t>(column_count_)
+  size_t pixel_buffer_size = row_count_ * column_count_
       * static_cast<size_t>(GDALGetDataTypeSize(pixel_type_)/8)
-      * static_cast<size_t>(band_count_);
+      * band_count_;
 
   memcpy(pixels_, s.pixels_, pixel_buffer_size);
 }
@@ -109,10 +108,9 @@ RasterChunk& RasterChunk::operator=(const RasterChunk &s) {
   band_count_ = s.band_count_;
   memcpy(geotransform_, s.geotransform_, 6*sizeof(double));
 
-  size_t pixel_buffer_size = static_cast<size_t>(row_count_)
-      * static_cast<size_t>(column_count_)
+  size_t pixel_buffer_size = row_count_ * column_count_
       * static_cast<size_t>(GDALGetDataTypeSize(pixel_type_)/8)
-      * static_cast<size_t>(band_count_);
+      * band_count_;
 
   memcpy(pixels_, s.pixels_, pixel_buffer_size);
 
@@ -171,14 +169,10 @@ bool RasterChunk::operator>(const RasterChunk &s) {
 
 bool RasterChunk::operator<=(const RasterChunk &s) {
   if (*this == s) {
-    return true;
+      return true;
   }
 
-  if (*this < s) {
-    return true;
-  }
-
-  return false;
+  return *this < s;
 }
 
 bool RasterChunk::operator>=(const RasterChunk &s) {
@@ -186,11 +180,7 @@ bool RasterChunk::operator>=(const RasterChunk &s) {
     return true;
   }
 
-  if (*this > s) {
-    return true;
-  }
-
-  return false;
+  return *this > s;
 }
 
 PRB_ERROR RasterChunk::ReadRasterChunk(GDALDataset *ds, RasterChunk *chunk) {
