@@ -67,7 +67,7 @@ T Min(RasterChunk *input,
   T temp2 = 0;
   for (int x = pixel_area.ul.x; x <= pixel_area.lr.x; ++x) {
     for (int y = pixel_area.ul.y; y <= pixel_area.lr.y; ++y) {
-      temp2 = pixels[y * input->column_count_  + x];
+      temp2 = pixels[y * input->column_count_ + x];
 
       if (temp2 < temp) {
         temp = temp2;
@@ -83,14 +83,15 @@ T Mean(RasterChunk *input,
        Area pixel_area) {
   T temp = 0;
   T *pixels = static_cast<T*>(input->pixels_);
+
   for (int x = pixel_area.ul.x; x <= pixel_area.lr.x; ++x) {
     for (int y = pixel_area.ul.y; y <= pixel_area.lr.y; ++y) {
       temp += pixels[y * input->column_count_ + x];
     }
   }
 
-  temp /= (pixel_area.lr.x - pixel_area.ul.x)
-      * (pixel_area.lr.y - pixel_area.ul.y);
+  temp /= (pixel_area.lr.x - pixel_area.ul.x + 1)
+          * (pixel_area.lr.y - pixel_area.ul.y + 1);
 
   return temp;
 }
