@@ -666,32 +666,132 @@ bool ReprojectChunk(RasterChunk *source,
     return false;
   }
 
+  // FIXME: lexical cast to pixel type (c++11)
   double fvalue = strtod(fillvalue.c_str(), NULL);
 
   switch (source->pixel_type_) {
     case GDT_Byte:
-      GEN_RESAMPLER_CASES(uint8_t);
+        return ReprojectChunkType<uint8_t>(source, destination, fvalue, GetResampler<uint8_t>(resampler));
     case GDT_UInt16:
-      GEN_RESAMPLER_CASES(uint16_t);
+      return ReprojectChunkType<uint16_t>(source, destination, fvalue, GetResampler<uint16_t>(resampler));
     case GDT_Int16:
-      GEN_RESAMPLER_CASES(int16_t);
+      return ReprojectChunkType<int16_t>(source, destination, fvalue, GetResampler<int16_t>(resampler));
     case GDT_UInt32:
-      GEN_RESAMPLER_CASES(uint32_t);
+      return ReprojectChunkType<uint32_t>(source, destination, fvalue, GetResampler<uint32_t>(resampler));
     case GDT_Int32:
-      GEN_RESAMPLER_CASES(int32_t);
+      return ReprojectChunkType<int32_t>(source, destination, fvalue, GetResampler<int32_t>(resampler));
     case GDT_Float32:
-      GEN_RESAMPLER_CASES(float);
+      return ReprojectChunkType<float>(source, destination, fvalue, GetResampler<float>(resampler));
     case GDT_Float64:
-      GEN_RESAMPLER_CASES(double);
+      return ReprojectChunkType<double>(source, destination, fvalue, GetResampler<double>(resampler));
     case GDT_CInt16:
     case GDT_CInt32:
     case GDT_CFloat32:
     case GDT_CFloat64:
     default:
-      fprintf(stderr, "Invalid type in ReprojectChunk!\n");
+      fprintf(stderr, "Invalid pixel type in ReprojectChunk!\n");
       return false;
-      break;
   }
+ }
+
+template <typename pixelType>
+pixelType (*GetResampler (RESAMPLER type)) (RasterChunk*, Area) {
+    switch (type) {
+        case MIN: 
+            return &Min<pixelType>; 
+        case MAX: 
+            return &Max<pixelType>;
+        case MEAN: 
+            return &Mean<pixelType>;
+        case NEAREST:
+            return NULL;
+        default:
+            fprintf(stderr, "Unknown resampler type %d!\n", type);
+            return NULL;
+    } 
+}
+
+template <class pixelType>
+bool ReprojectChunkType(RasterChunk *source,
+                        RasterChunk *destination,
+                        pixelType fillvalue,
+                        pixelType (*resampler) (RasterChunk*, Area)) {
+  Coordinate temp1, temp2;
+  Area pixelArea;
+
+  RasterCoordTransformer rt(destination->projection_,
+                            destination->ul_projected_corner_,
+                            destination->pixel_size_,
+                            destination->row_count_,
+                            destination->column_count_,
+                            source->projection_,
+                            source->ul_projected_corner_,
+                            source->pixel_size_);
+
+
+  for (int chunk_y = 0; chunk_y < destination->row_count_; ++chunk_y)  {
+    for (int chunk_x = 0; chunk_x < destination->column_count_; ++chunk_x) {
+      temp1.x = chunk_x;
+      temp1.y = chunk_y;
+
+      pixelArea = rt.Transform(temp1);
+
+      if (pixelArea.ul.x == -1.0 || (pixelArea.ul.x > source->column_count_ - 1)
+          || (pixelArea.lr.y > source->row_count_ - 1)) {
+        // The pixel is outside of the projected area
+        reinterpret_cast<pixelType*>(destination->pixels_)
+            [chunk_x + chunk_y * destination->column_count_] = fillvalue;
+        continue;
+      }
+
+      temp1 = pixelArea.ul;
+      temp2 = pixelArea.lr;
+
+      int64_t ul_x = static_cast<int64_t>(temp1.x);
+      int64_t ul_y = static_cast<int64_t>(temp1.y);
+      int64_t lr_x = static_cast<int64_t>(temp2.x);
+      int64_t lr_y = static_cast<int64_t>(temp2.y);
+
+      if (ul_x < 0) {
+        ul_x = 0;
+      }
+
+      if (ul_y < 0) {
+        ul_y = 0;
+      }
+
+      if (lr_x > (source->column_count_ - 1)) {
+        lr_x = source->column_count_ - 1;
+      }
+
+      if (ul_y > (source->row_count_ - 1)) {
+        ul_y = source->row_count_ - 1;
+      }
+
+      // Perform resampling...
+      int64_t dest_offset = chunk_x + chunk_y * destination->column_count_;
+      int64_t src_offset = ul_x + ul_y * source->column_count_;
+
+      if ((resampler == NULL) || ((ul_x > lr_x) || (ul_y > lr_y))) {
+        // ul/lr do not enclose an area, use NN
+        if (ul_x + 1 > source->column_count_ || ul_y + 1 > source->row_count_) {
+          // TODO(dmattli) FIX THIS
+        }
+
+        fprintf(stderr, "ul/lr doesn't enclose an area! ul %ld %ld lr %ld %ld\n", ul_x, ul_y, lr_x, lr_y);
+
+            reinterpret_cast<pixelType*>(destination->pixels_)[dest_offset] =
+                reinterpret_cast<pixelType*>(source->pixels_)[src_offset];
+        continue;
+      }
+
+      Area ia = Area(ul_x, ul_y, lr_x, lr_y);
+      reinterpret_cast<pixelType*>(destination->pixels_)[dest_offset] =
+          resampler(source, ia);
+    }
+  }
+
   return true;
 }
 }
+

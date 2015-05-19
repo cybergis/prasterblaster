@@ -32,36 +32,6 @@ namespace librasterblaster {
 int simplerandom(int i);
 /** \cond DOXYHIDE **/
 
-#define GEN_RESAMPLER_CASES(C_PIXEL_TYPE)   \
-        switch (resampler) {               \
-        case MIN: \
-          return ReprojectChunkType<C_PIXEL_TYPE>(source, \
-                                                   destination, \
-                                                   static_cast<C_PIXEL_TYPE>(fvalue), \
-                                                   &(Min<C_PIXEL_TYPE>)); \
-          break; \
-        case MAX: \
-          return ReprojectChunkType<C_PIXEL_TYPE>(source, \
-                                                   destination, \
-                                                   static_cast<C_PIXEL_TYPE>(fvalue), \
-                                                   &(Max<C_PIXEL_TYPE>)); \
-          break; \
-        case MEAN: \
-          return ReprojectChunkType<C_PIXEL_TYPE>(source, \
-                                                   destination, \
-                                                   static_cast<C_PIXEL_TYPE>(fvalue), \
-                                                   &(Mean<C_PIXEL_TYPE>)); \
-          break; \
-    case NEAREST: \
-    default: \
-          return ReprojectChunkType<C_PIXEL_TYPE>(source, \
-                                                   destination, \
-                                                   static_cast<C_PIXEL_TYPE>(fvalue), \
-                                                   NULL); \
-      } \
-      break; \
-
-
 /**
  * @brief Creates an output raster based on a input and a new projection
  * 
@@ -173,88 +143,19 @@ bool ReprojectChunk(RasterChunk *source,
                     RasterChunk *destination,
                     string fillvalue,
                     RESAMPLER resampler);
+
 /** @cond DOXYHIDE **/
-template <class pixelType>
+
+template <typename pixelType>
+pixelType (*GetResampler(RESAMPLER type)) (RasterChunk*, Area);
+
+template <typename pixelType>
 bool ReprojectChunkType(RasterChunk *source,
                         RasterChunk *destination,
                         pixelType fillvalue,
-                        pixelType (*resampler)(RasterChunk*,
-                                               Area)) {
-  Coordinate temp1, temp2;
-  Area pixelArea;
-
-  RasterCoordTransformer rt(destination->projection_,
-                            destination->ul_projected_corner_,
-                            destination->pixel_size_,
-                            destination->row_count_,
-                            destination->column_count_,
-                            source->projection_,
-                            source->ul_projected_corner_,
-                            source->pixel_size_);
-
-
-  for (int chunk_y = 0; chunk_y < destination->row_count_; ++chunk_y)  {
-    for (int chunk_x = 0; chunk_x < destination->column_count_; ++chunk_x) {
-      temp1.x = chunk_x;
-      temp1.y = chunk_y;
-
-      pixelArea = rt.Transform(temp1);
-
-      if (pixelArea.ul.x == -1.0 || (pixelArea.ul.x > source->column_count_ - 1)
-          || (pixelArea.lr.y > source->row_count_ - 1)) {
-        // The pixel is outside of the projected area
-        reinterpret_cast<pixelType*>(destination->pixels_)
-            [chunk_x + chunk_y * destination->column_count_] = fillvalue;
-        continue;
-      }
-
-      temp1 = pixelArea.ul;
-      temp2 = pixelArea.lr;
-
-      int64_t ul_x = static_cast<int64_t>(temp1.x);
-      int64_t ul_y = static_cast<int64_t>(temp1.y);
-      int64_t lr_x = static_cast<int64_t>(temp2.x);
-      int64_t lr_y = static_cast<int64_t>(temp2.y);
-
-      if (ul_x < 0) {
-        ul_x = 0;
-      }
-
-      if (ul_y < 0) {
-        ul_y = 0;
-      }
-
-      if (lr_x > (source->column_count_ - 1)) {
-        lr_x = source->column_count_ - 1;
-      }
-
-      if (ul_y > (source->row_count_ - 1)) {
-        ul_y = source->row_count_ - 1;
-      }
-
-      // Perform resampling...
-      int64_t dest_offset = chunk_x + chunk_y * destination->column_count_;
-      int64_t src_offset = ul_x + ul_y * source->column_count_;
-
-      if ((resampler == NULL) || ((ul_x <= lr_x) || (lr_y <= ul_x))) {
-        // ul/lr do not enclose an area, use NN
-        if (ul_x + 1 > source->column_count_ || ul_y + 1 > source->row_count_) {
-          // TODO(dmattli) FIX THIS
-        }
-            reinterpret_cast<pixelType*>(destination->pixels_)[dest_offset] =
-                reinterpret_cast<pixelType*>(source->pixels_)[src_offset];
-        continue;
-      }
-
-      Area ia = Area(ul_x, ul_y, lr_x, lr_y);
-      reinterpret_cast<pixelType*>(destination->pixels_)[dest_offset] =
-          resampler(source, ia);
-    }
-  }
-
-  return true;
-}
+                        pixelType (*resampler)(RasterChunk*, Area));
 /** @endcond **/
+
 }
 
 

@@ -74,6 +74,8 @@ Configuration::Configuration(int argc, char *argv[]) {
         } else if (arg == "nearest") {
           resampler = NEAREST;
         }
+        printf("Using resampler %d from \"%s\"\n", resampler, arg.c_str());
+
         break;
       case 'f':
         fillvalue = optarg;
