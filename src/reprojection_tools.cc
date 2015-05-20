@@ -675,18 +675,18 @@ bool ReprojectChunk(RasterChunk *source,
 template <typename pixelType>
 pixelType (*GetResampler (RESAMPLER type)) (RasterChunk*, Area) {
     switch (type) {
-        case MIN: 
-            return &Min<pixelType>; 
-        case MAX: 
+        case MIN:
+            return &Min<pixelType>;
+        case MAX:
             return &Max<pixelType>;
-        case MEAN: 
+        case MEAN:
             return &Mean<pixelType>;
         case NEAREST:
             return NULL;
         default:
             fprintf(stderr, "Unknown resampler type %d!\n", type);
             return NULL;
-    } 
+    }
 }
 
 template <class pixelType>
@@ -714,11 +714,12 @@ bool ReprojectChunkType(RasterChunk *source,
 
       pixelArea = rt.Transform(temp1);
 
+      int64_t dest_offset = chunk_x + chunk_y * destination->column_count_;
+
       if (pixelArea.ul.x == -1.0 || (pixelArea.ul.x > source->column_count_ - 1)
           || (pixelArea.lr.y > source->row_count_ - 1)) {
         // The pixel is outside of the projected area
-        reinterpret_cast<pixelType*>(destination->pixels_)
-            [chunk_x + chunk_y * destination->column_count_] = fillvalue;
+        static_cast<pixelType*>(destination->pixels_)[dest_offset] = fillvalue;
         continue;
       }
 
@@ -747,8 +748,8 @@ bool ReprojectChunkType(RasterChunk *source,
       }
 
       // Perform resampling...
-      int64_t dest_offset = chunk_x + chunk_y * destination->column_count_;
       int64_t src_offset = ul_x + ul_y * source->column_count_;
+      pixelType sampled_value;
 
       if ((resampler == NULL) || ((ul_x > lr_x) || (ul_y > lr_y))) {
         // ul/lr do not enclose an area, use NN
@@ -756,16 +757,18 @@ bool ReprojectChunkType(RasterChunk *source,
           // TODO(dmattli) FIX THIS
         }
 
-        fprintf(stderr, "ul/lr doesn't enclose an area! ul %ld %ld lr %ld %ld\n", ul_x, ul_y, lr_x, lr_y);
+        if ((ul_x > lr_x) || (ul_y > lr_y)) {
+          //fprintf(stderr, "ul/lr doesn't enclose an area: ul %ld %ld lr %ld %ld\n", ul_x, ul_y, lr_x, lr_y);
+        }
 
-            reinterpret_cast<pixelType*>(destination->pixels_)[dest_offset] =
-                reinterpret_cast<pixelType*>(source->pixels_)[src_offset];
-        continue;
+        sampled_value = static_cast<pixelType*>(source->pixels_)[src_offset];
+      } else {
+        Area ia = Area(ul_x, ul_y, lr_x, lr_y);
+
+        sampled_value = resampler(source, ia);
       }
 
-      Area ia = Area(ul_x, ul_y, lr_x, lr_y);
-      reinterpret_cast<pixelType*>(destination->pixels_)[dest_offset] =
-          resampler(source, ia);
+      static_cast<pixelType*>(destination->pixels_)[dest_offset] = sampled_value;
     }
   }
 
