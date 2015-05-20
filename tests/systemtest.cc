@@ -61,7 +61,7 @@ TEST(SystemTest, GLOBALVEG) {
 
     conf.input_filename = STR(__PRB_SRC_DIR__) "/tests/testdata/veg.tif";
     conf.output_filename = test_name;
-    conf.resampler = librasterblaster::MIN;
+    conf.resampler = librasterblaster::NEAREST;
     conf.output_srs = golden->GetProjectionRef();
     conf.tile_size = 16;
     conf.partition_size = 1;
