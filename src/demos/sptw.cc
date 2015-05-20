@@ -15,7 +15,9 @@
  *
  */
 
-#include "src/demos/sptw.h"
+#include <algorithm>
+#include <sstream>
+#include <vector>
 
 #include <fcntl.h>
 #include <gdal_priv.h>
@@ -26,13 +28,10 @@
 #include <tiff.h>
 #include <tiffio.h>
 
-#include <algorithm>
-#include <sstream>
-#include <vector>
+#include "sptw.h"
 
-#include "src/rasterchunk.h"
-#include "src/std_int.h"
-#include "src/utils.h"
+#include "../rasterchunk.h"
+#include "../utils.h"
 
 using std::string;
 using librasterblaster::RasterChunk;
@@ -257,8 +256,6 @@ SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file,
   MPI_File_write_at(tiff_file->fh, file_size-1, buffer, 1, MPI_BYTE, &status);
   return SP_None;
 }
-
-
 
 SPTW_ERROR create_raster(string filename,
                          int64_t x_size,

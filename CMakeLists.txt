@@ -15,8 +15,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 # Set path to bundled GDAL and proj
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${CMAKE_SOURCE_DIR}/src/gdal)
 
-# Add src subdirectories to include path
-include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/src/gtest/include)
+include_directories(${CMAKE_SOURCE_DIR}/src/gtest/include)
 
 # Set CXXFLAGS
 set(CMAKE_CXX_FLAGS "-D__PRB_SRC_DIR__=${CMAKE_SOURCE_DIR} ${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wcast-align -Wpointer-arith -Wsign-compare -Wformat=2 -Wno-format-y2k  -Wmissing-braces -Wparentheses -Wtrigraphs -Wstrict-aliasing=2")

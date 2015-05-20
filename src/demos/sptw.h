@@ -19,12 +19,12 @@
 #ifndef SRC_DEMOS_SPTW_H_
 #define SRC_DEMOS_SPTW_H_
 
+#include <stdint.h>
+#include <string>
 #include <gdal_priv.h>
 #include <mpi.h>
-#include <string>
 
-#include "src/rasterchunk.h"
-#include "src/std_int.h"
+#include "../rasterchunk.h"
 
 using std::string;
 

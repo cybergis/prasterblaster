@@ -15,18 +15,14 @@
 //
 //
 
-/*
- *
- *
- */
 #ifndef SRC_RASTERCOORDTRANSFORMER_H_
 #define SRC_RASTERCOORDTRANSFORMER_H_
 
-#include <ogr_spatialref.h>
-
 #include <string>
 
-#include "src/utils.h"
+#include <ogr_spatialref.h>
+
+#include "utils.h"
 
 using std::string;
 

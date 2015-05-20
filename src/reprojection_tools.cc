@@ -15,9 +15,7 @@
 //
 //
 
-#include "src/reprojection_tools.h"
-
-#include <float.h>
+#include <cfloat>
 
 #include <ogr_api.h>
 #include <ogr_spatialref.h>
@@ -31,11 +29,10 @@
 #include <cstdlib>
 #include <sstream>
 
-#include "src/rastercoordtransformer.h"
-#include "src/resampler.h"
-#include "src/std_int.h"
-#include "src/utils.h"
-
+#include "reprojection_tools.h"
+#include "rastercoordtransformer.h"
+#include "resampler.h"
+#include "utils.h"
 
 namespace librasterblaster {
 PRB_ERROR CreateOutputRaster(GDALDataset *in,

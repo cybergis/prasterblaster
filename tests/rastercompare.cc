@@ -19,7 +19,7 @@
 #include <gdal_priv.h>
 #include <gdal.h>
 
-#include "tests/rastercompare.h"
+#include "rastercompare.h"
 
 using std::string;
 
@@ -129,6 +129,7 @@ int rastercompare(string control_filename, string test_filename) {
   delete test_pixels;
   GDALClose(control);
   GDALClose(test);
+
   if (bad_pixels == 0) {
     return 0;
   } else {

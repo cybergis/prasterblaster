@@ -20,11 +20,11 @@
 
 #include <string>
 #include <vector>
+#include <stdint.h>
 
-#include "src/rastercoordtransformer.h"
-#include "src/resampler.h"
-#include "src/std_int.h"
-#include "src/utils.h"
+#include "rastercoordtransformer.h"
+#include "resampler.h"
+#include "utils.h"
 
 /// Container namespace for librasterblaster project
 namespace librasterblaster {

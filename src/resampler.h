@@ -20,8 +20,8 @@
 
 #include <gdal.h>
 
-#include "src/rasterchunk.h"
-#include "src/utils.h"
+#include "rasterchunk.h"
+#include "utils.h"
 
 namespace librasterblaster {
 /**

@@ -17,8 +17,8 @@
 
 #include <mpi.h>
 
-#include "src/configuration.h"
-#include "src/demos/prasterblaster-pio.h"
+#include "../configuration.h"
+#include "../demos/prasterblaster-pio.h"
 
 using librasterblaster::Configuration;
 using librasterblaster::prasterblasterpio;
@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
   // Initialize Configuration object
   Configuration conf(argc, argv);
 
-  int ret =  prasterblasterpio(conf);
+  int ret = prasterblasterpio(conf);
   MPI_Finalize();
 
   return ret;

@@ -22,11 +22,11 @@
 #include <algorithm>
 #include <vector>
 
-#include "src/configuration.h"
-#include "src/reprojection_tools.h"
+#include "../configuration.h"
+#include "../reprojection_tools.h"
 
-#include "src/demos/sptw.h"
-#include "src/utils.h"
+#include "../demos/sptw.h"
+#include "../utils.h"
 
 using std::vector;
 

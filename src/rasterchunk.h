@@ -16,15 +16,12 @@
 //
 //
 
-
 #ifndef SRC_RASTERCHUNK_H_
 #define SRC_RASTERCHUNK_H_
 
-#include <gdal_priv.h>
-
 #include <string>
-
-#include "src/utils.h"
+#include <gdal_priv.h>
+#include "utils.h"
 
 namespace librasterblaster {
 /// A class representing an in-memory part of a raster.

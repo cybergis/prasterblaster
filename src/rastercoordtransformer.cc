@@ -19,15 +19,15 @@
  *
  */
 
+#include <cmath>
+
 #include <ogr_api.h>
 #include <ogr_spatialref.h>
 #include <gdal.h>
 #include <gdal_priv.h>
 
-#include <cmath>
-
-#include "src/reprojection_tools.h"
-#include "src/resampler.h"
+#include "reprojection_tools.h"
+#include "resampler.h"
 
 namespace librasterblaster {
 RasterCoordTransformer::

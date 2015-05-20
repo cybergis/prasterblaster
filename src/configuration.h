@@ -21,8 +21,8 @@
 
 #include <string>
 
-#include "src/resampler.h"
-#include "src/reprojection_tools.h"
+#include "resampler.h"
+#include "reprojection_tools.h"
 
 using std::string;
 

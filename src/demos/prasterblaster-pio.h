@@ -19,9 +19,9 @@
 
 #include <string>
 
-#include "src/configuration.h"
-#include "src/demos/sptw.h"
-#include "src/utils.h"
+#include "../configuration.h"
+#include "../demos/sptw.h"
+#include "../utils.h"
 
 namespace librasterblaster {
 /**

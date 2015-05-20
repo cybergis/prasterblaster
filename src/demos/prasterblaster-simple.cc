@@ -21,10 +21,9 @@
 
 #include <vector>
 
-#include "src/configuration.h"
-#include "src/reprojection_tools.h"
-
-#include "src/utils.h"
+#include "../configuration.h"
+#include "../reprojection_tools.h"
+#include "../utils.h"
 
 #define STR_EXPAND(tok) #tok
 #define STR(tok) STR_EXPAND(tok)

@@ -15,12 +15,12 @@
  *
  */
 
-#include <gtest/gtest.h>
-
 #include <vector>
 
-#include "src/utils.h"
-#include "src/reprojection_tools.h"
+#include <gtest/gtest.h>
+
+#include "../src/utils.h"
+#include "../src/reprojection_tools.h"
 
 using librasterblaster::Area;
 using librasterblaster::BlockPartition;

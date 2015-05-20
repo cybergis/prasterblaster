@@ -17,7 +17,7 @@
 
 #include <getopt.h>
 
-#include "src/configuration.h"
+#include "configuration.h"
 
 namespace librasterblaster {
 

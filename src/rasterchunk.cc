@@ -16,12 +16,12 @@
 //
 //
 
+#include <cstring>
 #include <gdal.h>
-#include <string.h>
 
-#include "src/reprojection_tools.h"
-#include "src/rasterchunk.h"
-#include "src/utils.h"
+#include "reprojection_tools.h"
+#include "rasterchunk.h"
+#include "utils.h"
 
 namespace librasterblaster {
 RasterChunk* RasterChunk::CreateRasterChunk(GDALDataset *ds, Area chunk_area) {

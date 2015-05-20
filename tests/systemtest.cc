@@ -21,14 +21,14 @@
 #include <unistd.h>
 
 #include "gtest/gtest.h"
-#include "src/configuration.h"
-#include "src/reprojection_tools.h"
-#include "src/resampler.h"
-#include "src/demos/prasterblaster-pio.h"
+#include "../src/configuration.h"
+#include "../src/reprojection_tools.h"
+#include "../src/resampler.h"
+#include "../src/demos/prasterblaster-pio.h"
 
-#include "src/demos/sptw.h"
+#include "../src/demos/sptw.h"
 
-#include "tests/rastercompare.h"
+#include "rastercompare.h"
 
 using librasterblaster::Configuration;
 using librasterblaster::PRB_NOERROR;
