@@ -268,25 +268,6 @@ PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
   return PRB_NOERROR;
 }
 
-// For use by PartitionBySize
-int simplerandom(int i) {
-  return std::rand()%i;
-}
-
-bool partition_compare(Area a, Area b) {
-  if (a.ul.y < b.ul.y) {
-    return true;
-  } else if (a.ul.y > b.ul.y) {
-    return false;
-  }
-  else if (a.ul.x < b.ul.x) {
-    return true;
-  } else {
-    return false;
-  }
-  return false;
-}
-
 std::vector<Area> BlockPartition(int rank,
                                  int process_count,
                                  int row_count,

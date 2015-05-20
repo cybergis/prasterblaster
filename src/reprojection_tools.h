@@ -28,10 +28,6 @@
 
 /// Container namespace for librasterblaster project
 namespace librasterblaster {
-/** \cond DOXYHIDE **/
-int simplerandom(int i);
-/** \cond DOXYHIDE **/
-
 /**
  * @brief Creates an output raster based on a input and a new projection
  * 
@@ -79,9 +75,7 @@ PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
                                  double output_pixel_size,
                                  Area output_projected_area,
                                  int output_tile_size);
-/** \cond DOXYHIDE **/
-bool partition_compare(Area a, Area b);
-/** \endcond **/
+
 std::vector<Area> BlockPartition(int rank,
                                  int process_count,
                                  int row_count,
