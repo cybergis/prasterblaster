@@ -251,9 +251,10 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     // Now we call ReprojectChunk with the RasterChunk pair and the desired
     // resampler. ReprojectChunk performs the reprojection/resampling and fills
     // the output RasterChunk with the new values.
+
     resample_start = MPI_Wtime();
-    bool ret = ReprojectChunk(in_chunk,
-                              out_chunk,
+    bool ret = ReprojectChunk(*in_chunk,
+                              *out_chunk,
                               conf.fillvalue,
                               conf.resampler);
     if (ret == false) {

@@ -106,7 +106,7 @@ void RasterCoordTransformer::init(string source_projection,
 }
 
 Area RasterCoordTransformer::
-Transform(Coordinate source, bool area_check) {
+Transform(Coordinate source, int support, bool area_check) {
   Area value;
   Coordinate temp1, temp2;
 
@@ -120,14 +120,14 @@ Transform(Coordinate source, bool area_check) {
   value.ul = temp1;
   value.lr = temp1;
 
-  temp1.x = (static_cast<double>(source.x) * source_pixel_size_) + source_ul_.x;
-  temp1.y = source_ul_.y - (static_cast<double>(source.y) * source_pixel_size_);
-  temp2.x = temp1.x;
-  temp2.y = temp1.y;
+  temp1.x = (source.x * source_pixel_size_) + source_ul_.x;
+  temp1.y = source_ul_.y - (source.y * source_pixel_size_);
+  temp2 = temp1;
 
   src_to_geo->TransformEx(1, &temp2.x, &temp2.y, &unused);
   geo_to_src->TransformEx(1, &temp2.x, &temp2.y, &unused);
 
+  // FIXME: epsilon
   if ((area_check && (fabs(temp1.y - temp2.y) > 0.01))
       || fabs(temp1.x - temp2.x) > 0.01) {
     // Point is outside defined projection area, return no-value
@@ -136,24 +136,36 @@ Transform(Coordinate source, bool area_check) {
     return value;
   }
 
-  temp1.x = (static_cast<double>(source.x) * source_pixel_size_) + source_ul_.x;
-  temp1.y = source_ul_.y - (static_cast<double>(source.y) * source_pixel_size_);
+  temp1.x = (source.x * source_pixel_size_) + source_ul_.x;
+  temp1.y = source_ul_.y - (source.y * source_pixel_size_);
   temp2 = temp1;
 
   // Now we are going to assign temp1 as the UL of our pixel and
   // temp2 as LR
-  temp2.x += sqrt(2 * source_pixel_size_ * source_pixel_size_);
-  temp2.y -= sqrt(2 * source_pixel_size_ * source_pixel_size_);
+  const double cell_size = sqrt(2 * source_pixel_size_ * source_pixel_size_);
+
+  temp2.x += cell_size;
+  temp2.y -= cell_size;
+
+  if (support > 0) {
+    float support_distance = (support - 0.5) * cell_size;
+
+    temp1.x -= support_distance;
+    temp1.y += support_distance;
+    temp2.x += support_distance;
+    temp2.y -= support_distance;
+  }
 
   ctrans->TransformEx(1, &temp1.x, &temp1.y, &unused);
   ctrans->TransformEx(1, &temp2.x, &temp2.y, &unused);
 
-  // temp1/temp2 now contain coords to input projection
+  // temp1/temp2 now contain coords to input projectionprintf("width %f height %f\n", width, height);
   // Now convert to points in the raster coordinate space.
   temp1.x -= destination_ul_.x;
   temp1.y = destination_ul_.y - temp1.y;
   temp1.x /= destination_pixel_size_;
   temp1.y /= destination_pixel_size_;
+
   temp2.x -= destination_ul_.x;
   temp2.y = destination_ul_.y - temp2.y;
   temp2.x /= destination_pixel_size_;
@@ -161,6 +173,8 @@ Transform(Coordinate source, bool area_check) {
 
   value.ul = temp1;
   value.lr = temp2;
+
+  // FIXME: Clamp instead? (support region might be out of bounds near the edges)
 
   // Check that entries are valid
   if (value.ul.x < 0.0

@@ -110,8 +110,8 @@ int main(void) {
       return 1;
     }
 
-    bool ret = librasterblaster::ReprojectChunk(in_chunk,
-                                                out_chunk,
+    bool ret = librasterblaster::ReprojectChunk(*in_chunk,
+                                                *out_chunk,
                                                 fillvalue,
                                                 resampler);
     if (ret == false) {

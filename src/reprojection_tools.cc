@@ -331,26 +331,24 @@ std::vector<Area> BlockPartition(int rank,
 }
 
 void SearchAndUpdate(Area input_area,
-                     string input_srs,
-                     string output_srs,
-                     double input_ulx,
-                     double input_uly,
-                     double input_pixel_size,
-                     Area *output_area) {
+    string input_srs,
+    string output_srs,
+    double input_ulx,
+    double input_uly,
+    double input_pixel_size,
+    Area *output_area) {
   Coordinate input_coord;
   Coordinate temp;
   OGRSpatialReference input_sr, output_sr;
 
   input_sr.SetFromUserInput(input_srs.c_str());
   output_sr.SetFromUserInput(output_srs.c_str());
-  OGRCoordinateTransformation *t =
-      OGRCreateCoordinateTransformation(&input_sr,
-                                        &output_sr);
+  auto *t = OGRCreateCoordinateTransformation(&input_sr, &output_sr);
 
   if (t == NULL) {
-          output_area->ul.x = -1.0;
-          output_area->ul.y = -1.0;
-          return;
+    output_area->ul.x = -1.0;
+    output_area->ul.y = -1.0;
+    return;
   }
 
   for (int64_t x = input_area.ul.x; x <= input_area.lr.x; ++x) {
@@ -361,7 +359,7 @@ void SearchAndUpdate(Area input_area,
       t->Transform(1, &input_coord.x, &input_coord.y);
       temp = input_coord;
 
-      if (temp.x  < output_area->ul.x) {
+      if (temp.x < output_area->ul.x) {
         output_area->ul.x = temp.x;
       }
       if (temp.y > output_area->ul.y) {
@@ -600,7 +598,6 @@ Area RasterMinbox2(string source_projection,
     return source_area;
   }
 
-
   source_area.ul.x = floor(source_area.ul.x);
   source_area.ul.y = floor(source_area.ul.y);
   source_area.lr.x = ceil(source_area.lr.x);
@@ -635,11 +632,11 @@ Area RasterMinbox2(string source_projection,
  *
  * @return Returns a bool indicating success or failure.
  */
-bool ReprojectChunk(RasterChunk *source,
-                    RasterChunk *destination,
-                    string fillvalue,
-                    RESAMPLER resampler) {
-  if (source->pixel_type_ != destination->pixel_type_) {
+bool ReprojectChunk(RasterChunk& source,
+    RasterChunk& destination,
+    string fillvalue,
+    RESAMPLER resampler) {
+  if (source.pixel_type_ != destination.pixel_type_) {
     fprintf(stderr, "Source and destination chunks have different types!\n");
     return false;
   }
@@ -647,21 +644,30 @@ bool ReprojectChunk(RasterChunk *source,
   // FIXME: lexical cast to pixel type (c++11)
   double fvalue = strtod(fillvalue.c_str(), NULL);
 
-  switch (source->pixel_type_) {
+  int support = 0;
+
+  switch (resampler) {
+    case BILINEAR: support = 1; break;
+    case BICUBIC: support = 2; break;
+    case LANCZOS: support = 3; break;
+    default: break;
+  }
+
+  switch (source.pixel_type_) {
     case GDT_Byte:
-        return ReprojectChunkType<uint8_t>(source, destination, fvalue, GetResampler<uint8_t>(resampler));
+      return ReprojectChunkType<uint8_t>(source, destination, fvalue, GetResampler<uint8_t>(resampler), support);
     case GDT_UInt16:
-      return ReprojectChunkType<uint16_t>(source, destination, fvalue, GetResampler<uint16_t>(resampler));
+      return ReprojectChunkType<uint16_t>(source, destination, fvalue, GetResampler<uint16_t>(resampler), support);
     case GDT_Int16:
-      return ReprojectChunkType<int16_t>(source, destination, fvalue, GetResampler<int16_t>(resampler));
+      return ReprojectChunkType<int16_t>(source, destination, fvalue, GetResampler<int16_t>(resampler), support);
     case GDT_UInt32:
-      return ReprojectChunkType<uint32_t>(source, destination, fvalue, GetResampler<uint32_t>(resampler));
+      return ReprojectChunkType<uint32_t>(source, destination, fvalue, GetResampler<uint32_t>(resampler), support);
     case GDT_Int32:
-      return ReprojectChunkType<int32_t>(source, destination, fvalue, GetResampler<int32_t>(resampler));
+      return ReprojectChunkType<int32_t>(source, destination, fvalue, GetResampler<int32_t>(resampler), support);
     case GDT_Float32:
-      return ReprojectChunkType<float>(source, destination, fvalue, GetResampler<float>(resampler));
+      return ReprojectChunkType<float>(source, destination, fvalue, GetResampler<float>(resampler), support);
     case GDT_Float64:
-      return ReprojectChunkType<double>(source, destination, fvalue, GetResampler<double>(resampler));
+      return ReprojectChunkType<double>(source, destination, fvalue, GetResampler<double>(resampler), support);
     case GDT_CInt16:
     case GDT_CInt32:
     case GDT_CFloat32:
@@ -670,56 +676,65 @@ bool ReprojectChunk(RasterChunk *source,
       fprintf(stderr, "Invalid pixel type in ReprojectChunk!\n");
       return false;
   }
- }
+}
 
 template <typename pixelType>
-pixelType (*GetResampler (RESAMPLER type)) (RasterChunk*, Area) {
-    switch (type) {
-        case MIN:
-            return &Min<pixelType>;
-        case MAX:
-            return &Max<pixelType>;
-        case MEAN:
-            return &Mean<pixelType>;
-        case NEAREST:
-            return NULL;
-        default:
-            fprintf(stderr, "Unknown resampler type %d!\n", type);
-            return NULL;
-    }
+//pixelType (*GetResampler (RESAMPLER type)) (RasterChunk*, Area) {
+std::function<pixelType(RasterChunk&, Area, float)> GetResampler(RESAMPLER type) {
+  switch (type) {
+    case NEAREST:
+      return NULL;
+    case MIN:
+      return &Min<pixelType>;
+    case MAX:
+      return &Max<pixelType>;
+    case MEAN:
+      return &Mean<pixelType>;
+    case BILINEAR:
+      return &Bilinear<pixelType>;
+    case BICUBIC:
+      return &Bicubic<pixelType>;
+    case LANCZOS:
+      return &Lanczos<pixelType>;
+    default:
+      fprintf(stderr, "Unknown resampler type %d!\n", type);
+      return NULL;
+  }
 }
 
 template <class pixelType>
-bool ReprojectChunkType(RasterChunk *source,
-                        RasterChunk *destination,
-                        pixelType fillvalue,
-                        pixelType (*resampler) (RasterChunk*, Area)) {
+bool ReprojectChunkType(RasterChunk& source,
+                        RasterChunk& destination,
+                        pixelType fill_value,
+                        std::function<pixelType(RasterChunk&, Area, float)> resampler,
+                        int filter_support) {
   Coordinate temp1, temp2;
   Area pixelArea;
 
-  RasterCoordTransformer rt(destination->projection_,
-                            destination->ul_projected_corner_,
-                            destination->pixel_size_,
-                            destination->row_count_,
-                            destination->column_count_,
-                            source->projection_,
-                            source->ul_projected_corner_,
-                            source->pixel_size_);
+  RasterCoordTransformer rt(destination.projection_,
+                            destination.ul_projected_corner_,
+                            destination.pixel_size_,
+                            destination.row_count_,
+                            destination.column_count_,
+                            source.projection_,
+                            source.ul_projected_corner_,
+                            source.pixel_size_);
 
+  double scale_factor = destination.pixel_size_ / source.pixel_size_;
 
-  for (int chunk_y = 0; chunk_y < destination->row_count_; ++chunk_y)  {
-    for (int chunk_x = 0; chunk_x < destination->column_count_; ++chunk_x) {
+  for (int chunk_y = 0; chunk_y < destination.row_count_; ++chunk_y)  {
+    for (int chunk_x = 0; chunk_x < destination.column_count_; ++chunk_x) {
       temp1.x = chunk_x;
       temp1.y = chunk_y;
 
-      pixelArea = rt.Transform(temp1);
+      pixelArea = rt.Transform(temp1, filter_support);
 
-      int64_t dest_offset = chunk_x + chunk_y * destination->column_count_;
+      int64_t dest_offset = chunk_x + chunk_y * destination.column_count_;
 
-      if (pixelArea.ul.x == -1.0 || (pixelArea.ul.x > source->column_count_ - 1)
-          || (pixelArea.lr.y > source->row_count_ - 1)) {
+      if (pixelArea.ul.x == -1.0 || (pixelArea.ul.x > source.column_count_ - 1)
+          || (pixelArea.lr.y > source.row_count_ - 1)) {
         // The pixel is outside of the projected area
-        static_cast<pixelType*>(destination->pixels_)[dest_offset] = fillvalue;
+        static_cast<pixelType*>(destination.pixels_)[dest_offset] = fill_value;
         continue;
       }
 
@@ -731,6 +746,11 @@ bool ReprojectChunkType(RasterChunk *source,
       int64_t lr_x = static_cast<int64_t>(temp2.x);
       int64_t lr_y = static_cast<int64_t>(temp2.y);
 
+      //double ul_x = temp1.x;
+      //double ul_y = temp1.y;
+      //double lr_x = temp2.x;
+      //double lr_y = temp2.y;
+
       if (ul_x < 0) {
         ul_x = 0;
       }
@@ -738,22 +758,21 @@ bool ReprojectChunkType(RasterChunk *source,
       if (ul_y < 0) {
         ul_y = 0;
       }
-
-      if (lr_x > (source->column_count_ - 1)) {
-        lr_x = source->column_count_ - 1;
+      
+      if (lr_x > (source.column_count_ - 1)) {
+        lr_x = source.column_count_ - 1;
       }
 
-      if (ul_y > (source->row_count_ - 1)) {
-        ul_y = source->row_count_ - 1;
+      if (ul_y > (source.row_count_ - 1)) {
+        ul_y = source.row_count_ - 1;
       }
 
       // Perform resampling...
-      int64_t src_offset = ul_x + ul_y * source->column_count_;
       pixelType sampled_value;
 
       if ((resampler == NULL) || ((ul_x > lr_x) || (ul_y > lr_y))) {
         // ul/lr do not enclose an area, use NN
-        if (ul_x + 1 > source->column_count_ || ul_y + 1 > source->row_count_) {
+        if (ul_x + 1 > source.column_count_ || ul_y + 1 > source.row_count_) {
           // TODO(dmattli) FIX THIS
         }
 
@@ -761,14 +780,16 @@ bool ReprojectChunkType(RasterChunk *source,
           //fprintf(stderr, "ul/lr doesn't enclose an area: ul %ld %ld lr %ld %ld\n", ul_x, ul_y, lr_x, lr_y);
         }
 
-        sampled_value = static_cast<pixelType*>(source->pixels_)[src_offset];
+        int64_t src_offset = (int64_t) ul_x + (int64_t) ul_y * source.column_count_;
+
+        sampled_value = static_cast<pixelType*>(source.pixels_)[src_offset];
       } else {
         Area ia = Area(ul_x, ul_y, lr_x, lr_y);
 
-        sampled_value = resampler(source, ia);
+        sampled_value = resampler(source, ia, scale_factor);
       }
 
-      static_cast<pixelType*>(destination->pixels_)[dest_offset] = sampled_value;
+      static_cast<pixelType*>(destination.pixels_)[dest_offset] = sampled_value;
     }
   }
 

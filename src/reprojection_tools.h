@@ -20,6 +20,7 @@
 
 #include <string>
 #include <vector>
+#include <functional>
 #include <stdint.h>
 
 #include "rastercoordtransformer.h"
@@ -133,21 +134,22 @@ Area RasterMinbox2(string source_projection,
  * @return Returns a bool indicating success or failure.
  */
 
-bool ReprojectChunk(RasterChunk *source,
-                    RasterChunk *destination,
-                    string fillvalue,
+bool ReprojectChunk(RasterChunk& source,
+                    RasterChunk& destination,
+                    string fill_value,
                     RESAMPLER resampler);
 
 /** @cond DOXYHIDE **/
 
-template <typename pixelType>
-pixelType (*GetResampler(RESAMPLER type)) (RasterChunk*, Area);
+template<typename T>
+std::function<T(RasterChunk&, Area, float)> GetResampler(RESAMPLER type);
 
-template <typename pixelType>
-bool ReprojectChunkType(RasterChunk *source,
-                        RasterChunk *destination,
-                        pixelType fillvalue,
-                        pixelType (*resampler)(RasterChunk*, Area));
+template <typename T>
+bool ReprojectChunkType(RasterChunk& source,
+                        RasterChunk& destination,
+                        T fill_value,
+                        std::function<T(RasterChunk&, Area, float)> resampler,
+                        int filter_support);
 /** @endcond **/
 
 }

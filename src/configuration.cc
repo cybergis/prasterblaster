@@ -73,7 +73,14 @@ Configuration::Configuration(int argc, char *argv[]) {
           resampler = MEAN;
         } else if (arg == "nearest") {
           resampler = NEAREST;
+        } else if (arg == "bilinear") {
+          resampler = BILINEAR;
+        } else if (arg == "bicubic") {
+          resampler = BICUBIC;
+        } else if (arg == "lanczos") {
+          resampler = LANCZOS;
         }
+
         printf("Using resampler %d from \"%s\"\n", resampler, arg.c_str());
 
         break;

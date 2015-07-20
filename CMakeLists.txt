@@ -1,4 +1,8 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
+
+set(CMAKE_DISABLE_SOURCE_CHANGES ON)
+set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+
 project(pRasterBlaster)
 
 option(BundleGDAL "Bundle private GDAL and PROJ" OFF)
@@ -16,6 +20,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${CMAKE_SOURCE_DIR}/src/gdal)
 
 include_directories(${CMAKE_SOURCE_DIR}/src/gtest/include)
+
+include(FindCXX11)
 
 # Set CXXFLAGS
 set(CMAKE_CXX_FLAGS "-D__PRB_SRC_DIR__=${CMAKE_SOURCE_DIR} ${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wcast-align -Wpointer-arith -Wsign-compare -Wformat=2 -Wno-format-y2k  -Wmissing-braces -Wparentheses -Wtrigraphs -Wstrict-aliasing=2")

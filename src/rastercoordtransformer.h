@@ -69,7 +69,7 @@ class RasterCoordTransformer {
 
     \param source a Coordinate struct that specifies the point in the source raster space to map to the destination raster space.
   */
-  Area Transform(Coordinate source, bool area_check = true);
+  Area Transform(Coordinate source, int support = 0, bool area_check = true);
 
   // ! A normal member function taking no arguments
   /*
