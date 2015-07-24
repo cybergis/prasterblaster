@@ -204,10 +204,16 @@ PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
     return PRB_BADARG;
   }
 
-  // Copy ColorTable
+  // Copy ColorTable and NoData value
   if (in->GetRasterCount() > 0) {
-    GDALColorTable *ct = in->GetRasterBand(1)->GetColorTable();
-    output->GetRasterBand(1)->SetColorTable(ct);
+    auto in_band = in->GetRasterBand(1);
+    auto out_band = output->GetRasterBand(1);
+
+    GDALColorTable *ct = in_band->GetColorTable();
+    double no_data = in_band->GetNoDataValue();
+
+    out_band->SetColorTable(ct);
+    out_band->SetNoDataValue(no_data);
   }
 
   // Setup georeferencing
