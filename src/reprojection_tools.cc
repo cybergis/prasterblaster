@@ -57,7 +57,7 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
   // Determine output raster size by calculating the projected coordinate minbox
   double in_transform[6];
   in->GetGeoTransform(in_transform);
-  Coordinate ul(in_transform[0], in_transform[3], UNDEF);
+  Coordinate ul(in_transform[0], in_transform[3]);
   char *srs_str = NULL;
   in_srs.exportToProj4(&srs_str);
   Area out_area = ProjectedMinbox(ul,
@@ -121,7 +121,7 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
    // Determine output raster size by calculating the projected coordinate minbox
   double in_transform[6];
   in->GetGeoTransform(in_transform);
-  Coordinate ul(in_transform[0], in_transform[3], UNDEF);
+  Coordinate ul(in_transform[0], in_transform[3]);
   char *srs_str = NULL;
   in_srs.exportToProj4(&srs_str);
   Area out_area = ProjectedMinbox(ul,
@@ -170,6 +170,8 @@ PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
   double in_transform[6];
   in->GetGeoTransform(in_transform);
 
+  auto in_band = in->GetRasterBand(1);
+
   GDALAllRegister();
   GDALDriver *driver = GetGDALDriverManager()->GetDriverByName("GTiff");
 
@@ -178,8 +180,7 @@ PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
     return PRB_BADARG;
   }
 
-  std::stringstream ts;
-  ts << output_tile_size;
+  std::string ts_str = std::to_string(output_tile_size);
 
   // Set driver options
   char **options = NULL;
@@ -187,8 +188,8 @@ PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
   options = CSLSetNameValue(options, "BIGTIFF", "YES");
   options = CSLSetNameValue(options, "TILED", "YES");
   options = CSLSetNameValue(options, "COMPRESS", "NONE");
-  options = CSLSetNameValue(options, "BLOCKXSIZE", ts.str().c_str());
-  options = CSLSetNameValue(options, "BLOCKYSIZE", ts.str().c_str());
+  options = CSLSetNameValue(options, "BLOCKXSIZE", ts_str.c_str());
+  options = CSLSetNameValue(options, "BLOCKYSIZE", ts_str.c_str());
   options = CSLSetNameValue(options, "SPARSE_OK", "YES");
 
   GDALDataset *output =
@@ -196,25 +197,25 @@ PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
                      output_columns,
                      output_rows,
                      in->GetRasterCount(),
-                     in->GetRasterBand(1)->GetRasterDataType(),
+                     in_band->GetRasterDataType(),
                      options);
+
+  CSLDestroy(options);
 
   if (output == NULL) {
     fprintf(stderr, "driver->Create call failed.\n");
     return PRB_BADARG;
   }
 
+  auto out_band = output->GetRasterBand(1);
+
   // Copy ColorTable and NoData value
-  if (in->GetRasterCount() > 0) {
-    auto in_band = in->GetRasterBand(1);
-    auto out_band = output->GetRasterBand(1);
 
-    GDALColorTable *ct = in_band->GetColorTable();
-    double no_data = in_band->GetNoDataValue();
+  GDALColorTable *ct = in_band->GetColorTable();
+  double no_data = in_band->GetNoDataValue();
 
-    out_band->SetColorTable(ct);
-    out_band->SetNoDataValue(no_data);
-  }
+  out_band->SetColorTable(ct);
+  out_band->SetNoDataValue(no_data);
 
   // Setup georeferencing
   double out_t[6] = { output_projected_area.ul.x,
@@ -225,14 +226,14 @@ PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
                       -output_pixel_size };
 
   output->SetGeoTransform(out_t);
+
   OGRSpatialReference out_sr;
   char *wkt = NULL;
   out_sr.SetFromUserInput(output_srs.c_str());
   out_sr.exportToWkt(&wkt);
   output->SetProjection(wkt);
-
   OGRFree(wkt);
-  CSLDestroy(options);
+
   GDALClose(output);
 
   return PRB_NOERROR;
@@ -254,14 +255,15 @@ std::vector<Area> BlockPartition(int rank,
   const int64_t partitions_across = (tiles_across + partition_width - 1) / partition_width;
 
   std::vector<Area> blocks;
-  Area p;
 
   for (int64_t y = 0; y < partitions_down; ++y) {
     for (int64_t x = 0; x < partitions_across; ++x) {
+      Area p;
       p.ul.x = x * partition_width;
       p.ul.y = y * partition_height;
       p.lr.x = p.ul.x + partition_width - 1;
       p.lr.y = p.ul.y + partition_height - 1;
+
       blocks.push_back(p);
     }
   }
@@ -436,8 +438,8 @@ Area RasterMinbox(GDALDataset *source,
   source->GetGeoTransform(s_gt);
   destination->GetGeoTransform(d_gt);
 
-  Coordinate s_ul(s_gt[0], s_gt[3], UNDEF);
-  Coordinate d_ul(d_gt[0], d_gt[3], UNDEF);
+  Coordinate s_ul(s_gt[0], s_gt[3]);
+  Coordinate d_ul(d_gt[0], d_gt[3]);
 
   string s_srs(source->GetProjectionRef());
   string d_srs(destination->GetProjectionRef());
@@ -476,14 +478,10 @@ Area RasterMinbox2(string source_projection,
                             destination_projection,
                             destination_ul,
                             destination_pixel_size);
-  if (rt.ready() == false) {
-    return Area(-1.0, -1.0, -1.0, -1.0);
-  }
 
   Area temp;
   source_area.ul.x = source_area.ul.y = DBL_MAX;
   source_area.lr.y = source_area.lr.x = -DBL_MAX;
-  source_area.units = UNDEF;
 
   int row_space = destination_row_count / 10;
   if (row_space < 3) {
@@ -614,7 +612,7 @@ bool ReprojectChunk(RasterChunk& source,
     return false;
   }
 
-  // FIXME: lexical cast to pixel type (c++11)
+  // FIXME: proper conversion to pixel type
   double fvalue = strtod(fillvalue.c_str(), NULL);
 
   int support = 0;
@@ -652,7 +650,6 @@ bool ReprojectChunk(RasterChunk& source,
 }
 
 template <typename pixelType>
-//pixelType (*GetResampler (RESAMPLER type)) (RasterChunk*, Area) {
 std::function<pixelType(RasterChunk&, Area, float)> GetResampler(RESAMPLER type) {
   switch (type) {
     case NEAREST:

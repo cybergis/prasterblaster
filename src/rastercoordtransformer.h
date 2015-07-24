@@ -34,7 +34,6 @@ namespace librasterblaster {
  */
 class RasterCoordTransformer {
  public:
-  // ! A constructor
   /* ! 
 
     This constructor takes six parameters. The first three
@@ -54,10 +53,6 @@ class RasterCoordTransformer {
                          Coordinate destination_ul,
                          double destination_pixel_size);
 
-
-  ~RasterCoordTransformer();
-
-  // ! A normal member taking a single argument and returning an Area struct.
   /*
 
     This function takes a coordinate in the source raster space
@@ -70,13 +65,6 @@ class RasterCoordTransformer {
     \param source a Coordinate struct that specifies the point in the source raster space to map to the destination raster space.
   */
   Area Transform(Coordinate source, int support = 0, bool area_check = true);
-
-  // ! A normal member function taking no arguments
-  /*
-    This function returns a boolean value indicating whether the
-    RasterCoordTransformer constructed corrrectly and is ready to use.
-   */
-  bool ready();
 
  private:
   void init(string source_projection,

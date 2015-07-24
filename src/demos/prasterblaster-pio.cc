@@ -42,7 +42,7 @@ using sptw::PTIFF;
 using sptw::open_raster;
 using sptw::SPTW_ERROR;
 
-void MyErrorHandler(CPLErr eErrClass, int err_no, const char *msg) {
+void GDALErrorHandler(CPLErr, int, const char *) {
         return;
 }
 /*! \page prasterblasterpio
@@ -73,12 +73,10 @@ namespace librasterblaster {
 PRB_ERROR write_rasterchunk(PTIFF *ptiff,
                              RasterChunk *chunk) {
   Area write_area;
-  write_area.ul = chunk->ChunkToRaster(
-      librasterblaster::Coordinate(0.0, 0.0, librasterblaster::UNDEF));
+  write_area.ul = chunk->ChunkToRaster(librasterblaster::Coordinate(0.0, 0.0));
   write_area.lr = chunk->ChunkToRaster(
-      librasterblaster::Coordinate(chunk->column_count_-1,
-                                   chunk->row_count_-1,
-                                   librasterblaster::UNDEF));
+      librasterblaster::Coordinate(chunk->column_count_-1, chunk->row_count_-1));
+
   sptw::write_area(ptiff,
                    chunk->pixels_,
                    write_area.ul.x,
@@ -102,7 +100,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   MPI_Comm_size(MPI_COMM_WORLD, &process_count);
 
   // Replace CPLErrorHandler
-  CPLPushErrorHandler(MyErrorHandler);
+  CPLPushErrorHandler(GDALErrorHandler);
 
   GDALAllRegister();
 
@@ -161,9 +159,8 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   MPI_Barrier(MPI_COMM_WORLD);
   PTIFF* output_raster = open_raster(conf.output_filename);
   if (rank == 0) {
-    SPTW_ERROR sperr = populate_tile_offsets(output_raster,
-                                             conf.tile_size,
-                                             0);
+    SPTW_ERROR sperr = populate_tile_offsets(output_raster, conf.tile_size);
+
     if (sperr != sptw::SP_None) {
       fprintf(stderr, "\nError populating tile offsets\n");
     }
@@ -255,7 +252,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     resample_start = MPI_Wtime();
     bool ret = ReprojectChunk(*in_chunk,
                               *out_chunk,
-                              conf.fillvalue,
+                              conf.fill_value,
                               conf.resampler);
     if (ret == false) {
             fprintf(stderr, "Error reprojecting chunk!\n");

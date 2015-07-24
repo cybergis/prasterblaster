@@ -29,16 +29,6 @@ enum PRB_ERROR {
   PRB_PROJERROR, /*!< Error with projection specification */
 };
 
-enum ProjUnit {
-  UNDEF = -1,
-  RADIAN = 0,  //  Radians
-  FEET,        //  Feet
-  METER,       //  Meters
-  SECOND,      //  Seconds
-  DEGREE,      //  Decimal Degrees
-  INT_FEET     //  International Feet
-};
-
 /*! Coordinate struct
    This class provides a more readable way of storing and passing coordinate
    parameters for the Transformer class. It stores x and y as doubles and units
@@ -48,34 +38,21 @@ struct Coordinate {
   /*! Default Constructor
     0's all attributes.
   */
-  Coordinate():x(0.0), y(0.0), units(UNDEF) {}
+  Coordinate():x(0.0), y(0.0) {}
   /*! Full Constructor
     Sets all attributes in the Coordinate according to the parameters.
   */
-  Coordinate(double xx, double yy, ProjUnit uunits)
-      : x(xx), y(yy), units(uunits) {}
-
-  /*! Copy Constructor
-    Sets all attributes to equal those in Coordinate c.
-  */
-  Coordinate(const Coordinate &c): x(c.x), y(c.y), units(c.units) {}
-
-  Coordinate& operator=(const Coordinate &c) {
-    this->x = c.x;
-    this->y = c.y;
-    this->units = c.units;
-    return *this;
-  }
+  Coordinate(double xx, double yy)
+      : x(xx), y(yy) {}
 
   bool operator==(const Coordinate &c) {
-    return (x == c.x && y == c.y && units == c.units);
+    return (x == c.x && y == c.y);
   }
 
   bool operator!=(const Coordinate &c) { return !(*this == c); }
 
   double x;
   double y;
-  ProjUnit units;
 };
 
 /** 
@@ -86,7 +63,7 @@ struct Area {
   /** 
    * @brief This constructor initializes points to zero.
    */
-  Area():ul(), lr(), units(UNDEF) {}
+  Area():ul(), lr() {}
   /// A constructor
   /**
    * @brief This constructor allows both coordinates to be given initial values.
@@ -98,13 +75,11 @@ struct Area {
 Area(double ulx,
      double uly,
      double lrx,
-     double lry) : ul(ulx, uly, UNDEF), lr(lrx, lry, UNDEF), units(UNDEF) {}
+     double lry) : ul(ulx, uly), lr(lrx, lry){}
   /// Upper-left coordinate of area
   Coordinate ul;
   /// Lower-right coordinate of area
   Coordinate lr;
-  /// Units used in ul and lr coordinates
-  ProjUnit units;
 };
 }
 

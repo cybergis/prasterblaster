@@ -38,10 +38,10 @@ using librasterblaster::PRB_NOERROR;
 
 namespace {
 TEST(SystemTest, GLOBALVEG) {
-  const int gold_count = 12;
   const std::string golden_rasters[] = { "aea", "cea", "eck4", "eck6", "gall",
                                          "gnom", "laea", "merc", "mill",
                                          "moll", "sinu", "vandg"};
+  const int gold_count = std::extent<decltype(golden_rasters)>::value;
   Configuration conf;
 
   GDALAllRegister();

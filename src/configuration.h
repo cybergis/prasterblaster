@@ -79,9 +79,9 @@ struct Configuration {
    */
   RESAMPLER resampler;
   /**
-   * @brief This is set to the fillvalue specified by the user.
+   * @brief This is set to the fill value specified by the user.
    */
-  string fillvalue;
+  string fill_value;
   /**
    * @brief Value to set in nodata areas of the raster. The interpretation of this
    * string will depend on the pixel type.

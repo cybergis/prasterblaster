@@ -43,8 +43,8 @@ RasterChunk* RasterChunk::CreateRasterChunk(GDALDataset *ds, Area chunk_area) {
   temp->projection_ = ds->GetProjectionRef();
   temp->raster_location_ = chunk_area.ul;
   temp->ul_projected_corner_ = Coordinate(gt[0]+(chunk_area.ul.x*gt[1]),
-                                          gt[3]-(chunk_area.ul.y*gt[1]),
-                                          UNDEF);
+                                          gt[3]-(chunk_area.ul.y*gt[1]));
+
   temp->pixel_size_ = gt[1];
   temp->row_count_ = chunk_area.lr.y - chunk_area.ul.y + 1;
   temp->column_count_ = chunk_area.lr.x - chunk_area.ul.x + 1;
@@ -74,47 +74,6 @@ RasterChunk* RasterChunk::CreateRasterChunk(GDALDataset *input_raster,
                               input_raster,
                               output_area);
   return CreateRasterChunk(input_raster, in_area);
-}
-
-RasterChunk::RasterChunk(const RasterChunk &s) {
-  projection_ = s.projection_;
-  raster_location_ = s.raster_location_;
-  ul_projected_corner_ = s.ul_projected_corner_;
-  pixel_size_ = s.pixel_size_;
-  row_count_ = s.row_count_;
-  column_count_ = s.column_count_;
-  pixel_type_ = s.pixel_type_;
-  band_count_ = s.band_count_;
-  memcpy(geotransform_, s.geotransform_, 6*sizeof(double));
-
-  size_t pixel_buffer_size = row_count_ * column_count_
-      * static_cast<size_t>(GDALGetDataTypeSize(pixel_type_)/8)
-      * band_count_;
-
-  memcpy(pixels_, s.pixels_, pixel_buffer_size);
-}
-
-RasterChunk& RasterChunk::operator=(const RasterChunk &s) {
-  if (this == &s) {
-    return *this;
-  }
-  projection_ = s.projection_;
-  raster_location_ = s.raster_location_;
-  ul_projected_corner_ = s.ul_projected_corner_;
-  pixel_size_ = s.pixel_size_;
-  row_count_ = s.row_count_;
-  column_count_ = s.column_count_;
-  pixel_type_ = s.pixel_type_;
-  band_count_ = s.band_count_;
-  memcpy(geotransform_, s.geotransform_, 6*sizeof(double));
-
-  size_t pixel_buffer_size = row_count_ * column_count_
-      * static_cast<size_t>(GDALGetDataTypeSize(pixel_type_)/8)
-      * band_count_;
-
-  memcpy(pixels_, s.pixels_, pixel_buffer_size);
-
-  return *this;
 }
 
 bool RasterChunk::operator==(const RasterChunk &s) {
@@ -232,13 +191,11 @@ PRB_ERROR RasterChunk::WriteRasterChunk(GDALDataset *ds, RasterChunk *chunk) {
 
 Coordinate RasterChunk::ChunkToRaster(Coordinate chunk_coordinate) {
   return Coordinate(chunk_coordinate.x + raster_location_.x,
-                    chunk_coordinate.y + raster_location_.y,
-                    chunk_coordinate.units);
+                    chunk_coordinate.y + raster_location_.y);
 }
 
 Coordinate RasterChunk::RasterToChunk(Coordinate raster_coordinate) {
   return Coordinate(raster_coordinate.x - raster_location_.x,
-                    raster_coordinate.y - raster_location_.y,
-                    raster_coordinate.units);
+                    raster_coordinate.y - raster_location_.y);
 }
 }

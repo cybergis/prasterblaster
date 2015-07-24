@@ -50,10 +50,6 @@ RasterCoordTransformer(string source_projection,
   return;
 }
 
-RasterCoordTransformer::~RasterCoordTransformer() {
-  return;
-}
-
 void RasterCoordTransformer::init(string source_projection,
                                   Coordinate source_ul,
                                   double source_pixel_size,
@@ -88,7 +84,7 @@ void RasterCoordTransformer::init(string source_projection,
   if (t != NULL) {
     ctrans = t;
   } else {
-    printf("BAD!\n\n");
+    printf("Could not create coordinate transformation!\n\n");
     return;
   }
 
@@ -202,9 +198,5 @@ Transform(Coordinate source, int support, bool area_check) {
   }
 
   return value;
-}
-
-bool RasterCoordTransformer::ready() {
-  return true;
 }
 }

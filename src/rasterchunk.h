@@ -64,18 +64,6 @@ class RasterChunk {
   RasterChunk(const RasterChunk &s);
 
   /**
-   * @brief 
-   * This function reads the pixel values from the GDALDataset into the
-   * RasterChunk.
-   *
-   * @param ds The raster to read from.
-   * @param chunk The chunk to read to.
-   *
-   */
-
-  RasterChunk& operator=(const RasterChunk &s);
-
-  /**
    * @brief The comparison operators compare the upper-left corner of the raster
    * locations. This is mostly meaningful when a raster is decomposed into
    * non-overlapping RasterChunks.
@@ -89,7 +77,17 @@ class RasterChunk {
   bool operator<=(const RasterChunk &s);
   bool operator>=(const RasterChunk &s);
 
+  /**
+   * @brief 
+   * This function reads the pixel values from the GDALDataset into the
+   * RasterChunk.
+   *
+   * @param ds The raster to read from.
+   * @param chunk The chunk to read to.
+   *
+   */
   static PRB_ERROR ReadRasterChunk(GDALDataset *ds, RasterChunk *chunk);
+  
   /**
    * @brief
    * This function writes the pixel values from the RasterChunk into the

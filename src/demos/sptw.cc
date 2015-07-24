@@ -169,9 +169,7 @@ int write_int64(PTIFF *tiff_file,
   return 0;
 }
 
-SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file,
-                                 int64_t tile_size,
-                                 int64_t tile_alignment) {
+SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file, int64_t tile_size) {
   MPI_Status status;
   bool big_endian = false;   // Is tiff file big endian?
 
@@ -190,7 +188,7 @@ SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file,
   version = parse_int16(version_data, big_endian);
 
   if (version != 0x002b) {
-    // Wrong Tiff version !
+    // Wrong TIFF version!
     return SP_BadArg;
   }
 
@@ -625,10 +623,8 @@ SPTW_ERROR write_area(PTIFF *ptiff,
 
   std::vector<Area> write_stack;
   Area write_area;
-  write_area.ul = librasterblaster::Coordinate(ul_x,
-                                               ul_y, librasterblaster::UNDEF);
-  write_area.lr = librasterblaster::Coordinate(lr_x,
-                                               lr_y, librasterblaster::UNDEF);
+  write_area.ul = librasterblaster::Coordinate(ul_x, ul_y);
+  write_area.lr = librasterblaster::Coordinate(lr_x, lr_y);
 
   write_stack.push_back(write_area);
 

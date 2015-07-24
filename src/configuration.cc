@@ -85,7 +85,7 @@ Configuration::Configuration(int argc, char *argv[]) {
 
         break;
       case 'f':
-        fillvalue = optarg;
+        fill_value = optarg;
         break;
       case 'x':
         tile_size = static_cast<int>(strtol(optarg, NULL, 10));

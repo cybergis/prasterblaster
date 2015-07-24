@@ -90,8 +90,8 @@ T Max(RasterChunk& input, Area pixel_area, float) {
                   * input.column_count_
                   + static_cast<int>(pixel_area.ul.x)];
   T temp2 = 0;
-  for (int x = pixel_area.ul.x; x <= pixel_area.lr.x; ++x) {
-    for (int y = pixel_area.ul.y; y <= pixel_area.lr.y; ++y) {
+  for (int y = pixel_area.ul.y; y <= pixel_area.lr.y; ++y) {
+    for (int x = pixel_area.ul.x; x <= pixel_area.lr.x; ++x) {
       temp2 = pixels[y * input.column_count_ + x];
 
       if (temp2 > temp) {
@@ -132,8 +132,8 @@ T Mean(RasterChunk& input, Area pixel_area, float) {
 
   int cells = 0;
 
-  for (int x = pixel_area.ul.x; x <= pixel_area.lr.x; ++x) {
-    for (int y = pixel_area.ul.y; y <= pixel_area.lr.y; ++y) {
+  for (int y = pixel_area.ul.y; y <= pixel_area.lr.y; ++y) {
+    for (int x = pixel_area.ul.x; x <= pixel_area.lr.x; ++x) {
       temp += pixels[(int64_t) y * input.column_count_ + (int64_t) x];
       cells++;
     }
