@@ -225,39 +225,6 @@ PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
   out_sr.exportToWkt(&wkt);
   output->SetProjection(wkt);
 
-  double *data = new double(sizeof(*data) * 4 * in->GetRasterCount());
-
-  output->RasterIO(GF_Write,
-                   0,
-                   0,
-                   1,
-                   1,
-                   data,
-                   1,
-                   1,
-                   in->GetRasterBand(1)->GetRasterDataType(),
-                   in->GetRasterCount(),
-                   NULL,
-                   0,
-                   0,
-                   0);
-
-  output->RasterIO(GF_Write,
-                   output_columns-1,
-                   output_rows-1,
-                   1,
-                   1,
-                   data,
-                   1,
-                   1,
-                   in->GetRasterBand(1)->GetRasterDataType(),
-                   in->GetRasterCount(),
-                   NULL,
-                   0,
-                   0,
-                   0);
-  delete data;
-
   OGRFree(wkt);
   CSLDestroy(options);
   GDALClose(output);

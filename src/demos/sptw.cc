@@ -200,6 +200,7 @@ SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file,
 
   // Read number of directory entries
   int64_t entry_count = read_int64(tiff_file, doffset, big_endian);
+
   // directory offset + sizeof directory count
   int64_t entry_offset = doffset + sizeof(int64_t);
 
@@ -227,19 +228,26 @@ SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file,
 
     // Check if directory type is TIFFTAG_TILEOFFSETS
     if (entry_tag == TIFFTAG_TILEOFFSETS) {
-      // Read location of first_offset
-      int64_t first_offset = read_int64(tiff_file, entry_data, big_endian);
+      // Store the first tile at the end of the file
+      // instead of trusting GDAL to place it.
+      //
+      // The offset appears to be miscalculated when using the
+      // SPARSE_OK GDAL option and data was being corrupted if
+      // there were too many tags present in the TIFF file.
+      MPI_Offset first_offset;
+      MPI_File_get_size(tiff_file->fh, &first_offset);
+
       first_tile_offset = first_offset;
       tile_count = element_count;
 
-      for (int64_t j = 1; j < element_count; ++j) {
+      for (int64_t j = 0; j < element_count; ++j) {
         write_int64(tiff_file,
             entry_data+(sizeof(int64_t)*j),
             first_offset+(tile_size_bytes*j),
             big_endian);
       }
     } else if (entry_tag == TIFFTAG_TILEBYTECOUNTS) {
-      for (int64_t j = 1; j < element_count; ++j) {
+      for (int64_t j = 0; j < element_count; ++j) {
         write_int64(tiff_file,
                     entry_data+(sizeof(int64_t)*j),
                     tile_size_bytes,
@@ -366,7 +374,7 @@ PTIFF* open_raster(string filename) {
   GDALAllRegister();
 
   GDALDataset *ds = static_cast<GDALDataset*>(GDALOpen(filename.c_str(),
-                                                       GA_Update));
+                                                       GA_ReadOnly));
 
   if (ds == NULL) {
     free(c_filename);
@@ -579,6 +587,7 @@ SPTW_ERROR write_subset(PTIFF *tiff_file,
              static_cast<char*>(data)+pixel_offset,
              sub_row_size);
     }
+    
     MPI_File_write_at(tiff_file->fh,
                       calculate_file_offset(tiff_file, write_ul_x, write_ul_y),
                       buffer,
@@ -613,6 +622,7 @@ SPTW_ERROR write_area(PTIFF *ptiff,
                       int64_t ul_y,
                       int64_t lr_x,
                       int64_t lr_y) {
+
   std::vector<Area> write_stack;
   Area write_area;
   write_area.ul = librasterblaster::Coordinate(ul_x,
