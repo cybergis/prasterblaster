@@ -147,7 +147,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
                                                          conf.cell_dimension_ratio,
                                                          no_data);
     if (err != PRB_NOERROR) {
-      fprintf(stderr, "Error creating raster!: %d\n", err);
+      fprintf(stderr, "Error creating output raster: %d\n", err);
       return PRB_IOERROR;
     }
   }
@@ -159,9 +159,10 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     SPTW_ERROR sperr = populate_tile_offsets(output_raster, conf.tile_size);
 
     if (sperr != sptw::SP_None) {
-      fprintf(stderr, "\nError populating tile offsets\n");
+      fprintf(stderr, "\nError populating tile offsets!\n");
+      return PRB_IOERROR;
     }
-    printf("done\n");
+    printf("done.\n");
   }
 
   // Wait for tile offsets to be populated
@@ -180,7 +181,6 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
 
   if (output_raster == NULL) {
     fprintf(stderr, "Could not open output raster\n");
-    MPI_Abort(MPI_COMM_WORLD, 1);
     return PRB_IOERROR;
   }
 
@@ -225,7 +225,6 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     PRB_ERROR chunk_err = in_chunk.Read(input_raster);
     if (chunk_err != PRB_NOERROR) {
       fprintf(stderr, "Error reading input chunk!\n");
-      MPI_Abort(MPI_COMM_WORLD, 1);
       return PRB_IOERROR;
     }
     read_total += MPI_Wtime() - prelude_end;
@@ -248,8 +247,8 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
                               conf.fill_value,
                               conf.resampler);
     if (ret == false) {
-            fprintf(stderr, "Error reprojecting chunk!\n");
-            MPI_Abort(MPI_COMM_WORLD, 1);
+      fprintf(stderr, "Error reprojecting chunk!\n");
+      return PRB_PROJERROR;
     }
     resample_end = MPI_Wtime();
     resample_total += resample_end - resample_start;
@@ -261,7 +260,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
                             out_chunk);
     if (err != PRB_NOERROR) {
       fprintf(stderr, "Rank %d: Error writing chunk!\n", rank);
-      MPI_Abort(MPI_COMM_WORLD, 1);
+      return PRB_IOERROR;
     }
     write_end = MPI_Wtime();
     write_total += write_end - write_start;
