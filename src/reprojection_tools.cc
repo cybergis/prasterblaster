@@ -27,6 +27,7 @@
 #include <vector>
 #include <ctime>
 #include <cstdlib>
+#include <cmath>
 #include <sstream>
 
 #include "reprojection_tools.h"
@@ -39,7 +40,8 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
                              string output_filename,
                              string output_srs,
                              int output_tile_size,
-                             double output_ratio) {
+                             double output_ratio,
+                             double output_no_data_value) {
   OGRSpatialReference in_srs;
   OGRSpatialReference out_srs;
   OGRErr err;
@@ -93,7 +95,8 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
                                             num_rows,
                                             output_pixel_size,
                                             out_area,
-                                            output_tile_size);
+                                            output_tile_size,
+                                            output_no_data_value);
   return result;
 }
 
@@ -155,7 +158,8 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
                                             num_rows,
                                             output_pixel_size,
                                             out_area,
-                                            output_tile_size);
+                                            output_tile_size,
+                                            NAN);
   return result;
 }
 
@@ -166,7 +170,8 @@ PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
                                  int64_t output_rows,
                                  double output_pixel_size,
                                  Area output_projected_area,
-                                 int output_tile_size) {
+                                 int output_tile_size,
+                                 double output_no_data_value) {
   double in_transform[6];
   in->GetGeoTransform(in_transform);
 
@@ -213,6 +218,11 @@ PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
   double no_data = in_band->GetNoDataValue();
 
   out_band->SetColorTable(ct);
+
+  if (!std::isnan(output_no_data_value)) {
+    no_data = output_no_data_value;
+  }
+
   out_band->SetNoDataValue(no_data);
 
   // Setup georeferencing

@@ -134,11 +134,18 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
 
     // Now we have to create the output raster
     printf("Creating output raster...");
+
+    double no_data = NAN;
+    if (!conf.fill_value.empty()) {
+      no_data = std::strtod(conf.fill_value.c_str(), NULL);
+    }
+
     PRB_ERROR err = librasterblaster::CreateOutputRaster(input_raster,
                                                          conf.output_filename,
                                                          conf.output_srs,
                                                          conf.tile_size,
-                                                         conf.cell_dimension_ratio);
+                                                         conf.cell_dimension_ratio,
+                                                         no_data);
     if (err != PRB_NOERROR) {
       fprintf(stderr, "Error creating raster!: %d\n", err);
       return PRB_IOERROR;

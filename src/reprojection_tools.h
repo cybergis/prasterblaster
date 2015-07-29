@@ -18,10 +18,11 @@
 #ifndef SRC_REPROJECTION_TOOLS_H_
 #define SRC_REPROJECTION_TOOLS_H_
 
+#include <cmath>
+#include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
-#include <functional>
-#include <stdint.h>
 
 #include "rastercoordtransformer.h"
 #include "resampler.h"
@@ -48,7 +49,8 @@ PRB_ERROR CreateOutputRaster(GDALDataset *in,
                              string output_filename,
                              string output_srs,
                              int output_tile_size,
-                             double output_ratio = 1.0f);
+                             double output_ratio = 1.0f,
+                             double output_no_data_value = NAN);
 /**
  * @brief Creates an output raster based on an input raster, a new projection,
  * and a maximum pixel dimension. This is to be used when the dimensions of the
@@ -75,7 +77,8 @@ PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
                                  int64_t output_rows,
                                  double output_pixel_size,
                                  Area output_projected_area,
-                                 int output_tile_size);
+                                 int output_tile_size,
+                                 double output_no_data_value);
 
 std::vector<Area> BlockPartition(int rank,
                                  int process_count,
