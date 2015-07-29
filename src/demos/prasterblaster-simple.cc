@@ -83,35 +83,28 @@ int main(void) {
                                                 tile_size,
                                                 partition_size);
 
-  for (std::vector<Area>::iterator i = partitions.begin();
-       i != partitions.end();
-       ++i) {
+
+  for (auto& partition : partitions) {
     // Each partition represents an area of the output raster. The input minbox
     // has to be calculated for each partition. This call to CreateRasterChunk
     // performs the minbox operation and initializes the RasterChunk.
-    RasterChunk *in_chunk = RasterChunk::CreateRasterChunk(input_raster,
-                                                                output_raster,
-                                                                *i);
+    Area in_area = librasterblaster::RasterMinbox(input_raster, output_raster, partition);
+
+    RasterChunk in_chunk(input_raster, in_area);
 
     // The RasterChunk is initialized but we still have to read the pixel values
     // from the file. This is done by calling ReadRasterChunk.
-    PRB_ERROR chunk_err = RasterChunk::ReadRasterChunk(input_raster, in_chunk);
+    PRB_ERROR chunk_err = in_chunk.Read(input_raster);
 
     if (chunk_err != PRB_NOERROR) {
       fprintf(stderr, "Error reading from input!\n");
       return 1;
     }
 
-    RasterChunk *out_chunk = RasterChunk::CreateRasterChunk(output_raster,
-                                                            *i);
+    RasterChunk out_chunk(output_raster, partition);
 
-    if (out_chunk == NULL) {
-      fprintf(stderr, "Error initializing output chunk!\n");
-      return 1;
-    }
-
-    bool ret = librasterblaster::ReprojectChunk(*in_chunk,
-                                                *out_chunk,
+    bool ret = librasterblaster::ReprojectChunk(in_chunk,
+                                                out_chunk,
                                                 fillvalue,
                                                 resampler);
     if (ret == false) {
@@ -120,10 +113,7 @@ int main(void) {
     }
 
     // Finally write the output chunk to the output raster file
-    chunk_err = RasterChunk::WriteRasterChunk(output_raster, out_chunk);
-
-    delete in_chunk;
-    delete out_chunk;
+    chunk_err = out_chunk.Write(output_raster);
   }
 
   printf("Reprojection successful! Open the file %s to view the output\n",

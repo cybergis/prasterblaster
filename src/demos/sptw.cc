@@ -170,12 +170,11 @@ int write_int64(PTIFF *tiff_file,
 }
 
 SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file, int64_t tile_size) {
-  MPI_Status status;
   bool big_endian = false;   // Is tiff file big endian?
 
   // Read endianess of file
   uint8_t endian_flag[2] = { 0x49, 0x49 };
-  MPI_File_read_at(tiff_file->fh, 0, endian_flag, 2, MPI_BYTE, &status);
+  MPI_File_read_at(tiff_file->fh, 0, endian_flag, 2, MPI_BYTE, MPI_STATUS_IGNORE);
   if (endian_flag[0] == 0x4d) {
     big_endian = true;
   }
@@ -183,12 +182,12 @@ SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file, int64_t tile_size) {
   // Check tiff version, should be 0x002b for BigTiff
   uint8_t version_data[2];
   int16_t version = 0;
-  MPI_File_read_at(tiff_file->fh, 2, version_data, 2, MPI_BYTE, &status);
+  MPI_File_read_at(tiff_file->fh, 2, version_data, 2, MPI_BYTE, MPI_STATUS_IGNORE);
 
   version = parse_int16(version_data, big_endian);
 
-  if (version != 0x002b) {
-    // Wrong TIFF version!
+  // Check that we are dealing with a BigTIFF
+  if (version != 0x002B) {
     return SP_BadArg;
   }
 
@@ -215,7 +214,7 @@ SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file, int64_t tile_size) {
                      tag_buffer,
                      2,
                      MPI_BYTE,
-                     &status);
+                     MPI_STATUS_IGNORE);
     int16_t entry_tag = parse_int16(tag_buffer, big_endian);
 
     // Read count of elements in entry
@@ -256,10 +255,10 @@ SPTW_ERROR populate_tile_offsets(PTIFF *tiff_file, int64_t tile_size) {
   }
 
   // Calculate end of file and write to it
-  uint8_t buffer[10];
-  buffer[0] = 0;
+  uint8_t buffer = 0;
   int64_t file_size = (tile_count * tile_size_bytes) + first_tile_offset;
-  MPI_File_write_at(tiff_file->fh, file_size-1, buffer, 1, MPI_BYTE, &status);
+  MPI_File_write_at(tiff_file->fh, file_size-1, &buffer, 1, MPI_BYTE, MPI_STATUS_IGNORE);
+
   return SP_None;
 }
 
@@ -481,8 +480,8 @@ int64_t chunk_to_file_offset(PTIFF *tiff_file,
                              int64_t chunk_x,
                              int64_t chunk_y) {
   //  First we have to translate the chunk_offset to raster coordinates.
-  const int64_t raster_x = chunk_x + chunk->raster_location_.x;
-  const int64_t raster_y = chunk_y + chunk->raster_location_.y;
+  const int64_t raster_x = chunk_x + chunk->raster_location.x;
+  const int64_t raster_y = chunk_y + chunk->raster_location.y;
   const int64_t tile_x = raster_x % tiff_file->block_x_size;
   const int64_t tile_y = raster_y % tiff_file->block_y_size;
   const int64_t offset_into_tile = (tile_x + (tile_y * tiff_file->block_x_size))

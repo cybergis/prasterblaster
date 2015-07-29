@@ -172,11 +172,10 @@ PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
 
   auto in_band = in->GetRasterBand(1);
 
-  GDALAllRegister();
   GDALDriver *driver = GetGDALDriverManager()->GetDriverByName("GTiff");
 
   if (driver == NULL) {
-    fprintf(stderr, "Error opening GTiff driver.\n");
+    fprintf(stderr, "Error loading GTiff driver.\n");
     return PRB_BADARG;
   }
 
@@ -203,14 +202,13 @@ PRB_ERROR CreateOutputRasterFile(GDALDataset *in,
   CSLDestroy(options);
 
   if (output == NULL) {
-    fprintf(stderr, "driver->Create call failed.\n");
+    fprintf(stderr, "Failed to create output raster file.\n");
     return PRB_BADARG;
   }
 
   auto out_band = output->GetRasterBand(1);
 
   // Copy ColorTable and NoData value
-
   GDALColorTable *ct = in_band->GetColorTable();
   double no_data = in_band->GetNoDataValue();
 
@@ -271,11 +269,10 @@ std::vector<Area> BlockPartition(int rank,
   // Now we shuffle the partitions for load balancing.
   // All processes should generate the same shuffle.
   std::srand(42);
-//  std::random_shuffle(blocks.begin(), blocks.end(), simplerandom);
 
   std::vector<Area> partitions;
   for (size_t i = 0; i < blocks.size(); ++i) {
-    if (i % process_count == static_cast<unsigned int>(rank)) {
+    if (i % process_count == (size_t) rank) {
       partitions.push_back(blocks[i]);
     }
   }
@@ -519,6 +516,7 @@ Area RasterMinbox2(string source_projection,
           || (temp.lr.y > destination_row_count - 1) || (temp.lr.y < 0.0)) {
         temp.ul.x = -1.0;
         continue;
+
         printf("\n\nSearch Area: %f %f %f %f\n",
                destination_raster_area.ul.x,
                destination_raster_area.ul.y,
@@ -607,7 +605,7 @@ bool ReprojectChunk(RasterChunk& source,
     RasterChunk& destination,
     string fillvalue,
     RESAMPLER resampler) {
-  if (source.pixel_type_ != destination.pixel_type_) {
+  if (source.pixel_type != destination.pixel_type) {
     fprintf(stderr, "Source and destination chunks have different types!\n");
     return false;
   }
@@ -624,7 +622,7 @@ bool ReprojectChunk(RasterChunk& source,
     default: break;
   }
 
-  switch (source.pixel_type_) {
+  switch (source.pixel_type) {
     case GDT_Byte:
       return ReprojectChunkType<uint8_t>(source, destination, fvalue, GetResampler<uint8_t>(resampler), support);
     case GDT_UInt16:
@@ -681,30 +679,30 @@ bool ReprojectChunkType(RasterChunk& source,
   Coordinate temp1, temp2;
   Area pixelArea;
 
-  RasterCoordTransformer rt(destination.projection_,
-                            destination.ul_projected_corner_,
-                            destination.pixel_size_,
-                            destination.row_count_,
-                            destination.column_count_,
-                            source.projection_,
-                            source.ul_projected_corner_,
-                            source.pixel_size_);
+  RasterCoordTransformer rt(destination.projection,
+                            destination.ul_projected_corner,
+                            destination.pixel_size,
+                            destination.row_count,
+                            destination.column_count,
+                            source.projection,
+                            source.ul_projected_corner,
+                            source.pixel_size);
 
-  double scale_factor = destination.pixel_size_ / source.pixel_size_;
+  double scale_factor = destination.pixel_size / source.pixel_size;
 
-  for (int chunk_y = 0; chunk_y < destination.row_count_; ++chunk_y)  {
-    for (int chunk_x = 0; chunk_x < destination.column_count_; ++chunk_x) {
+  for (int chunk_y = 0; chunk_y < destination.row_count; ++chunk_y)  {
+    for (int chunk_x = 0; chunk_x < destination.column_count; ++chunk_x) {
       temp1.x = chunk_x;
       temp1.y = chunk_y;
 
       pixelArea = rt.Transform(temp1, filter_support);
 
-      int64_t dest_offset = chunk_x + chunk_y * destination.column_count_;
+      int64_t dest_offset = chunk_x + chunk_y * destination.column_count;
 
-      if (pixelArea.ul.x == -1.0 || (pixelArea.ul.x > source.column_count_ - 1)
-          || (pixelArea.lr.y > source.row_count_ - 1)) {
+      if (pixelArea.ul.x == -1.0 || (pixelArea.ul.x > source.column_count - 1)
+          || (pixelArea.lr.y > source.row_count - 1)) {
         // The pixel is outside of the projected area
-        static_cast<pixelType*>(destination.pixels_)[dest_offset] = fill_value;
+        static_cast<pixelType*>(destination.pixels)[dest_offset] = fill_value;
         continue;
       }
 
@@ -729,12 +727,12 @@ bool ReprojectChunkType(RasterChunk& source,
         ul_y = 0;
       }
       
-      if (lr_x > (source.column_count_ - 1)) {
-        lr_x = source.column_count_ - 1;
+      if (lr_x > (source.column_count - 1)) {
+        lr_x = source.column_count - 1;
       }
 
-      if (ul_y > (source.row_count_ - 1)) {
-        ul_y = source.row_count_ - 1;
+      if (ul_y > (source.row_count - 1)) {
+        ul_y = source.row_count - 1;
       }
 
       // Perform resampling...
@@ -742,7 +740,7 @@ bool ReprojectChunkType(RasterChunk& source,
 
       if ((resampler == NULL) || ((ul_x > lr_x) || (ul_y > lr_y))) {
         // ul/lr do not enclose an area, use NN
-        if (ul_x + 1 > source.column_count_ || ul_y + 1 > source.row_count_) {
+        if (ul_x + 1 > source.column_count || ul_y + 1 > source.row_count) {
           // TODO(dmattli) FIX THIS
         }
 
@@ -750,16 +748,16 @@ bool ReprojectChunkType(RasterChunk& source,
           //fprintf(stderr, "ul/lr doesn't enclose an area: ul %ld %ld lr %ld %ld\n", ul_x, ul_y, lr_x, lr_y);
         }
 
-        int64_t src_offset = (int64_t) ul_x + (int64_t) ul_y * source.column_count_;
+        int64_t src_offset = (int64_t) ul_x + (int64_t) ul_y * source.column_count;
 
-        sampled_value = static_cast<pixelType*>(source.pixels_)[src_offset];
+        sampled_value = static_cast<pixelType*>(source.pixels)[src_offset];
       } else {
         Area ia = Area(ul_x, ul_y, lr_x, lr_y);
 
         sampled_value = resampler(source, ia, scale_factor);
       }
 
-      static_cast<pixelType*>(destination.pixels_)[dest_offset] = sampled_value;
+      static_cast<pixelType*>(destination.pixels)[dest_offset] = sampled_value;
     }
   }
 

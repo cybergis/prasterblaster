@@ -27,6 +27,10 @@ namespace librasterblaster {
 /// A class representing an in-memory part of a raster.
 class RasterChunk {
  public:
+
+  RasterChunk() {
+    pixels = NULL;
+  }
   /**
    * @brief
    * This function creates a RasterChunk.
@@ -35,25 +39,7 @@ class RasterChunk {
    * @param chunk_area The inclusive area that the chunk should represent.
    *
    */
-  static RasterChunk* CreateRasterChunk(GDALDataset *ds, Area chunk_area);
-
-  /**
-   * @brief
-   *
-   * This function creates a RasterChunk from the "destination" dataset by
-   *   calculating the area in "destination" that corresponds to 
-   *   "source_area" in "source" .
-   *
-   * @param destination Dataset to create the chunk from.
-   * @param source Dataset that is used to find the area
-   * @param source_area Area that is used to calculate area from 
-   *                    destination
-   *
-   *
-   */
-  static RasterChunk* CreateRasterChunk(GDALDataset *destination,
-                                        GDALDataset *source,
-                                        Area source_area);
+  RasterChunk(GDALDataset *ds, Area chunk_area);
 
   /**
    * @brief
@@ -62,6 +48,16 @@ class RasterChunk {
    * @param s Source RasterChunk to be copied
    */
   RasterChunk(const RasterChunk &s);
+
+  /// RasterChunk destructor
+  /**
+   * This destructor frees the memory, if any, allocated at pixels_.
+   */
+  ~RasterChunk() {
+    if (this->pixels != NULL) {
+      free(this->pixels);
+    }
+  }
 
   /**
    * @brief The comparison operators compare the upper-left corner of the raster
@@ -83,10 +79,9 @@ class RasterChunk {
    * RasterChunk.
    *
    * @param ds The raster to read from.
-   * @param chunk The chunk to read to.
    *
    */
-  static PRB_ERROR ReadRasterChunk(GDALDataset *ds, RasterChunk *chunk);
+  PRB_ERROR Read(GDALDataset *ds);
   
   /**
    * @brief
@@ -97,53 +92,41 @@ class RasterChunk {
    * @param chunk The RasterChunk to write to the file.
    *
    */
-  static PRB_ERROR WriteRasterChunk(GDALDataset *ds, RasterChunk *chunk);
-  /// RasterChunk constructor
-  RasterChunk() {
-    this->pixels_ = NULL;
-  }
-  /// RasterChunk destructor
-  /**
-   * This destructor frees the memory, if any,  allocated at pixels_.
-   */
-  ~RasterChunk() {
-    if (this->pixels_ != NULL) {
-      free(this->pixels_);
-    }
-  }
+  PRB_ERROR Write(GDALDataset *ds);
+
   Coordinate ChunkToRaster(Coordinate chunk_coordinate);
   Coordinate RasterToChunk(Coordinate raster_coordinate);
 
-  std::string projection_;
+  std::string projection;
   /// Location of the chunk, in raster coordinates
   /** 
    * This variable represents the upper-left location of the raster chunk, in
    * the raster coordinates.
    */
-  Coordinate raster_location_;
+  Coordinate raster_location;
   /// Upper-left corner, in projected coordinates
   /**
    * This variable represents the upper-left location of the raster chunk in
    * projected coordinates.
    */
-  Coordinate ul_projected_corner_;
+  Coordinate ul_projected_corner;
   /// Size of pixel, in meters
   /**
    * This variable represents the size of the pixel in meters.
    */
-  double pixel_size_;  // in meters
+  double pixel_size;  // in meters
   /// Number of rows
-  int row_count_;
+  int row_count;
   /// Number of columns
-  int column_count_;
+  int column_count;
   /// Datatype of pixel values
-  GDALDataType pixel_type_;
+  GDALDataType pixel_type;
   /// Number of bands
-  int band_count_;
+  int band_count;
   /// GDAL geotransform
-  double geotransform_[6];
+  double geotransform[6];
   /// Pointer to pixel values
-  void *pixels_;
+  void *pixels;
 };
 }
 

@@ -43,8 +43,8 @@ using sptw::open_raster;
 using sptw::SPTW_ERROR;
 
 void GDALErrorHandler(CPLErr, int, const char *) {
-        return;
 }
+
 /*! \page prasterblasterpio
 
 \htmlonly
@@ -70,15 +70,14 @@ prasterblaster-pio.cc.
 </p>
  */
 namespace librasterblaster {
-PRB_ERROR write_rasterchunk(PTIFF *ptiff,
-                             RasterChunk *chunk) {
+PRB_ERROR write_rasterchunk(PTIFF *ptiff, RasterChunk& chunk) {
   Area write_area;
-  write_area.ul = chunk->ChunkToRaster(librasterblaster::Coordinate(0.0, 0.0));
-  write_area.lr = chunk->ChunkToRaster(
-      librasterblaster::Coordinate(chunk->column_count_-1, chunk->row_count_-1));
+  write_area.ul = chunk.ChunkToRaster(librasterblaster::Coordinate(0.0, 0.0));
+  write_area.lr = chunk.ChunkToRaster(
+      librasterblaster::Coordinate(chunk.column_count-1, chunk.row_count-1));
 
   sptw::write_area(ptiff,
-                   chunk->pixels_,
+                   chunk.pixels,
                    write_area.ul.x,
                    write_area.ul.y,
                    write_area.lr.x,
@@ -88,7 +87,6 @@ PRB_ERROR write_rasterchunk(PTIFF *ptiff,
 
 /** Main function for the prasterblasterpio program */
 PRB_ERROR prasterblasterpio(Configuration conf) {
-  RasterChunk *in_chunk, *out_chunk;
   double start_time, end_time, preloop_time;
 
   start_time = MPI_Wtime();
@@ -101,7 +99,6 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
 
   // Replace CPLErrorHandler
   CPLPushErrorHandler(GDALErrorHandler);
-
   GDALAllRegister();
 
   if (conf.input_filename == "" || conf.output_filename == "") {
@@ -123,7 +120,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   GDALDataset *input_raster =
       static_cast<GDALDataset*>(GDALOpen(conf.input_filename.c_str(),
                                          GA_ReadOnly));
-  if (input_raster == NULL) {
+  if (input_raster == nullptr) {
     fprintf(stderr, "Error opening input raster!\n");
     return PRB_IOERROR;
   }
@@ -131,19 +128,12 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   // If we are the process with rank 0 we are responsible for the creation of
   // the output raster.
   if (rank == 0) {
-    OGRSpatialReference sr;
-    char *wkt;
-    sr.SetFromUserInput(input_raster->GetProjectionRef());
-    sr.exportToPrettyWkt(&wkt);
     printf("prasterblaster-pio: Beginning reprojection task\n");
     printf("\tInput File: %s, Output File: %s\n",
            conf.input_filename.c_str(), conf.output_filename.c_str());
-    OGRFree(wkt);
 
     // Now we have to create the output raster
     printf("Creating output raster...");
-    double gt[6];
-    input_raster->GetGeoTransform(gt);
     PRB_ERROR err = librasterblaster::CreateOutputRaster(input_raster,
                                                          conf.output_filename,
                                                          conf.output_srs,
@@ -179,7 +169,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   // file.
   GDALDataset *gdal_output_raster =
       static_cast<GDALDataset*>(GDALOpen(conf.output_filename.c_str(),
-                                         GA_Update));
+                                         GA_ReadOnly));
 
   if (output_raster == NULL) {
     fprintf(stderr, "Could not open output raster\n");
@@ -201,6 +191,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
            partitions.size(),
            conf.partition_size);
   }
+
   double read_total, misc_start, misc_total;
   double write_start, write_end, write_total;
   double resample_start, resample_end, resample_total;
@@ -210,18 +201,21 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   preloop_time = MPI_Wtime() - start_time;
 
   // Now we loop through the returned partitions
-  for (size_t i = 0; i < partitions.size(); ++i) {
+  for (size_t i = 0; i < partitions.size(); i++) {
+    auto& partition = partitions[i];
     loop_start = MPI_Wtime();
 
-    // Now we use the ProjectedRaster object we created for the input file to
+    // Use the ProjectedRaster object we created for the input file to
     // create a RasterChunk that has the pixel values read into it.
-    in_chunk = RasterChunk::CreateRasterChunk(input_raster,
-                                              gdal_output_raster,
-                                              partitions.at(i));
+    Area in_area = librasterblaster::RasterMinbox(gdal_output_raster,
+                              input_raster,
+                              partition);
+
+    RasterChunk in_chunk(input_raster, in_area);
     minbox_total += MPI_Wtime() - loop_start;
 
     prelude_end = MPI_Wtime();
-    PRB_ERROR chunk_err = RasterChunk::ReadRasterChunk(input_raster, in_chunk);
+    PRB_ERROR chunk_err = in_chunk.Read(input_raster);
     if (chunk_err != PRB_NOERROR) {
       fprintf(stderr, "Error reading input chunk!\n");
       MPI_Abort(MPI_COMM_WORLD, 1);
@@ -233,16 +227,8 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     // We want a RasterChunk for the output area but we area going to generate
     // the pixel values not read them from the file so we use
     // CreateRasterChunk
-    out_chunk = RasterChunk::CreateRasterChunk(gdal_output_raster,
-                                               partitions.at(i));
-    if (out_chunk == NULL) {
-      fprintf(stderr, "Error allocating output chunk! %f %f %f %f\n",
-              partitions[i].ul.x,
-              partitions[i].ul.y,
-              partitions[i].lr.x,
-              partitions[i].lr.y);
-      return PRB_BADARG;
-    }
+    RasterChunk out_chunk(gdal_output_raster, partition);
+
     misc_total += MPI_Wtime() - misc_start;
 
     // Now we call ReprojectChunk with the RasterChunk pair and the desired
@@ -250,8 +236,8 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     // the output RasterChunk with the new values.
 
     resample_start = MPI_Wtime();
-    bool ret = ReprojectChunk(*in_chunk,
-                              *out_chunk,
+    bool ret = ReprojectChunk(in_chunk,
+                              out_chunk,
                               conf.fill_value,
                               conf.resampler);
     if (ret == false) {
@@ -274,12 +260,9 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
     write_total += write_end - write_start;
 
     misc_start = MPI_Wtime();
-    delete in_chunk;
-    delete out_chunk;
 
     if (rank == 0) {
-      printf(" %d%% ",
-             (int)((i*100) / partitions.size()));
+      printf(" %lu%% ", (i*100) / partitions.size());
       fflush(stdout);
     }
     misc_total += MPI_Wtime() - misc_start;
@@ -313,11 +296,12 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   MPI_Gather(runtimes,
              7,
              MPI_DOUBLE,
-             &(process_runtimes[0]),
+             &process_runtimes[0],
              7,
              MPI_DOUBLE,
              0,
              MPI_COMM_WORLD);
+  
   double averages[7] = { 0.0 };
 
   for (unsigned int i = 0; i < process_runtimes.size(); i++) {
@@ -327,6 +311,7 @@ PRB_ERROR prasterblasterpio(Configuration conf) {
   for (unsigned int i = 0; i < 7; i++) {
     averages[i] /= process_count;
   }
+
   if (rank == 0) {
     printf("\nRuntimes in seconds:\n");
     printf("Total  Pre-loop Minbox Read   Resample Write  Misc\n");

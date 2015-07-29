@@ -85,14 +85,14 @@ inline float lanczos_filter(float x) {
 /** @cond DOXYHIDE */
 template <typename T>
 T Max(RasterChunk& input, Area pixel_area, float) {
-  T *pixels = static_cast<T*>(input.pixels_);
+  T *pixels = static_cast<T*>(input.pixels);
   T temp = pixels[static_cast<int>(pixel_area.ul.y)
-                  * input.column_count_
+                  * input.column_count
                   + static_cast<int>(pixel_area.ul.x)];
   T temp2 = 0;
   for (int y = pixel_area.ul.y; y <= pixel_area.lr.y; ++y) {
     for (int x = pixel_area.ul.x; x <= pixel_area.lr.x; ++x) {
-      temp2 = pixels[y * input.column_count_ + x];
+      temp2 = pixels[y * input.column_count + x];
 
       if (temp2 > temp) {
         temp = temp2;
@@ -105,16 +105,16 @@ T Max(RasterChunk& input, Area pixel_area, float) {
 
 template <typename T>
 T Min(RasterChunk& input, Area pixel_area, float) {
-  T *pixels = static_cast<T*>(input.pixels_);
+  T *pixels = static_cast<T*>(input.pixels);
   T temp = pixels[static_cast<int>(pixel_area.ul.y)
-    * input.column_count_
+    * input.column_count
     + static_cast<int>(pixel_area.ul.x)];
 
   T temp2 = 0;
 
   for (int y = pixel_area.ul.y; y <= pixel_area.lr.y; ++y) {
     for (int x = pixel_area.ul.x; x <= pixel_area.lr.x; ++x) {
-      temp2 = pixels[y * input.column_count_ + x];
+      temp2 = pixels[y * input.column_count + x];
 
       if (temp2 < temp) {
         temp = temp2;
@@ -128,13 +128,13 @@ T Min(RasterChunk& input, Area pixel_area, float) {
 template <typename T>
 T Mean(RasterChunk& input, Area pixel_area, float) {
   T temp = 0;
-  T *pixels = static_cast<T*>(input.pixels_);
+  T *pixels = static_cast<T*>(input.pixels);
 
   int cells = 0;
 
   for (int y = pixel_area.ul.y; y <= pixel_area.lr.y; ++y) {
     for (int x = pixel_area.ul.x; x <= pixel_area.lr.x; ++x) {
-      temp += pixels[(int64_t) y * input.column_count_ + (int64_t) x];
+      temp += pixels[(int64_t) y * input.column_count + (int64_t) x];
       cells++;
     }
   }
@@ -147,7 +147,7 @@ T Mean(RasterChunk& input, Area pixel_area, float) {
 template <typename T, typename F>
 T Filter(RasterChunk& input, Area pixel_area, F filter, int support, float scale_factor) {
   T temp = 0;
-  T *pixels = static_cast<T*>(input.pixels_);
+  T *pixels = static_cast<T*>(input.pixels);
 
   float ss = support / scale_factor;
 
@@ -167,7 +167,7 @@ T Filter(RasterChunk& input, Area pixel_area, F filter, int support, float scale
 
       float weight = x_weight * y_weight;
 
-      temp += pixels[(int64_t) y * input.column_count_ + (int64_t) x] * weight;
+      temp += pixels[(int64_t) y * input.column_count + (int64_t) x] * weight;
       total_weight += weight;
     }
   }

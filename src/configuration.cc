@@ -40,17 +40,18 @@ Configuration::Configuration() {
   partition_size = -1;
   tile_size = 1024;
   timing_filename = "";
-  cell_dimension_ratio = 1;
+  cell_dimension_ratio = 1.0;
 }
 
 Configuration::Configuration(int argc, char *argv[]) {
   signed char c = 0;
   partition_size = 1;
   std::string arg = "";
-  resampler = NEAREST;
+  resampler = BILINEAR;
   tile_size = 1024;
   timing_filename = "";
-  cell_dimension_ratio = 1;
+  cell_dimension_ratio = 1.0;
+
   while ((c = getopt_long(argc,
                           argv,
                           "p:r:f:n:x:c",
@@ -65,7 +66,7 @@ Configuration::Configuration(int argc, char *argv[]) {
         source_srs = optarg;
         break;
       case 'n':
-        partition_size = strtol(optarg, NULL, 10);
+        partition_size = std::stoi(optarg);
         break;
       case 'r':
         arg = optarg;
@@ -80,22 +81,18 @@ Configuration::Configuration(int argc, char *argv[]) {
         } else if (arg == "lanczos") {
           resampler = LANCZOS;
         }
-
-        printf("Using resampler %d from \"%s\"\n", resampler, arg.c_str());
-
         break;
       case 'f':
         fill_value = optarg;
         break;
       case 'x':
-        tile_size = static_cast<int>(strtol(optarg, NULL, 10));
+        tile_size = std::stoi(optarg);
         break;
       case 'c':
         timing_filename = optarg;
         break;
       case 'o':
-        if (sscanf(optarg, "%lf", &cell_dimension_ratio) == 0)
-            cell_dimension_ratio = 1.0;
+        cell_dimension_ratio = std::stof(optarg);
         break;
       default:
         fprintf(stderr, "%s: option '-%c' is invalid: ignored\n",
